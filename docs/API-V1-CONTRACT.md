@@ -6,15 +6,16 @@ The custom PHP API under `api/v1/` remains separate from the Laravel application
 
 ## Implemented routes
 
-| Method | Path                              | Purpose                                               |
-| ------ | --------------------------------- | ----------------------------------------------------- |
-| GET    | /api/v1/health/live               | Process liveness; no database required                |
-| GET    | /api/v1/health/ready              | Checks database connection and schema version 0005    |
-| GET    | /api/v1/meta                      | API version, rollout state, timezone, currency, roles |
-| POST   | /api/v1/sessions                  | Verify credentials and issue a session                |
-| GET    | /api/v1/sessions/current          | Restore active user and current role                  |
-| POST   | /api/v1/sessions/current/logout   | Revoke session with CSRF validation                   |
-| POST   | /api/v1/sessions/current/password | Change password and revoke all sessions               |
+| Method | Path                              | Purpose                                                          |
+| ------ | --------------------------------- | ---------------------------------------------------------------- |
+| GET    | /api/v1/health/live               | Process liveness; no database required                           |
+| GET    | /api/v1/health/ready              | Checks database connection and schema version 0005               |
+| GET    | /api/v1/meta                      | API version, rollout state, timezone, currency, roles            |
+| POST   | /api/v1/sessions                  | Verify credentials and issue a session                           |
+| GET    | /api/v1/sessions/current          | Restore active user and current role                             |
+| POST   | /api/v1/sessions/current/logout   | Revoke session with CSRF validation                              |
+| POST   | /api/v1/sessions/current/password | Change password and revoke all sessions                          |
+| GET    | /api/v1/bootstrap                 | Authenticated, role-scoped read-only PWA bootstrap compatibility |
 
 All responses use a JSON envelope with ok, data or error, and a request identifier. Responses are not cacheable. The API does not enable cross-origin access; same-origin HTTPS is the default boundary. Unknown resources return 404 and unsupported methods return 405.
 
@@ -55,6 +56,14 @@ The PHP runtime reads environment variables directly; it does not parse .env. Us
 ## Laravel 13 isolated shadow implementation
 
 The Laravel application is exercised only against a dedicated disposable CI MySQL schema. It does not replace or modify the custom PHP API routes, and the PWA continues to call Apps Script.
+
+The authenticated bootstrap route returns the legacy PWA data shape for the signed-in principal, property settings, a bounded recent voucher collection, role-appropriate vendor records and the permitted email/name directory. Staff voucher data is creator-scoped; Manager/Owner receive property-wide voucher/name data; Accountant receives no voucher or vendor records. The opening-balance setting is returned only to view-all roles and is masked to zero for Staff/Accountant. Inactive vendors remain visible as catalog metadata, matching the legacy bootstrap behavior. Owner onboarding checks are not implemented in Laravel. This is a read-only Laravel shadow endpoint and does not switch or configure the PWA transport; Apps Script remains the only production writer.
+
+### Laravel browser transport — limited local shadow mode
+
+The Laravel browser adapter is an opt-in, same-origin compatibility experiment. Login and current-session responses expose only the verified readable `cv_csrf` value for the current browser session. The opaque `cv_session` remains a Secure, HttpOnly cookie and is never returned in JSON or persisted by JavaScript. The adapter sends `credentials: same-origin`, holds the CSRF value in memory, refreshes it through `GET /sessions/current` after a reload, and sends it in `X-CSRF-Token` on state-changing requests. Cross-origin and non-HTTPS non-local bases fail closed.
+
+The first supported browser actions are login, session restore, logout, password change, bootstrap, dashboard summary and a basic unfiltered/date/type/status register read. Search/facets/totals parity, vendor filters, dashboard daily-operations reads, receipts, bulk, duplicate confirmation, voucher/vendor/user/settings/audit/cash-close writes and all other unmapped legacy actions are rejected with `API_ACTION_UNSUPPORTED`. No action falls back to Apps Script from the Laravel adapter. Customer web builds hardcode `API_TRANSPORT=apps-script`; the Laravel switch exists only for explicit localhost development. IndexedDB storage/replay remains unchanged and must not be treated as safe to drain against the Laravel adapter until write and idempotency parity is completed.
 
 | Method | Path                                      | Shadow implementation                                                            |
 | ------ | ----------------------------------------- | -------------------------------------------------------------------------------- |

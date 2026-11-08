@@ -88,6 +88,17 @@ final class AuthenticateLegacySession
                 ->update(['last_seen_at_utc' => DB::raw('UTC_TIMESTAMP(6)')]);
         }
 
+        $csrfCookie = $request->cookie('cv_csrf');
+        if (
+            is_string($csrfCookie)
+            && preg_match('/^[a-f0-9]{64}$/D', $csrfCookie)
+            && hash_equals((string) $session->csrf_token_hash, hash('sha256', $csrfCookie))
+        ) {
+            // A CSRF token is intentionally readable by same-origin application code.
+            // The session credential remains HttpOnly and is never exposed in JSON.
+            $request->attributes->set('csrf_token', $csrfCookie);
+        }
+
         $request->attributes->set('principal', [
             'id' => (string) $session->id,
             'name' => (string) $session->full_name,

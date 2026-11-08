@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Bootstrap\Http\Controllers\BootstrapController;
 use App\Modules\Shared\ApiResponse;
 use App\Modules\CashClose\Http\Controllers\CashCloseController;
 use App\Modules\Receipts\Http\Controllers\ReceiptController;
@@ -65,6 +66,7 @@ Route::prefix('v1')->group(function (): void {
                 'sessions:current',
                 'sessions:logout',
                 'sessions:change-password',
+                'bootstrap:read',
                 'vouchers:list',
                 'vouchers:duplicate-check',
                 'vouchers:create',
@@ -97,6 +99,7 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::middleware('legacy.session')->group(function (): void {
+        Route::get('/bootstrap', [BootstrapController::class, 'show']);
         Route::get('/vouchers', [VoucherController::class, 'index']);
         Route::get('/dashboard/summary', [ReportsController::class, 'dashboardSummary']);
         Route::get('/reports/recorded-movements', [ReportsController::class, 'recordedMovementReport']);

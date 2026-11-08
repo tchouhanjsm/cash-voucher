@@ -226,6 +226,8 @@ const localApiOverride = ['localhost', '127.0.0.1'].includes(location.hostname)
 
 window.CV_CONFIG = {
   API_URL: localApiOverride || ${JSON.stringify(apiUrl)},
+  API_TRANSPORT: "apps-script",
+  LARAVEL_API_URL: "",
   ENVIRONMENT: ${JSON.stringify(environment)},
   DEPLOYMENT_ID: ${JSON.stringify(deploymentId)},
 };

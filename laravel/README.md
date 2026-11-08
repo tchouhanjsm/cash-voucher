@@ -29,37 +29,93 @@ Set CV_DUPLICATE_CONFIRMATION_KEY to an independent random value of at least 32 
 
 The APP_KEY is used by Laravel's encryption services; this API does not use Laravel cookie sessions. The browser authentication contract remains cv_session plus cv_csrf.
 
+## Local verification and browser smoke test
+
+Use Node 22 for the repository checks (`.nvmrc`). On the development Mac, invoke MacPorts PHP explicitly: `php` may still resolve to XAMPP PHP 8.2.4, while Laravel requires PHP 8.3 or newer.
+
+From the repository root:
+
+```bash
+nvm install 22
+nvm use 22
+npm ci
+npm run check
+```
+
+Laravel dependency, runtime and PHP syntax checks:
+
+```bash
+cd laravel
+/opt/local/bin/php83 /usr/local/bin/composer install --no-interaction --prefer-dist --no-progress
+/opt/local/bin/php83 /usr/local/bin/composer validate --no-check-publish
+/opt/local/bin/php83 artisan --version
+find app bootstrap config public routes tests -type f -name '*.php' -print0 | xargs -0 -n1 /opt/local/bin/php83 -l
+cd ..
+```
+
+For the browser smoke test, start Laravel in one terminal and the same-origin PWA proxy in another:
+
+```bash
+cd laravel
+/opt/local/bin/php83 artisan serve --host=127.0.0.1 --port=8000
+```
+
+```bash
+nvm use 22
+npm run dev:laravel-shadow
+```
+
+Open `http://127.0.0.1:4173/?transport=laravel-shadow`. The proxy binds only to loopback, serves an allow-list of PWA assets and forwards only `/api/v1/*` to Laravel on port 8000. It preserves the session and CSRF cookies so the browser uses one origin. Do not enter production credentials or real business data. The adapter rejects financial writes and unsupported actions.
+
+A real local login/bootstrap test requires an isolated disposable **MySQL 8.0** database with the root schema baseline applied and a test user. PHPUnit's `laravel/phpunit.xml` targets `cash_voucher_laravel_test` and its dedicated test account. XAMPP MariaDB 10.4.28 is not a substitute for the MySQL 8.0 test target; do not point the suite or migrations at XAMPP's operational database. When a separate MySQL 8.0 test instance is available, run the feature suite from `laravel/`:
+
+```bash
+cd laravel
+/opt/local/bin/php83 vendor/bin/phpunit
+```
+
+Do not run `artisan migrate`, `migrate:fresh`, `db:wipe` or schema-changing commands. Apply only the reviewed root SQL baseline to a disposable local database through the guarded CLI migration runner, using a local-only DDL account and explicit `CV_APP_ENV=local` plus `CV_ALLOW_SCHEMA_MIGRATIONS=true`. The CI feature suite currently supplies the isolated MySQL 8.0 evidence when local MySQL 8.0 is unavailable.
+
 ## Implemented routes in this phase
 
-| Method | Route                                     | Scope                                                                   |
-| ------ | ----------------------------------------- | ----------------------------------------------------------------------- |
-| GET    | /api/v1/health/live                       | Public liveness, no DB dependency                                       |
-| GET    | /api/v1/health/ready                      | Public DB/schema readiness check                                        |
-| GET    | /api/v1/meta                              | Public rollout metadata                                                 |
-| POST   | /api/v1/sessions                          | Login; legacy HMAC verification/upgrade; throttled; sets Secure cookies |
-| GET    | /api/v1/sessions/current                  | Restore session and current role                                        |
-| POST   | /api/v1/sessions/current/logout           | CSRF-protected logout; revokes active session and clears cookies        |
-| POST   | /api/v1/sessions/current/password         | CSRF-protected password change; revokes all sessions                    |
-| GET    | /api/v1/vouchers                          | Authenticated, creator-scoped for staff; manager/owner view-all         |
-| POST   | /api/v1/vouchers/duplicate-check          | Authenticated create capability + CSRF                                  |
-| POST   | /api/v1/vouchers                          | Single authenticated voucher create + CSRF + idempotency                |
-| GET    | /api/v1/vendors                           | Manager/owner vendor list; active by default                            |
-| POST   | /api/v1/vendors                           | Manager/owner vendor create + CSRF + idempotency                        |
-| PATCH  | /api/v1/vendors/{vendorId}                | Manager/owner vendor update + CSRF + idempotency                        |
-| POST   | /api/v1/vendors/{vendorId}/active         | Manager/owner desired active-state change + CSRF + idempotency          |
-| PATCH  | /api/v1/vouchers/{voucherId}              | Manager/owner correction with reason + idempotency                      |
-| POST   | /api/v1/vouchers/{voucherId}/cancel       | Manager/owner cancellation with reason + idempotency                    |
-| POST   | /api/v1/vouchers/{voucherId}/approval     | Manager/owner pending-payment approval + immutable event                |
-| POST   | /api/v1/vouchers/{voucherId}/rejection    | Manager/owner pending-payment rejection + reason                        |
-| POST   | /api/v1/vouchers/{voucherId}/receipts     | Staff-own or manager/owner; private image upload                        |
-| GET    | /api/v1/receipts/{receiptId}              | Staff-own or manager/owner; private image retrieval                     |
-| GET    | /api/v1/cash-closes/preview               | Manager/owner server-side daily cash preview                            |
-| POST   | /api/v1/cash-closes                       | Manager/owner idempotent immutable daily close                          |
-| POST   | /api/v1/cash-closes/{closeId}/corrections | Manager/owner attributed correction note, append-only                   |
-| GET    | /api/v1/dashboard/summary                 | Staff creator-scoped; Manager/Owner property-wide; SQL aggregates       |
-| GET    | /api/v1/reports/recorded-movements        | Manager/Owner/Accountant read-only report with pagination               |
+| Method | Route                                     | Scope                                                                        |
+| ------ | ----------------------------------------- | ---------------------------------------------------------------------------- |
+| GET    | /api/v1/health/live                       | Public liveness, no DB dependency                                            |
+| GET    | /api/v1/health/ready                      | Public DB/schema readiness check                                             |
+| GET    | /api/v1/meta                              | Public rollout metadata                                                      |
+| POST   | /api/v1/sessions                          | Login; legacy HMAC verification/upgrade; throttled; sets Secure cookies      |
+| GET    | /api/v1/sessions/current                  | Restore session and current role                                             |
+| POST   | /api/v1/sessions/current/logout           | CSRF-protected logout; revokes active session and clears cookies             |
+| POST   | /api/v1/sessions/current/password         | CSRF-protected password change; revokes all sessions                         |
+| GET    | /api/v1/bootstrap                         | Authenticated read-only PWA bootstrap shape; role-scoped voucher/vendor data |
+| GET    | /api/v1/vouchers                          | Authenticated, creator-scoped for staff; manager/owner view-all              |
+| POST   | /api/v1/vouchers/duplicate-check          | Authenticated create capability + CSRF                                       |
+| POST   | /api/v1/vouchers                          | Single authenticated voucher create + CSRF + idempotency                     |
+| GET    | /api/v1/vendors                           | Manager/owner vendor list; active by default                                 |
+| POST   | /api/v1/vendors                           | Manager/owner vendor create + CSRF + idempotency                             |
+| PATCH  | /api/v1/vendors/{vendorId}                | Manager/owner vendor update + CSRF + idempotency                             |
+| POST   | /api/v1/vendors/{vendorId}/active         | Manager/owner desired active-state change + CSRF + idempotency               |
+| PATCH  | /api/v1/vouchers/{voucherId}              | Manager/owner correction with reason + idempotency                           |
+| POST   | /api/v1/vouchers/{voucherId}/cancel       | Manager/owner cancellation with reason + idempotency                         |
+| POST   | /api/v1/vouchers/{voucherId}/approval     | Manager/owner pending-payment approval + immutable event                     |
+| POST   | /api/v1/vouchers/{voucherId}/rejection    | Manager/owner pending-payment rejection + reason                             |
+| POST   | /api/v1/vouchers/{voucherId}/receipts     | Staff-own or manager/owner; private image upload                             |
+| GET    | /api/v1/receipts/{receiptId}              | Staff-own or manager/owner; private image retrieval                          |
+| GET    | /api/v1/cash-closes/preview               | Manager/owner server-side daily cash preview                                 |
+| POST   | /api/v1/cash-closes                       | Manager/owner idempotent immutable daily close                               |
+| POST   | /api/v1/cash-closes/{closeId}/corrections | Manager/owner attributed correction note, append-only                        |
+| GET    | /api/v1/dashboard/summary                 | Staff creator-scoped; Manager/Owner property-wide; SQL aggregates            |
+| GET    | /api/v1/reports/recorded-movements        | Manager/Owner/Accountant read-only report with pagination                    |
 
 The API preserves the existing { ok, data|error, meta } envelope, request ID, and no-store response policy. Money crosses the API boundary as a decimal string and is persisted as integer paise.
+
+The bootstrap route is an isolated compatibility read only. It returns property settings and the initial PWA data shape with Staff creator scope, Manager/Owner property scope and an Accountant-empty voucher/vendor collection. The opening-balance setting is masked to zero for roles without view-all access. Owner onboarding checks are not yet available in Laravel. The PWA still uses its configured Apps Script endpoint; this route is not an endpoint-switch authorization.
+
+## Browser transport experiment (local only)
+
+The opt-in localhost flag `?transport=laravel-shadow` selects a same-origin cookie-session adapter for the limited read/auth surface described in [the API contract](../docs/API-V1-CONTRACT.md). The adapter does not expose or persist the HttpOnly `cv_session` secret. It holds only the verified CSRF value in memory and obtains a fresh value from the authenticated current-session route after reload. Cross-origin and non-HTTPS non-local hosts are rejected.
+
+Customer builds always set `API_TRANSPORT=apps-script`. Do not add the Laravel flag to a customer URL or change the configured Apps Script endpoint. Voucher writes, receipt transfers, duplicate-check confirmation, bulk, filters/facets/totals parity and the IndexedDB outbox drain are deliberately unsupported in this adapter; unsupported actions fail closed. Do not use the Laravel browser mode for financial entry or queue replay.
 
 ## Financial invariants
 
@@ -100,4 +156,4 @@ The CI suite runs against a dedicated `cash_voucher_laravel_test` schema on the 
     composer install
     vendor/bin/phpunit
 
-The dependency graph was resolved successfully in CI and uploaded as an artifact for review. The tracked `laravel/composer.lock` is still a merge gate; clean installs currently resolve the graph until that lockfile is committed. Hosting qualification, schema-baseline adoption, PWA transport changes, exports/imports and production cutover remain separate gated work.
+The tracked `laravel/composer.lock` is committed and Composer CI uses deterministic `composer install`. PR #270 merged this dependency change into `client-main`. Hosting qualification, schema-baseline adoption, PWA transport changes, exports/imports and production cutover remain separate gated work.

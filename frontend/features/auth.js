@@ -11,10 +11,17 @@ import { clearPersistedApiSessionToken, persistApiSessionToken } from '../core/s
 export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
   let idleT;
 
+  function configuredApiUrl() {
+    const config = window.CV_CONFIG || {};
+    return config.API_TRANSPORT === 'laravel-cookie-shadow'
+      ? config.LARAVEL_API_URL || ''
+      : config.API_URL || '';
+  }
+
   function showLogin(msg) {
     $('#app').classList.add('hidden');
     $('#login').classList.remove('hidden');
-    $('#lUrl').classList.toggle('hidden', !!(window.CV_CONFIG && CV_CONFIG.API_URL));
+    $('#lUrl').classList.toggle('hidden', !!configuredApiUrl());
     $('#lUrl').value = ls.get('cv.url') || '';
     $('#lPassword').value = '';
     $('#lEmailErr').textContent = '';
@@ -42,7 +49,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     emailInput.removeAttribute('aria-invalid');
     passwordInput.removeAttribute('aria-invalid');
 
-    S.url = (window.CV_CONFIG && CV_CONFIG.API_URL) || $('#lUrl').value.trim();
+    S.url = configuredApiUrl() || $('#lUrl').value.trim();
 
     if (!/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1))/.test(S.url)) {
       err.textContent = 'Enter the Server URL (starts with https://).';

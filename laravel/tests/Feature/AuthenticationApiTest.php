@@ -50,6 +50,8 @@ final class AuthenticationApiTest extends TestCase
             'password' => $password,
         ]);
 
+        $cookies = $this->cookieValues($login);
+
         $login->assertOk()
             ->assertJsonPath('ok', true)
             ->assertJsonPath('data.user.id', $userId)
@@ -57,9 +59,9 @@ final class AuthenticationApiTest extends TestCase
             ->assertJsonPath('data.user.role', 'staff')
             ->assertJsonPath('data.user.mustChangePassword', false)
             ->assertJsonMissingPath('data.sessionToken')
-            ->assertJsonMissingPath('data.csrfToken');
+            ->assertJsonMissingPath('data.user.sessionToken')
+            ->assertJsonPath('data.csrfToken', $cookies['cv_csrf']);
 
-        $cookies = $this->cookieValues($login);
         self::assertSame(64, strlen($cookies['cv_session']));
         self::assertSame(64, strlen($cookies['cv_csrf']));
 
@@ -89,6 +91,7 @@ final class AuthenticationApiTest extends TestCase
             ->assertJsonPath('data.user.name', 'Laravel Test staff')
             ->assertJsonPath('data.user.role', 'staff')
             ->assertJsonPath('data.user.mustChangePassword', false)
+            ->assertJsonPath('data.csrfToken', $cookies['cv_csrf'])
             ->assertJsonMissingPath('data.user.sessionId');
     }
 

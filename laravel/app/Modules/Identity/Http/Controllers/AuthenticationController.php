@@ -30,6 +30,7 @@ final class AuthenticationController
 
         $response = ApiResponse::success([
             'user' => $login['user'],
+            'csrfToken' => $login['csrfToken'],
             'expiresAtUtc' => $login['expiresAtUtc'],
         ], (string) $request->attributes->get('request_id'));
 
@@ -45,7 +46,10 @@ final class AuthenticationController
         unset($principal['sessionId']);
 
         return ApiResponse::success(
-            ['user' => $principal],
+            [
+                'user' => $principal,
+                'csrfToken' => (string) $request->attributes->get('csrf_token', ''),
+            ],
             (string) $request->attributes->get('request_id'),
         );
     }
