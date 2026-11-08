@@ -357,7 +357,13 @@ export function createPayments({ api, refresh }) {
     chips.append(receiptLabel, preview);
 
     supporting.appendChild(chips);
-    row.append(top, bottom, movement, supporting);
+
+    const optionalDetails = document.createElement('details');
+    optionalDetails.className = 'entry-supporting-details';
+    const optionalSummary = document.createElement('summary');
+    optionalSummary.textContent = 'Optional details · note or receipt';
+    optionalDetails.append(optionalSummary, supporting);
+    row.append(top, bottom, movement, optionalDetails);
     return row;
   }
 
@@ -493,7 +499,7 @@ export function createPayments({ api, refresh }) {
     actions.className = 'actions';
     actions.appendChild(
       resultButton(
-        'New ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
+        'Add another ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
         'newagain',
         'btn primary',
       ),
@@ -537,7 +543,7 @@ export function createPayments({ api, refresh }) {
     actions.className = 'actions';
     actions.appendChild(
       resultButton(
-        'New ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
+        'Save another ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
         'newagain',
         'btn primary',
       ),
@@ -692,6 +698,7 @@ export function createPayments({ api, refresh }) {
     addRow();
     renderRecentVendors();
     updateBatchSummary();
+    $('.rv', $('#rows .erow'))?.focus();
   }
   function recentVendors(limit = 6) {
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
@@ -931,6 +938,8 @@ export function createPayments({ api, refresh }) {
     const row = e.target.closest('.erow');
     if (!row) return;
     const files = [...e.target.files];
+    const optionalDetails = $('.entry-supporting-details', row);
+    if (files.length && optionalDetails) optionalDetails.open = true;
     const revision = row._receiptRevision;
     e.target.value = '';
 
