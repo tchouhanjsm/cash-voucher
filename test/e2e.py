@@ -5004,28 +5004,44 @@ with sync_playwright() as p:
         not page.locator('#registerAdvancedFilters').evaluate('element => element.open')
         and page.locator('#rq').is_visible()
         and page.locator('.register-date-presets').is_visible()
-        and page.locator('#rt').is_visible()
-        and page.locator('#rs').is_visible()
-        and page.locator('#rapproval').is_visible()
+        and not page.locator('#rt').is_visible()
+        and not page.locator('#rs').is_visible()
+        and not page.locator('#rapproval').is_visible()
         and not page.locator('#rv').is_visible(),
-        'Register keeps search, quick periods and common filters visible while less-used filters start collapsed',
+        'Register keeps search and quick periods visible while every refinement starts collapsed',
+    )
+
+    register_status_labels = [
+        label.strip() for label in page.locator('#rbody .voucher-row-status').all_text_contents()
+    ]
+    check(
+        len(register_status_labels) == page.locator('#rbody tr').count()
+        and all(label in ('Active', 'Cancelled', 'Needs review') for label in register_status_labels)
+        and page.locator('.register-results-summary h2').inner_text() == 'Recent transactions',
+        'Register presents recent transaction rows with an explicit, readable status',
     )
     advanced_summary = page.locator('#registerAdvancedFilters summary')
     advanced_summary.focus()
     page.keyboard.press('Enter')
     check(
         page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and page.locator('#rt').is_visible()
+        and page.locator('#rs').is_visible()
+        and page.locator('#rapproval').is_visible()
         and page.locator('#rv').is_visible()
         and page.locator('#rc').is_visible()
         and page.locator('#rfrom').is_visible()
         and page.locator('#rpmethod').is_visible(),
-        'More filters expands through the native keyboard-operable disclosure',
+        'Filters expands all refinements through the native keyboard-operable disclosure',
     )
     page.keyboard.press('Enter')
     check(
         not page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and not page.locator('#rt').is_visible()
+        and not page.locator('#rs').is_visible()
+        and not page.locator('#rapproval').is_visible()
         and not page.locator('#rv').is_visible(),
-        'More filters can be collapsed again without clearing selected values',
+        'Filters can be collapsed again without clearing selected values',
     )
     page.keyboard.press('Enter')
     check(
@@ -5297,6 +5313,7 @@ with sync_playwright() as p:
             if items:
                 items[0]['no'] = number_payload
                 items[0]['paymentMethod'] = number_payload
+                items[0]['status'] = number_payload
         route.fulfill(response=response, json=payload)
 
     page.route('**/api?*', tamper_register_page_voucher_number)
@@ -5308,8 +5325,10 @@ with sync_playwright() as p:
         page.locator('#rbody svg').count() == 0
         and number_payload in page.locator('#rbody').inner_text()
         and 'Unrecognized method' in page.locator('#rbody').inner_text()
+        and 'Needs review' in page.locator('#rbody').inner_text()
+        and page.locator('#rbody .voucher-row-status--review').count() == 1
         and not page.evaluate('window.__xssFired === true'),
-        'malformed voucher number and payment method remain inert in the register',
+        'malformed voucher number, method and status remain inert; status fails closed to Needs review',
     )
     page.locator('#rbody [data-act=print]').first.click()
     page.wait_for_function("document.querySelector('#printArea .pv') !== null")
@@ -7896,6 +7915,8 @@ with sync_playwright() as p:
     page.fill('#cr', 'entered twice')
     page.click('.mcard .primary')
     page.wait_for_timeout(500)
+    if not page.locator('#registerAdvancedFilters').evaluate('element => element.open'):
+        page.locator('#registerAdvancedFilters summary').click()
     page.select_option('#rs', 'CANCELLED')
     page.wait_for_function(
         "document.querySelector('#rbody tr.cx')?.innerText.includes('Ram Traders')"
@@ -8506,6 +8527,8 @@ with sync_playwright() as p:
     page.wait_for_selector('[data-v=reg]')
     go_view(page, 'reg')
     page.wait_for_selector('#rbody')
+    if not page.locator('#registerAdvancedFilters').evaluate('element => element.open'):
+        page.locator('#registerAdvancedFilters summary').click()
     page.select_option('#rs', 'ALL')
 
     # The register must stay usable when API records have malformed vendor/note/receipt fields.
