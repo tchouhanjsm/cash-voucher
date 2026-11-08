@@ -254,6 +254,47 @@ assert.match(
   /cash-movement-fieldset/,
   'new voucher requires an explicit physical drawer movement choice',
 );
+
+assert.match(
+  payments,
+  /\$\('\.rv', \$\('#rows \.erow'\)\)\?\.focus\(\)/,
+  'opening New Entry focuses the first payee or vendor field',
+);
+assert.match(
+  payments,
+  /entry-supporting-details/,
+  'notes and receipt attachments sit behind optional supporting details',
+);
+assert.match(
+  payments,
+  /optionalDetails\.open = true/,
+  'choosing receipt files reveals the optional details section',
+);
+assert.match(
+  payments,
+  /Save another /,
+  'a server-confirmed save offers a clear save-another action',
+);
+assert.match(
+  payments,
+  /Add another /,
+  'a device-queued save is described as adding another entry, not server confirmation',
+);
+assert.match(
+  styles,
+  /#nf\[data-workspace='entry-form-workspace'\]\s*\{[^}]*max-width:\s*800px/s,
+  'New Entry remains within an 800px desktop content width',
+);
+assert.match(
+  styles,
+  /\.erow \.entry-amount-field input\s*\{[^}]*font-size:\s*23px/s,
+  'the amount field is the strongest form input',
+);
+assert.match(
+  styles,
+  /\.entry-supporting-details > summary\s*\{[^}]*min-height:\s*44px/s,
+  'optional details remains keyboard- and touch-accessible',
+);
 assert.match(
   payments,
   /approval-threshold-hint/,
