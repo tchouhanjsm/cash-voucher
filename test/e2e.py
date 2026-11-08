@@ -3831,9 +3831,9 @@ with sync_playwright() as p:
         and page.locator('#aud-health [role=alert]').count() == 0,
         'no-known-failure state explains the dual-store blind spot without claiming complete audit history',
     )
+    open_disclosure(page, '#auditFilters')
     with page.expect_download() as audit_health_snapshot_download_info:
-        open_disclosure(page, '#auditFilters')
-    page.click('[data-act=audhealth]')
+        page.click('[data-act=audhealth]')
     audit_health_snapshot_download = audit_health_snapshot_download_info.value
     with open(audit_health_snapshot_download.path(), encoding='utf-8') as audit_health_snapshot_file:
         healthy_audit_snapshot = json.load(audit_health_snapshot_file)
@@ -7826,9 +7826,9 @@ with sync_playwright() as p:
         and not audit_page.evaluate('window.__xssFired === true'),
         'hostile monitor failure kind remains inert and does not execute',
     )
+    open_disclosure(audit_page, '#auditFilters')
     with audit_page.expect_download() as degraded_snapshot_download_info:
-        open_disclosure(audit_page, '#auditFilters')
-    audit_page.click('[data-act=audhealth]')
+        audit_page.click('[data-act=audhealth]')
     degraded_snapshot_download = degraded_snapshot_download_info.value
     with open(degraded_snapshot_download.path(), encoding='utf-8') as degraded_snapshot_file:
         degraded_audit_snapshot = json.load(degraded_snapshot_file)
@@ -7853,6 +7853,7 @@ with sync_playwright() as p:
         and audit_page.locator('#aud-health [role=alert]').count() == 1,
         'partial marker-store outage stays unavailable while exposing a known failure marker',
     )
+    open_disclosure(audit_page, '#auditFilters')
     with audit_page.expect_download() as mixed_snapshot_download_info:
         audit_page.click('[data-act=audhealth]')
     mixed_snapshot_download = mixed_snapshot_download_info.value
@@ -7877,6 +7878,7 @@ with sync_playwright() as p:
         and 'Historical audit completeness is not verified.' not in audit_page.locator('#aud-health').inner_text(),
         'invalid audit-health response is visibly reported as unverified rather than as known healthy',
     )
+    open_disclosure(audit_page, '#auditFilters')
     with audit_page.expect_download() as invalid_snapshot_download_info:
         audit_page.click('[data-act=audhealth]')
     invalid_snapshot_download = invalid_snapshot_download_info.value
@@ -7901,6 +7903,7 @@ with sync_playwright() as p:
         and audit_page.locator('#aud [data-act=audretry]').is_visible(),
         'audit monitoring request failure stays visibly unknown and offers a retry',
     )
+    open_disclosure(audit_page, '#auditFilters')
     with audit_page.expect_download() as unavailable_snapshot_download_info:
         audit_page.click('[data-act=audhealth]')
     unavailable_snapshot_download = unavailable_snapshot_download_info.value
