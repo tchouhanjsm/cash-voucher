@@ -3819,8 +3819,10 @@ with sync_playwright() as p:
         page.locator('#aud-q').is_visible()
         and page.locator('[data-act=audcsv]').is_visible()
         and not page.locator('#auditFilters').evaluate('(element) => element.open')
+        and page.locator('#aud-health').evaluate("(element) => element.closest('#auditFilters') !== null")
+        and not page.locator('#aud-health').is_visible()
         and 'retention is not guaranteed' in page.locator('#audit-scope').inner_text(),
-        'Audit Log keeps search and CSV export visible, filters collapsed and retention scope disclosed',
+        'Audit Log keeps search and CSV export visible while filters and technical health start collapsed',
     )
     page.wait_for_function(
         "document.querySelector('#aud').innerText.includes('<svg onload=window.__xssFired=true></svg>')"
@@ -3836,6 +3838,7 @@ with sync_playwright() as p:
         and 'loaded pages only' in page.locator('#audit-scope').inner_text(),
         'audit page explains cursor pagination and filtered export scope',
     )
+    open_disclosure(page, '#auditFilters')
     healthy_audit_text = page.locator('#aud-health').inner_text()
     check(
         'No audit-write failure marker is currently visible' in healthy_audit_text
