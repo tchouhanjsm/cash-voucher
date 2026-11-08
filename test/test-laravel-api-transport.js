@@ -86,10 +86,22 @@ async function run() {
       });
     }
     if (String(url).includes('/vendors/vendor-1/active')) {
-      return jsonResponse({ ok: true, data: { vendor: { id: 'vendor-1', name: 'Test supplier', active: false }, replayed: false } });
+      return jsonResponse({
+        ok: true,
+        data: {
+          vendor: { id: 'vendor-1', name: 'Test supplier', active: false },
+          replayed: false,
+        },
+      });
     }
     if (String(url).endsWith('/vendors') || String(url).endsWith('/vendors/vendor-1')) {
-      return jsonResponse({ ok: true, data: { vendor: { id: 'vendor-1', name: 'Test supplier', active: true }, replayed: false } });
+      return jsonResponse({
+        ok: true,
+        data: {
+          vendor: { id: 'vendor-1', name: 'Test supplier', active: true },
+          replayed: false,
+        },
+      });
     }
     if (String(url).endsWith('/sessions/current')) {
       return jsonResponse({ ok: true, data: { user: { id: 'user-1' }, csrfToken: csrf } });
