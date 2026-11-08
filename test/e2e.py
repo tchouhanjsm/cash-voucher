@@ -2212,6 +2212,20 @@ with sync_playwright() as p:
             )
             raise
     check(page.locator('#view tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
+    page.set_viewport_size({'width': 390, 'height': 800})
+    user_mobile_metrics = page.locator('.management-results-card .table-wrap').evaluate("""wrap => ({
+        clientWidth: wrap.clientWidth,
+        scrollWidth: wrap.scrollWidth,
+        labelledCells: [...wrap.querySelectorAll('tbody tr[data-user-search] td')].every(cell => Boolean(cell.dataset.label)),
+        headersPresent: Boolean(wrap.querySelector('thead th')),
+    })""")
+    check(
+        user_mobile_metrics['scrollWidth'] <= user_mobile_metrics['clientWidth'] + 1
+        and user_mobile_metrics['labelledCells']
+        and user_mobile_metrics['headersPresent'],
+        f'Users mobile rows expose labelled status/actions without horizontal table overflow; metrics={user_mobile_metrics}',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
     page.fill('#users-search', 'nina accountant')
     check(
         page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 1
@@ -3874,6 +3888,20 @@ with sync_playwright() as p:
     page.route('**/api?*', inject_hostile_audit_detail)
     go_view(page, 'audit')
     page.wait_for_selector('#aud tr')
+    page.set_viewport_size({'width': 390, 'height': 800})
+    audit_mobile_metrics = page.locator('.audit-panel .table-wrap').evaluate("""wrap => ({
+        clientWidth: wrap.clientWidth,
+        scrollWidth: wrap.scrollWidth,
+        labelledCells: [...wrap.querySelectorAll('tbody tr td:not([colspan])')].every(cell => Boolean(cell.dataset.label)),
+        headersPresent: Boolean(wrap.querySelector('thead th')),
+    })""")
+    check(
+        audit_mobile_metrics['scrollWidth'] <= audit_mobile_metrics['clientWidth'] + 1
+        and audit_mobile_metrics['labelledCells']
+        and audit_mobile_metrics['headersPresent'],
+        f'Audit Log mobile events stack into labelled rows without horizontal overflow; metrics={audit_mobile_metrics}',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
     check(
         page.locator('#aud-q').is_visible()
         and page.locator('[data-act=audcsv]').is_visible()
