@@ -22,7 +22,8 @@ async function run() {
     assert.equal(
       ignored,
       expectedIgnored,
-      relativePath + (expectedIgnored ? ' should be ignored by ESLint' : ' must remain in ESLint scope'),
+      relativePath +
+        (expectedIgnored ? ' should be ignored by ESLint' : ' must remain in ESLint scope'),
     );
   }
 
