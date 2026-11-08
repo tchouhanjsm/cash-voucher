@@ -34,7 +34,7 @@ function rupeesToNumber(value, label = 'amount') {
     return paise / 100;
   }
 
-  if (typeof value !== 'string' || !/^-?(?:0|[1-9][0-9]*)\\.[0-9]{2}$/.test(value)) {
+  if (typeof value !== 'string' || !/^-?(?:0|[1-9][0-9]*)\.[0-9]{2}$/.test(value)) {
     throw failure('The Laravel API returned an invalid ' + label + '.', 'API_RESPONSE_INVALID');
   }
 
@@ -91,7 +91,7 @@ function mapDailyOperations(preview) {
     Array.isArray(preview) ||
     typeof preview.closed !== 'boolean' ||
     typeof preview.date !== 'string' ||
-    !/^\\d{4}-\\d{2}-\\d{2}$/.test(preview.date)
+    !/^\d{4}-\d{2}-\d{2}$/.test(preview.date)
   ) {
     throw failure(
       'The Laravel cash-close preview returned an invalid response.',
