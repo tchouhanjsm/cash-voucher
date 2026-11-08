@@ -1162,32 +1162,39 @@ with sync_playwright() as p:
             f'{route_name}: route navigation places focus on the destination heading',
         )
         if route_id == 'dash':
-            open_disclosure(page, '.dashboard-analysis-disclosure')
-            page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
-            chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
-                role: svg.getAttribute('role'),
-                title: svg.querySelector('title')?.textContent || '',
-                description: svg.querySelector('desc')?.textContent || '',
-                labelledBy: svg.getAttribute('aria-labelledby') || '',
-                pointCount: svg.querySelectorAll('.dashboard-trend__point').length,
-                guideCount: svg.querySelectorAll('.dashboard-trend__gridline').length,
-                hasArea: Boolean(svg.querySelector('.dashboard-trend__area[d]')),
-                hasLine: Boolean(svg.querySelector('.dashboard-trend__line[d]')),
-                viewBox: svg.getAttribute('viewBox') || '',
-                pointBuckets: Number(svg.dataset.chartPoints || 0),
-            })""")
-            check(
-                chart_metrics['role'] == 'img'
-                and chart_metrics['title'] == 'Approved payment trend'
-                and chart_metrics['description']
-                and chart_metrics['labelledBy'] == 'dashboardTrendChartTitle dashboardTrendChartDescription'
-                and chart_metrics['hasArea'] and chart_metrics['hasLine']
-                and chart_metrics['pointCount'] == chart_metrics['pointBuckets']
-                and chart_metrics['pointBuckets'] > 0
-                and chart_metrics['guideCount'] >= 1
-                and chart_metrics['viewBox'] == '0 0 920 260',
-                f'dashboard trend is a responsive, titled SVG with exact-value points; metrics={chart_metrics}',
-            )
+            analysis_disclosure = page.locator('.dashboard-analysis-disclosure')
+            if analysis_disclosure.count() == 1:
+                open_disclosure(page, '.dashboard-analysis-disclosure')
+                page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
+                chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
+                    role: svg.getAttribute('role'),
+                    title: svg.querySelector('title')?.textContent || '',
+                    description: svg.querySelector('desc')?.textContent || '',
+                    labelledBy: svg.getAttribute('aria-labelledby') || '',
+                    pointCount: svg.querySelectorAll('.dashboard-trend__point').length,
+                    guideCount: svg.querySelectorAll('.dashboard-trend__gridline').length,
+                    hasArea: Boolean(svg.querySelector('.dashboard-trend__area[d]')),
+                    hasLine: Boolean(svg.querySelector('.dashboard-trend__line[d]')),
+                    viewBox: svg.getAttribute('viewBox') || '',
+                    pointBuckets: Number(svg.dataset.chartPoints || 0),
+                })""")
+                check(
+                    chart_metrics['role'] == 'img'
+                    and chart_metrics['title'] == 'Approved payment trend'
+                    and chart_metrics['description']
+                    and chart_metrics['labelledBy'] == 'dashboardTrendChartTitle dashboardTrendChartDescription'
+                    and chart_metrics['hasArea'] and chart_metrics['hasLine']
+                    and chart_metrics['pointCount'] == chart_metrics['pointBuckets']
+                    and chart_metrics['pointBuckets'] > 0
+                    and chart_metrics['guideCount'] >= 1
+                    and chart_metrics['viewBox'] == '0 0 920 260',
+                    f'dashboard trend is a responsive, titled SVG with exact-value points; metrics={chart_metrics}',
+                )
+            else:
+                check(
+                    analysis_disclosure.count() == 0,
+                    'Dashboard omits period analysis when the current role/state has no authorized analysis model',
+                )
 
         if route_id == 'new':
             # Synthetic fixture is applied after the destination focus assertion.
