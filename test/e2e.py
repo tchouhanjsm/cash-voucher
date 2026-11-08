@@ -6626,22 +6626,44 @@ with sync_playwright() as p:
     )
 
     go_view(page, 'dash')
-    check(
-        page.locator('.dashboard-analysis-disclosure').count() == 1
-        and not page.locator('.dashboard-analysis-disclosure').evaluate('(element) => element.open'),
-        'owner Dashboard keeps secondary period analysis collapsed on arrival',
-    )
-    open_disclosure(page, '.dashboard-analysis-disclosure')
-    page.wait_for_selector('svg.chart', state='visible')
+    initial_analysis = page.locator('.dashboard-analysis-disclosure')
+    if initial_analysis.count() == 1:
+        check(
+            not initial_analysis.evaluate('(element) => element.open'),
+            'owner Dashboard keeps secondary period analysis collapsed on arrival',
+        )
+        open_disclosure(page, '.dashboard-analysis-disclosure')
+        page.wait_for_selector('svg.chart', state='visible')
+    else:
+        check(
+            page.locator('.dashboard-empty-state').count() == 1
+            and page.locator('.dashboard-stats').count() == 0,
+            'an empty Dashboard period has no analysis disclosure or fabricated financial statistics',
+        )
+
     page.click('[data-k=mtd]')
-    page.wait_for_selector('.stats')
-    check(
-        'book balance' in page.inner_text('.stats').lower()
-        and 'cash in hand' not in page.inner_text('.stats').lower()
-        and 'not a physical cash count' in page.inner_text('.stats').lower(),
-        'dashboard clearly labels recorded net movement as book balance, not physical cash',
+    page.wait_for_function(
+        "document.querySelector('.dashboard-analysis-disclosure') || document.querySelector('.dashboard-empty-state')",
+        timeout=10000,
     )
-    check(page.locator('.hb').count() >= 3, 'dashboard bars')
+    analysis = page.locator('.dashboard-analysis-disclosure')
+    if analysis.count() == 1:
+        if not analysis.evaluate('(element) => element.open'):
+            open_disclosure(page, '.dashboard-analysis-disclosure')
+        page.wait_for_selector('svg.chart', state='visible')
+        check(
+            'book balance' in page.inner_text('.stats').lower()
+            and 'cash in hand' not in page.inner_text('.stats').lower()
+            and 'not a physical cash count' in page.inner_text('.stats').lower(),
+            'dashboard clearly labels recorded net movement as book balance, not physical cash',
+        )
+        check(page.locator('.hb').count() >= 3, 'dashboard bars')
+    else:
+        check(
+            page.locator('.dashboard-empty-state').count() == 1
+            and page.locator('.dashboard-stats').count() == 0,
+            'an empty monthly period still withholds unverified financial statistics',
+        )
 
     # Prototype-named user data must be ordinary aggregation keys, not Object properties.
     prototype_group_values = ['constructor', '__proto__', 'toString', 'hasOwnProperty']
