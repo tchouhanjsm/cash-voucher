@@ -3967,6 +3967,10 @@
     background: var(--workspace-surface);
   }
 
+  .app #view .management-results-card tbody tr[hidden] {
+    display: none;
+  }
+
   .app #view .management-results-card tbody td,
   .app #view .audit-panel tbody td {
     display: grid;
