@@ -274,7 +274,7 @@ assert.match(
 assert.match(
   payments,
   /value="\$\{businessDate\(\)\}" max="\$\{addDays\(businessDate\(\), 1\)\}" required/,
-  "New Entry defaults to today's business date and constrains the date picker",
+  'New Entry defaults to the current business date and constrains the date picker',
 );
 assert.match(
   payments,
