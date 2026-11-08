@@ -3918,3 +3918,107 @@
     padding: 10px;
   }
 }
+
+/* Admin tables become labelled records rather than horizontally clipped grids on phones. */
+@media screen and (max-width: 560px) {
+  .app #view .management-results-card .table-wrap,
+  .app #view .audit-panel .table-wrap {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app #view .management-results-card table,
+  .app #view .audit-panel table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .app #view .management-results-card thead,
+  .app #view .audit-panel thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .app #view .management-results-card tbody,
+  .app #view .audit-panel tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .app #view .management-results-card tbody tr,
+  .app #view .audit-panel tbody tr {
+    display: grid;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-surface);
+  }
+
+  .app #view .management-results-card tbody td,
+  .app #view .audit-panel tbody td {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--workspace-border);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .app #view .management-results-card tbody td::before,
+  .app #view .audit-panel tbody td::before {
+    content: attr(data-label);
+    color: var(--workspace-muted);
+    font-size: 10px;
+    font-weight: 760;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .app #view .management-results-card tbody td:last-child,
+  .app #view .audit-panel tbody td:last-child {
+    border-bottom: 0;
+  }
+
+  .app #view .management-results-card tbody td[data-label='Actions'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app #view .management-results-card tbody td[data-label='Actions'] > button {
+    min-height: 40px;
+    justify-self: start;
+  }
+
+  .app #view .management-results-card tbody td[data-label='Role'] select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .app #view .management-results-card tbody td[colspan],
+  .app #view .audit-panel tbody td[colspan] {
+    display: block;
+    grid-column: 1 / -1;
+  }
+
+  .app #view .management-results-card tbody td[colspan]::before,
+  .app #view .audit-panel tbody td[colspan]::before {
+    content: none;
+  }
+}
