@@ -1089,7 +1089,7 @@ with sync_playwright() as p:
         ('cash-close', 'cashClose', '.cc-controls'),
         ('bulk-upload', 'bulk', '#bt'),
         ('vendors', 'vend', '#vf'),
-        ('users', 'users', '#uf'),
+        ('users', 'users', '#users-search'),
         ('settings', 'set', '#sf'),
         ('audit', 'audit', '.audit-panel'),
         ('account', 'acct', '#pf'),
