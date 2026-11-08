@@ -1478,7 +1478,7 @@ with sync_playwright() as p:
     check(
         all(row_semantics.values())
         and row_semantics['movementLegend'] == 'What happened to the physical cash?'
-        and row_semantics['movementValues'] == ['CASH_IN', 'CASH_OUT', 'NO_CASH']
+        and row_semantics['movementValues'] == ['CASH_OUT', 'NO_CASH', 'CASH_IN']
         and row_semantics['movementUnselected'],
         f'New Entry row exposes three explicit drawer choices with no silent default; semantics={row_semantics}',
     )
