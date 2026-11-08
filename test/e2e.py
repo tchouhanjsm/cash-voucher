@@ -2703,6 +2703,9 @@ with sync_playwright() as p:
         }
         route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
 
+    page.evaluate(
+        "() => { window.__dashboardOriginalMe = S.me; S.me = { ...S.me, perms: { ...S.me.perms, viewAll: true } }; }"
+    )
     page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
     open_disclosure(page, '.dashboard-analysis-disclosure')
@@ -2731,9 +2734,12 @@ with sync_playwright() as p:
         dashboard_recovery_response.value.ok and recovered_summary.get('ok') is True,
         'dashboard recovers with a successful live read after hostile test data is removed',
     )
+    page.evaluate(
+        "() => { S.me = window.__dashboardOriginalMe; delete window.__dashboardOriginalMe; }"
+    )
     try:
         page.wait_for_function(
-            "document.querySelector('#view')?.innerText.includes('Approved payments') || "
+        "document.querySelector('#view')?.innerText.includes('Approved payments') || "
             "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included')",
             timeout=10000,
         )
