@@ -3684,3 +3684,222 @@
     font-size: 22px;
   }
 }
+
+/* Novice-first Dashboard and administration workspaces. */
+@media screen {
+  .app #view .dashboard-view > .page-header .page-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .app #view .dashboard-view > .page-header .page-header-actions > .btn {
+    min-height: 44px;
+  }
+  .app #view .dashboard-analysis-disclosure,
+  .app #view .users-filter-details,
+  .app #view .users-add-details,
+  .app #view .audit-filter-details {
+    min-width: 0;
+    border: 1px solid var(--workspace-border);
+    border-radius: 12px;
+    background: var(--workspace-surface);
+  }
+  .app #view .dashboard-analysis-disclosure > summary,
+  .app #view .users-filter-details > summary,
+  .app #view .users-add-details > summary,
+  .app #view .audit-filter-details > summary {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 14px;
+    color: var(--workspace-ink);
+    font-size: 13px;
+    font-weight: 760;
+    cursor: pointer;
+    list-style-position: inside;
+  }
+  .app #view .dashboard-analysis-disclosure > summary:focus-visible,
+  .app #view .users-filter-details > summary:focus-visible,
+  .app #view .users-add-details > summary:focus-visible,
+  .app #view .audit-filter-details > summary:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+  .app #view .dashboard-analysis-disclosure > summary span,
+  .app #view .users-add-details > summary span,
+  .app #view .users-filter-details > summary span,
+  .app #view .audit-filter-details > summary span {
+    color: var(--workspace-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: right;
+  }
+  .app #view .dashboard-analysis-disclosure[open] > summary,
+  .app #view .users-filter-details[open] > summary,
+  .app #view .users-add-details[open] > summary,
+  .app #view .audit-filter-details[open] > summary {
+    border-bottom: 1px solid var(--workspace-border);
+  }
+  .app #view .dashboard-analysis-disclosure__content {
+    padding: 14px;
+  }
+  .app #view .users-workspace {
+    display: grid;
+    min-width: 0;
+    gap: 10px;
+  }
+  .app #view .users-list-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+    align-items: end;
+    gap: 12px;
+  }
+  .app #view .users-search-field,
+  .app #view .audit-search-field {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    font-weight: 720;
+  }
+  .app #view .users-search-field input,
+  .app #view .audit-search-field input {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-surface);
+    color: var(--workspace-ink);
+    box-shadow: none;
+  }
+  .app #view .users-filter-details {
+    align-self: stretch;
+  }
+  .app #view .users-filter-details > summary {
+    height: 100%;
+  }
+  .app #view .users-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 12px 14px 14px;
+  }
+  .app #view .users-filter-grid label {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .app #view .users-filter-grid select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 9px;
+    background: var(--workspace-surface);
+    color: var(--workspace-ink);
+  }
+  .app #view .users-result-count {
+    margin: 0;
+    color: var(--workspace-muted);
+    font-size: 12px;
+  }
+  .app #view .users-filter-empty {
+    margin: 0;
+    padding: 18px;
+    border: 1px dashed var(--workspace-border);
+    border-radius: 10px;
+    text-align: center;
+  }
+  .app #view .users-add-details {
+    margin-top: 4px;
+    padding: 0;
+  }
+  .app #view .users-add-details > .form-panel {
+    margin: 12px;
+  }
+  .app #view .management-results-card {
+    margin-top: 0;
+  }
+  .app #view .audit-panel {
+    gap: 12px;
+  }
+  .app #view .audit-primary-tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+  }
+  .app #view .audit-primary-tools > .btn {
+    min-height: 48px;
+  }
+  .app #view .audit-filter-details .audit-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+    margin: 0;
+    padding: 12px 14px 14px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .app #view .audit-filter-actions {
+    display: flex;
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--workspace-border);
+  }
+  .app #view .audit-filter-actions > .btn {
+    min-height: 44px;
+  }
+}
+
+@media screen and (max-width: 560px) {
+  .app #view .dashboard-view > .page-header .page-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .app #view .dashboard-view > .page-header .page-header-actions > .btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .app #view .dashboard-view > .page-header .page-header-actions > .btn:last-child {
+    grid-column: 1 / -1;
+  }
+  .app #view .users-list-toolbar,
+  .app #view .audit-primary-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .users-filter-grid,
+  .app #view .audit-filter-details .audit-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .audit-primary-tools > .btn {
+    width: 100%;
+  }
+  .app #view .audit-filter-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .audit-filter-actions > .btn {
+    width: 100%;
+  }
+  .app #view .dashboard-analysis-disclosure__content {
+    padding: 10px;
+  }
+}
+
