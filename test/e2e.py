@@ -3588,8 +3588,9 @@ with sync_playwright() as p:
     page.wait_for_selector('#uf', state='attached')
     check(
         page.locator('#view tbody tr').count() == 6
-        and page.locator('#view [role=status]').count() == 0,
-        'owner Users view recovers after a valid list response returns',
+        and page.locator('#view [role=status]:not(#users-result-count)').count() == 0
+        and page.locator('#users-result-count').inner_text() == 'Showing 6 of 6 users',
+        'owner Users view recovers after a valid list response and reports its loaded result count',
     )
 
     # A late user-list response must not replace a route selected while loading.
@@ -4650,6 +4651,7 @@ with sync_playwright() as p:
         route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
 
     page.route('**/api?*', inject_staff_dashboard_summary)
+    page.set_viewport_size({'width': 390, 'height': 800})
     login('s@test.com', 'Staff#Start2026')
     page.wait_for_selector('#currentPassword')
     page.fill('#currentPassword', 'Staff#Start2026')
