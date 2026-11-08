@@ -20,6 +20,8 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
   let deferredInstall;
   let users = [];
   let usersRequestId = 0;
+  let usersResponseValid = true;
+  let malformedUserCount = 0;
   const userFilters = { query: '', role: 'ALL', status: 'ALL' };
   let auditRows = [];
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
@@ -275,6 +277,8 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         typeof user.active === 'boolean',
     );
     const malformedCount = receivedUsers.length - users.length;
+    usersResponseValid = envelopeValid;
+    malformedUserCount = malformedCount;
     const status = !envelopeValid
       ? '<p class="muted" role="status" aria-live="polite">User data is unavailable because the server response was invalid. Refresh and try again.</p>'
       : malformedCount
@@ -373,7 +377,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     if (count) {
       count.textContent = rows.length
         ? 'Showing ' + visible + ' of ' + rows.length + ' users'
-        : !envelopeValid || malformedCount
+        : !usersResponseValid || malformedUserCount
           ? 'No valid user records are available.'
           : users.length === 0
             ? 'No users have been added yet.'
