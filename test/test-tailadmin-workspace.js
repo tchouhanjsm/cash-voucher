@@ -552,6 +552,11 @@ assert.match(
 );
 assert.match(
   dashboard,
+  /dailyPositionPanel,[\s\S]*?needsAttention,[\s\S]*?periodControls\(from, to\)/,
+  'period controls follow the current-day drawer and attention queue',
+);
+assert.match(
+  dashboard,
   /<details class="dashboard-analysis-disclosure">/,
   'period analytics are available but collapsed by default',
 );
