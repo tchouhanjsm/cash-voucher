@@ -13,7 +13,6 @@ function normalizeCode(code, status) {
   return code || 'API_ERROR';
 }
 
-
 const MAX_DISPLAYABLE_PAISE = 4_503_599_627_370_495n;
 
 function rupeesToNumber(value, label = 'amount') {
@@ -94,7 +93,10 @@ function mapDailyOperations(preview) {
     typeof preview.date !== 'string' ||
     !/^\\d{4}-\\d{2}-\\d{2}$/.test(preview.date)
   ) {
-    throw failure('The Laravel cash-close preview returned an invalid response.', 'API_RESPONSE_INVALID');
+    throw failure(
+      'The Laravel cash-close preview returned an invalid response.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   const closed = preview.closed;
@@ -111,7 +113,10 @@ function mapDailyOperations(preview) {
     !Array.isArray(unclassified) ||
     !Array.isArray(invalidVouchers)
   ) {
-    throw failure('The Laravel cash-close preview is missing required exception details.', 'API_RESPONSE_INVALID');
+    throw failure(
+      'The Laravel cash-close preview is missing required exception details.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   const source = closed ? close : preview;
@@ -452,7 +457,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       case 'listUsers': {
         const page = await request('/users');
         if (!page || !Array.isArray(page.items)) {
-          throw failure('The Laravel users API returned an invalid response.', 'API_RESPONSE_INVALID');
+          throw failure(
+            'The Laravel users API returned an invalid response.',
+            'API_RESPONSE_INVALID',
+          );
         }
         return page.items.map((user) => ({
           id: user.id,
