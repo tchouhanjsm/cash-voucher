@@ -3841,6 +3841,9 @@
   .app #view .audit-primary-tools > .btn {
     min-height: 48px;
   }
+  .app #view .audit-filter-details > #aud-health {
+    margin: 12px 14px 0;
+  }
   .app #view .audit-filter-details .audit-filters {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
