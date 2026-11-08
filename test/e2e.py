@@ -1144,6 +1144,7 @@ with sync_playwright() as p:
             go_view(page, route_id)
         page.wait_for_selector(ready_selector, state='visible', timeout=10000)
         if route_id == 'dash':
+            open_disclosure(page, '.dashboard-analysis-disclosure')
             page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
             chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
                 role: svg.getAttribute('role'),
