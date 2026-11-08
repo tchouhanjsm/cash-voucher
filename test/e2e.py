@@ -2826,8 +2826,9 @@ with sync_playwright() as p:
         len(unsupported_dashboard_interceptions) == 1
         and 'Verify the dashboard route and response' in unsupported_dashboard_text
         and 'Financial totals remain hidden.' in unsupported_dashboard_text
+        and 'Apps Script deployment' not in unsupported_dashboard_text
         and page.locator('#view .stat').count() == 0,
-        'unsupported dashboardSummary action explains the staging mismatch and hides all totals',
+        'unsupported dashboardSummary action gives generic API guidance and hides all totals',
     )
     page.unroute('**/api?*', inject_unsupported_dashboard_action)
     with page.expect_response(
