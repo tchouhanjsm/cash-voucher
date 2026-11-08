@@ -2819,15 +2819,16 @@ with sync_playwright() as p:
     page.click('[data-act=range][data-k="7d"]')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes("
-        "'The connected Apps Script deployment does not recognize dashboardSummary')"
+        "'The configured API does not provide a compatible dashboard summary.')"
     )
     unsupported_dashboard_text = page.locator('#view').inner_text()
     check(
         len(unsupported_dashboard_interceptions) == 1
-        and 'Verify the staging deployment identity' in unsupported_dashboard_text
+        and 'Verify the dashboard route and response' in unsupported_dashboard_text
         and 'Financial totals remain hidden.' in unsupported_dashboard_text
+        and 'Apps Script deployment' not in unsupported_dashboard_text
         and page.locator('#view .stat').count() == 0,
-        'unsupported dashboardSummary action explains the staging mismatch and hides all totals',
+        'unsupported dashboardSummary action gives generic API guidance and hides all totals',
     )
     page.unroute('**/api?*', inject_unsupported_dashboard_action)
     with page.expect_response(
@@ -3779,9 +3780,9 @@ with sync_playwright() as p:
         'audit-log details are rendered as text, not executable HTML',
     )
     check(
-        'pages of 200' in page.locator('#audit-scope').inner_text().lower()
+        'load older adds earlier events' in page.locator('#audit-scope').inner_text().lower()
         and 'loaded pages only' in page.locator('#audit-scope').inner_text(),
-        'audit page explains server limit and filtered export scope',
+        'audit page explains cursor pagination and filtered export scope',
     )
     healthy_audit_text = page.locator('#aud-health').inner_text()
     check(

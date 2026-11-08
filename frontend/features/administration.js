@@ -712,7 +712,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
           auditRows = [];
           malformedAuditCount = 0;
           auditNextBeforeRow = null;
-          auditTotalCount = 0;
+          auditTotalCount = null;
           populateAuditOptions();
           renderAuditRows();
         }
@@ -1000,10 +1000,9 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
       message.className = 'error form-error';
       message.setAttribute('role', 'alert');
       message.setAttribute('aria-live', 'assertive');
-      message.textContent =
-        isLaravelShadow
-          ? 'The Laravel shadow API does not expose separate audit-write monitoring. Historical audit completeness is not verified.'
-          : 'Audit-write monitoring is unavailable from this backend. The health snapshot will record monitoring as unavailable; historical audit completeness is not verified.';
+      message.textContent = isLaravelShadow
+        ? 'The Laravel shadow API does not expose separate audit-write monitoring. Historical audit completeness is not verified.'
+        : 'Audit-write monitoring is unavailable from this backend. The health snapshot will record monitoring as unavailable; historical audit completeness is not verified.';
       panel.appendChild(message);
       return;
     }
