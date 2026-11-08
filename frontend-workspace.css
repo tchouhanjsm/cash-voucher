@@ -3674,7 +3674,9 @@
     border-radius: 5px;
   }
 
-  #nf[data-workspace='entry-form-workspace'] .entry-supporting-details[open] > .entry-supporting-fields {
+  #nf[data-workspace='entry-form-workspace']
+    .entry-supporting-details[open]
+    > .entry-supporting-fields {
     padding: 4px 0 2px;
   }
 
