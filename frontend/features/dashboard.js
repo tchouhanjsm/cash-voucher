@@ -1303,14 +1303,14 @@ export function createDashboard({ api }) {
         ].join('')
       : periodIsEmpty
         ? [
-            periodControls(from, to),
             dailyPositionPanel,
             needsAttention,
+            periodControls(from, to),
             emptyPeriodPanel,
             dashboardWarnings,
             operationsPanels,
           ].join('')
-        : [periodControls(from, to), dailyPositionPanel, needsAttention, financialPanels].join('');
+        : [dailyPositionPanel, needsAttention, periodControls(from, to), financialPanels].join('');
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +
