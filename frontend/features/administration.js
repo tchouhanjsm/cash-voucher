@@ -242,6 +242,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
 
   async function usersView() {
     if (S.view !== 'users') return;
+    Object.assign(userFilters, { query: '', role: 'ALL', status: 'ALL' });
     const requestId = ++usersRequestId;
     renderUsersLoadState();
 
@@ -372,9 +373,11 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     if (count) {
       count.textContent = rows.length
         ? 'Showing ' + visible + ' of ' + rows.length + ' users'
-        : users.length === 0
-          ? 'No users have been added yet.'
-          : 'No valid user records are available.';
+        : !envelopeValid || malformedCount
+          ? 'No valid user records are available.'
+          : users.length === 0
+            ? 'No users have been added yet.'
+            : 'No valid user records are available.';
     }
 
     const activeCount = Number(userFilters.role !== 'ALL') + Number(userFilters.status !== 'ALL');
