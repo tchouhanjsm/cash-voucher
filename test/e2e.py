@@ -3003,6 +3003,7 @@ with sync_playwright() as p:
         and manager_page.locator('.dashboard-cash-position').count() == 1
         and manager_page.locator('.daily-close-readiness').count() == 1
         and manager_page.locator('.dashboard-cash-position').evaluate("(element) => element.compareDocumentPosition(document.querySelector('.needs')) & Node.DOCUMENT_POSITION_FOLLOWING") != 0
+        and manager_page.locator('.needs').evaluate("(element) => element.compareDocumentPosition(document.querySelector('.dashboard-period')) & Node.DOCUMENT_POSITION_FOLLOWING") != 0
         and (
             (
                 manager_stats == 6
