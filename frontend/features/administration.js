@@ -16,7 +16,7 @@ import {
   toast,
 } from '../core/ui.js';
 
-export function createAdministration({ api, getNavigation, signOut }) {
+export function createAdministration({ api, getNavigation, signOut, isLaravelShadow = false }) {
   let deferredInstall;
   let users = [];
   let usersRequestId = 0;
@@ -1001,7 +1001,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
       message.setAttribute('role', 'alert');
       message.setAttribute('aria-live', 'assertive');
       message.textContent =
-        'Audit-write monitoring is unavailable from this backend. The health snapshot will record monitoring as unavailable; historical audit completeness is not verified.';
+        isLaravelShadow
+          ? 'The Laravel shadow API does not expose separate audit-write monitoring. Historical audit completeness is not verified.'
+          : 'Audit-write monitoring is unavailable from this backend. The health snapshot will record monitoring as unavailable; historical audit completeness is not verified.';
       panel.appendChild(message);
       return;
     }
@@ -1169,13 +1171,19 @@ export function createAdministration({ api, getNavigation, signOut }) {
         requestFailed: auditRequestFailed,
         responseInvalid: auditResponseInvalid,
       },
-      limitations: [
-        'This snapshot contains monitoring metadata only; it does not contain or reconstruct missing audit events.',
-        'NO_KNOWN_FAILURE means no failure marker was read; it does not prove audit history is complete.',
-        'A fallback marker is stored in the Settings sheet when Script Properties cannot be written; if both durable stores fail, the application attempts a temporary cache marker that expires.',
-        'If AuditLog, Script Properties, the Settings fallback and transient cache all fail, the missed audit event may remain undetectable and must be investigated from other records/logs.',
-        'Historical audit completeness is not verified.',
-      ],
+      limitations: isLaravelShadow
+        ? [
+            'This snapshot contains monitoring metadata only; it does not contain or reconstruct missing audit events.',
+            'The Laravel shadow API does not expose a separate audit-write failure monitor.',
+            'No conclusion about historical audit completeness or retention is made from this export.',
+          ]
+        : [
+            'This snapshot contains monitoring metadata only; it does not contain or reconstruct missing audit events.',
+            'NO_KNOWN_FAILURE means no failure marker was read; it does not prove audit history is complete.',
+            'A fallback marker is stored in the Settings sheet when Script Properties cannot be written; if both durable stores fail, the application attempts a temporary cache marker that expires.',
+            'If AuditLog, Script Properties, the Settings fallback and transient cache all fail, the missed audit event may remain undetectable and must be investigated from other records/logs.',
+            'Historical audit completeness is not verified.',
+          ],
     };
 
     download(
