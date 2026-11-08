@@ -1147,6 +1147,20 @@ with sync_playwright() as p:
         else:
             go_view(page, route_id)
         page.wait_for_selector(ready_selector, state='visible', timeout=10000)
+        page.wait_for_selector('#view .page-header h1', state='visible', timeout=10000)
+        check(
+            page.locator('#view .page-header h1').count() == 1
+            and page.locator('#view .page-header h1').inner_text().strip() != '',
+            f'{route_name}: one non-empty shared page heading is rendered',
+        )
+        page.wait_for_function(
+            "document.activeElement === document.querySelector('#view .page-header h1')",
+            timeout=2000,
+        )
+        check(
+            page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
+            f'{route_name}: route navigation places focus on the destination heading',
+        )
         if route_id == 'dash':
             open_disclosure(page, '.dashboard-analysis-disclosure')
             page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
@@ -1174,20 +1188,6 @@ with sync_playwright() as p:
                 and chart_metrics['viewBox'] == '0 0 920 260',
                 f'dashboard trend is a responsive, titled SVG with exact-value points; metrics={chart_metrics}',
             )
-        page.wait_for_selector('#view .page-header h1', state='visible', timeout=10000)
-        check(
-            page.locator('#view .page-header h1').count() == 1
-            and page.locator('#view .page-header h1').inner_text().strip() != '',
-            f'{route_name}: one non-empty shared page heading is rendered',
-        )
-        page.wait_for_function(
-            "document.activeElement === document.querySelector('#view .page-header h1')",
-            timeout=2000,
-        )
-        check(
-            page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
-            f'{route_name}: route navigation places focus on the destination heading',
-        )
 
         if route_id == 'new':
             # Synthetic fixture is applied after the destination focus assertion.
