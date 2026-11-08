@@ -1732,8 +1732,11 @@ with sync_playwright() as p:
     page.wait_for_selector('#view .daily-close-readiness')
 
     check(
-        page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
-        'Dashboard exposes the create-permitted primary action in its page header',
+        page.locator('#view .page-header-actions [data-k="PAYMENT"]').is_visible()
+        and page.locator('#view .page-header-actions [data-k="PAYMENT"]').inner_text() == 'Record a payment'
+        and page.locator('#view .page-header-actions [data-k="RECEIPT"]').is_visible()
+        and page.locator('#view .page-header-actions [data-k="RECEIPT"]').inner_text() == 'Cash received',
+        'Dashboard exposes distinct payment and cash-received actions in its page header',
     )
     check(
         page.locator('[data-v=dash]').get_attribute('aria-current') == 'page',
