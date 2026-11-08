@@ -1,6 +1,14 @@
 # Laravel migration phased backlog
 
 **Status:** PR #269 is merged; PR #270 is merged at `827d4aa9d87e0cf9ec52c2639662729006dc920a`, including the committed Composer lockfile and deterministic `composer install`. PR #271 (`feat/laravel-bootstrap-compat-20261107`) is rebased directly onto that `client-main` head with no merge conflict. CVL-031 now contains the role-scoped bootstrap read and an opt-in same-origin Laravel cookie/CSRF transport for login/session restore/logout/password change plus limited bootstrap/dashboard/basic register reads. Latest exact-head verification is in progress; the remaining test correction is tracked below. Write-action parity, full register/dashboard parity, receipt flow, outbox replay qualification, hosting qualification, import/reconciliation and cutover remain open. Apps Script remains the sole production financial writer.  
+## CVL-031 vendor write transport slice — 8 November 2026
+
+**Branch:** `feat/laravel-vendor-transport-clean-20261108`, based on the merged PR #273 integration head.
+
+The opt-in local Laravel adapter now supports the existing Vendor UI's create, update and explicit active-state operations. It maps to the existing Laravel vendor routes, sends the in-memory CSRF token and a cryptographically random idempotency key on every write, and preserves the HttpOnly session cookie. The Vendor UI sends the desired active state explicitly. Unsupported actions continue to fail closed without Apps Script fallback. Transport tests cover request method/path/body, CSRF and idempotency headers, invalid payload rejection and unsupported-action behavior.
+
+This is not production routing. Customer builds remain Apps Script-only; the IndexedDB outbox remains untouched. Exact-head CI and Browser E2E are required before merge.
+
 **Delivery principle:** small vertical slices; no destructive work; one writer at all times.
 
 ## CVL-031 first compatibility slice — bootstrap read (7 November 2026)
