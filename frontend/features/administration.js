@@ -26,7 +26,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
   let auditResponseInvalid = false;
   let auditRequestFailed = false;
   let auditNextBeforeRow = null;
-  let auditTotalCount = 0;
+  let auditTotalCount = null;
   let auditHealth = null;
   let auditLoadingOlder = false;
   let backupStatusLoading = false;
@@ -678,7 +678,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     auditResponseInvalid = false;
     auditRequestFailed = false;
     auditNextBeforeRow = null;
-    auditTotalCount = 0;
+    auditTotalCount = null;
     auditHealth = null;
     auditLoadingOlder = false;
 
@@ -688,7 +688,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         description: 'Review administrative events and export the loaded records.',
       }) +
       `<section class="card audit-panel" aria-describedby="audit-scope">
-        <p id="audit-scope" class="muted">Audit events load newest-first in pages of 200. Load older adds earlier events; filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
+        <p id="audit-scope" class="muted">Audit events load newest-first. Load older adds earlier events; filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
         <div id="aud-health" aria-live="polite"><p class="muted">Loading audit-write health…</p></div>
         <div class="filters audit-filters">
           <label>Search<input id="aud-q" type="search" aria-label="Search audit events" placeholder="Search details, target or user"></label>
@@ -748,13 +748,17 @@ export function createAdministration({ api, getNavigation, signOut }) {
       typeof page === 'object' &&
       !Array.isArray(page) &&
       Array.isArray(page.rows) &&
-      Number.isSafeInteger(page.totalCount) &&
-      page.totalCount >= 0 &&
+      (page.totalCount === null ||
+        (Number.isSafeInteger(page.totalCount) && page.totalCount >= 0)) &&
       (page.nextBeforeRow === null ||
-        (Number.isSafeInteger(page.nextBeforeRow) && page.nextBeforeRow >= 2));
+        (Number.isSafeInteger(page.nextBeforeRow) && page.nextBeforeRow >= 2) ||
+        (typeof page.nextBeforeRow === 'string' &&
+          page.nextBeforeRow.length > 0 &&
+          page.nextBeforeRow.length <= 512));
     const health = page && typeof page === 'object' ? page.auditHealth : undefined;
     const validHealth =
       health === undefined ||
+      health === null ||
       (health !== null &&
         typeof health === 'object' &&
         !Array.isArray(health) &&
@@ -790,7 +794,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     malformedAuditCount = append ? malformedAuditCount + invalidRows : invalidRows;
     auditResponseInvalid = false;
     auditNextBeforeRow = page.nextBeforeRow;
-    auditTotalCount = page.totalCount;
+    auditTotalCount = page.totalCount ?? null;
     populateAuditOptions();
     renderAuditRows();
     const more = $('#aud-more');
@@ -874,6 +878,19 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const details = String(row.details ?? '');
     try {
       const parsed = JSON.parse(details);
+      if (parsed.schemaVersion === 1 && typeof parsed.eventId === 'string') {
+        const context = ['Event ID: ' + parsed.eventId];
+        if (typeof parsed.reason === 'string' && parsed.reason.trim()) {
+          context.push('Reason: ' + parsed.reason);
+        }
+        if (parsed.before !== null && parsed.before !== undefined) {
+          context.push('Before: ' + JSON.stringify(parsed.before));
+        }
+        if (parsed.after !== null && parsed.after !== undefined) {
+          context.push('After: ' + JSON.stringify(parsed.after));
+        }
+        return context.join(' | ');
+      }
       if (parsed.version !== 1 || !Array.isArray(parsed.changes)) return details;
 
       const labels = {
@@ -1099,8 +1116,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
       body.appendChild(tr);
     }
     count.textContent =
-      `Showing ${rows.length} of ${auditRows.length} loaded events; ` +
-      `${auditTotalCount} total recorded.` +
+      (Number.isSafeInteger(auditTotalCount)
+        ? `Showing ${rows.length} of ${auditRows.length} loaded events; ${auditTotalCount} total recorded.`
+        : `Showing ${rows.length} of ${auditRows.length} loaded events.` +
+          (auditNextBeforeRow ? ' Older events are available.' : '')) +
       (malformedAuditCount
         ? ` ${malformedAuditCount} malformed audit event(s) omitted from loaded pages.`
         : '');
@@ -1144,7 +1163,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
       },
       coverage: {
         loadedRowCount: auditRows.length,
-        serverReportedTotalCount: auditPageUnavailable ? null : auditTotalCount,
+        serverReportedTotalCount:
+          auditPageUnavailable || !Number.isSafeInteger(auditTotalCount) ? null : auditTotalCount,
         malformedRowsOmitted: malformedAuditCount,
         requestFailed: auditRequestFailed,
         responseInvalid: auditResponseInvalid,
