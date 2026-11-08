@@ -156,6 +156,10 @@ final class SettingsApiTest extends TestCase
         $owner = $this->withRoleSession('owner');
         $payload = $this->payload();
         $key = 'settings-save-'.bin2hex(random_bytes(5));
+        $previousAuditCount = DB::table('audit_events')
+            ->where('event_type', 'PROPERTY_SETTINGS_UPDATED')
+            ->where('target_id', 'property')
+            ->count();
 
         $first = $owner->putJson('/api/v1/settings', $payload, ['Idempotency-Key' => $key]);
         $first->assertOk()
@@ -172,7 +176,7 @@ final class SettingsApiTest extends TestCase
             ->assertJsonPath('data.replayed', true);
 
         self::assertSame(
-            1,
+            $previousAuditCount + 1,
             DB::table('audit_events')
                 ->where('event_type', 'PROPERTY_SETTINGS_UPDATED')
                 ->where('target_id', 'property')
