@@ -5010,6 +5010,16 @@ with sync_playwright() as p:
         and not page.locator('#rv').is_visible(),
         'Register keeps search and quick periods visible while every refinement starts collapsed',
     )
+
+    register_status_labels = [
+        label.strip() for label in page.locator('#rbody .voucher-row-status').all_text_contents()
+    ]
+    check(
+        len(register_status_labels) == page.locator('#rbody tr').count()
+        and all(label in ('Active', 'Cancelled', 'Needs review') for label in register_status_labels)
+        and page.locator('.register-results-summary h2').inner_text() == 'Recent transactions',
+        'Register presents recent transaction rows with an explicit, readable status',
+    )
     advanced_summary = page.locator('#registerAdvancedFilters summary')
     advanced_summary.focus()
     page.keyboard.press('Enter')
