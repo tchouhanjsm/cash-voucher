@@ -288,7 +288,7 @@ assert.match(
 );
 assert.match(
   payments,
-  /input\.required = true;[\s\S]*?input\.name = 'cash-impact-/,
+  /input\.name = 'cash-impact-'[\s\S]*?input\.required = true/,
   'physical drawer movement remains a mandatory grouped choice',
 );
 assert.match(
