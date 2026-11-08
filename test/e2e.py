@@ -5004,28 +5004,34 @@ with sync_playwright() as p:
         not page.locator('#registerAdvancedFilters').evaluate('element => element.open')
         and page.locator('#rq').is_visible()
         and page.locator('.register-date-presets').is_visible()
-        and page.locator('#rt').is_visible()
-        and page.locator('#rs').is_visible()
-        and page.locator('#rapproval').is_visible()
+        and not page.locator('#rt').is_visible()
+        and not page.locator('#rs').is_visible()
+        and not page.locator('#rapproval').is_visible()
         and not page.locator('#rv').is_visible(),
-        'Register keeps search, quick periods and common filters visible while less-used filters start collapsed',
+        'Register keeps search and quick periods visible while every refinement starts collapsed',
     )
     advanced_summary = page.locator('#registerAdvancedFilters summary')
     advanced_summary.focus()
     page.keyboard.press('Enter')
     check(
         page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and page.locator('#rt').is_visible()
+        and page.locator('#rs').is_visible()
+        and page.locator('#rapproval').is_visible()
         and page.locator('#rv').is_visible()
         and page.locator('#rc').is_visible()
         and page.locator('#rfrom').is_visible()
         and page.locator('#rpmethod').is_visible(),
-        'More filters expands through the native keyboard-operable disclosure',
+        'Filters expands all refinements through the native keyboard-operable disclosure',
     )
     page.keyboard.press('Enter')
     check(
         not page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and not page.locator('#rt').is_visible()
+        and not page.locator('#rs').is_visible()
+        and not page.locator('#rapproval').is_visible()
         and not page.locator('#rv').is_visible(),
-        'More filters can be collapsed again without clearing selected values',
+        'Filters can be collapsed again without clearing selected values',
     )
     page.keyboard.press('Enter')
     check(
@@ -7896,6 +7902,8 @@ with sync_playwright() as p:
     page.fill('#cr', 'entered twice')
     page.click('.mcard .primary')
     page.wait_for_timeout(500)
+    if not page.locator('#registerAdvancedFilters').evaluate('element => element.open'):
+        page.locator('#registerAdvancedFilters summary').click()
     page.select_option('#rs', 'CANCELLED')
     page.wait_for_function(
         "document.querySelector('#rbody tr.cx')?.innerText.includes('Ram Traders')"
@@ -8506,6 +8514,8 @@ with sync_playwright() as p:
     page.wait_for_selector('[data-v=reg]')
     go_view(page, 'reg')
     page.wait_for_selector('#rbody')
+    if not page.locator('#registerAdvancedFilters').evaluate('element => element.open'):
+        page.locator('#registerAdvancedFilters summary').click()
     page.select_option('#rs', 'ALL')
 
     # The register must stay usable when API records have malformed vendor/note/receipt fields.
