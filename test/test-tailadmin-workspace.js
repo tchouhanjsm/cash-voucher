@@ -572,6 +572,16 @@ assert.match(
 );
 assert.match(
   administration,
+  /data-act="usersclear"/,
+  'Users exposes a visible one-step filter reset action',
+);
+assert.match(
+  administration,
+  /function clearUserFilters\(\)[\s\S]*?query: '', role: 'ALL', status: 'ALL'[\s\S]*?syncUserFilters\(\)[\s\S]*?search\?\.focus\(\)/,
+  'clearing Users filters resets search, role and status and returns focus to search',
+);
+assert.match(
+  administration,
   /<div class="audit-primary-tools"[\s\S]*?id="aud-q"[\s\S]*?data-act="audcsv"/,
   'Audit Log keeps search and CSV export in its primary toolbar',
 );
