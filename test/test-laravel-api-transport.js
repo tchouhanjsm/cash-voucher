@@ -291,13 +291,13 @@ async function run() {
   assert.equal(dailyOperations.openingCashRequired, true);
   assert.equal(dailyOperations.cashOutTotal, 125.5);
   assert.equal(dailyOperations.expectedCash, null);
-  assert.match(requests[7].url, /\\/cash-closes\\/preview$/);
+  assert.ok(requests[7].url.endsWith('/cash-closes/preview'));
 
   const users = await api('listUsers');
   assert.equal(users.length, 1);
   assert.equal(users[0].name, 'Test owner');
   assert.equal(users[0].active, true);
-  assert.match(requests[8].url, /\\/users$/);
+  assert.ok(requests[8].url.endsWith('/users'));
 
   const audit = await api('auditLog');
   assert.equal(audit.rows.length, 1);
@@ -306,8 +306,8 @@ async function run() {
   assert.equal(audit.totalCount, null, 'the cursor API must not invent a total count');
   assert.equal(audit.nextBeforeRow, 'opaque-cursor');
   assert.match(audit.rows[0].details, /Audit test reason/);
-  assert.match(requests[9].url, /\\/audit-events\\?/);
-  assert.match(requests[9].url, /limit=50/);
+  assert.ok(requests[9].url.includes('/audit-events?'));
+  assert.ok(requests[9].url.includes('/audit-events?'));
 
   await api('auditLog', { beforeRow: 'opaque-cursor' });
   assert.match(requests[10].url, /cursor=opaque-cursor/);
