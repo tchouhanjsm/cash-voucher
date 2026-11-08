@@ -20,6 +20,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
   let deferredInstall;
   let users = [];
   let usersRequestId = 0;
+  const userFilters = { query: '', role: 'ALL', status: 'ALL' };
   let auditRows = [];
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
   let malformedAuditCount = 0;
@@ -286,7 +287,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     const rows = users
       .map(
         (user) =>
-          `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option value="${esc(role)}"${role === user.role ? ' selected' : ''}>${esc(displayRole(role))}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
+          `<tr data-user-search="${esc((user.name + ' ' + user.email).toLowerCase())}" data-user-role="${esc(user.role)}" data-user-status="${user.active ? 'ACTIVE' : 'DISABLED'}"><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option value="${esc(role)}"${role === user.role ? ' selected' : ''}>${esc(displayRole(role))}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
      <td class="r nw"><button class="btn sm" data-act="upassword" data-id="${esc(user.id)}">Reset password</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
       )
       .join('');
@@ -318,9 +319,29 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     $('#view').innerHTML =
       head('Users', refreshBtn, {
         section: 'Manage',
-        description: 'Manage team access and role assignments.',
+        description: 'Find a team member, check their access and update it when needed.',
       }) +
       status +
+      '<section class="users-workspace" aria-label="Team members">' +
+      '<div class="users-list-toolbar">' +
+      '<label class="users-search-field" for="users-search">Search users<input id="users-search" type="search" autocomplete="off" placeholder="Name or email address"></label>' +
+      '<details class="users-filter-details" id="users-filter-details">' +
+      '<summary>Filters <span id="users-filter-summary">None active</span></summary>' +
+      '<div class="users-filter-grid">' +
+      '<label for="users-filter-role">Role<select id="users-filter-role"><option value="ALL">All roles</option>' +
+      roles.map((role) => '<option value="' + esc(role) + '">' + esc(displayRole(role)) + '</option>').join('') +
+      '</select></label>' +
+      '<label for="users-filter-status">Status<select id="users-filter-status"><option value="ALL">All users</option><option value="ACTIVE">Active</option><option value="DISABLED">Disabled</option></select></label>' +
+      '</div></details>' +
+      '</div>' +
+      '<p id="users-result-count" class="users-result-count" role="status" aria-live="polite"></p>' +
+      '<p id="users-filter-empty" class="muted users-filter-empty" hidden>No users match this search. Clear the search or filters and try again.</p>' +
+      '<div class="card management-results-card">' +
+      userTable +
+      '</div>' +
+      '</section>' +
+      '<details class="users-add-details">' +
+      '<summary>Add user <span>Create a new account and assign its role</span></summary>' +
       formPanel({
         id: 'uf',
         title: 'Add user',
@@ -329,10 +350,51 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         footer:
           '<p class="muted"><b>User</b>: create and view own entries · <b>Admin</b>: manage daily operations, vendors, bulk uploads, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p>',
       }) +
-      '<div class="card management-results-card">' +
-      userTable +
-      '</div>';
+      '</details>';
+    syncUserFilters();
   }
+  function syncUserFilters() {
+    const query = userFilters.query.trim().toLowerCase();
+    const rows = [...$('#view').querySelectorAll('.management-results-card tbody tr[data-user-search]')];
+    let visible = 0;
+    rows.forEach((row) => {
+      const matches =
+        (!query || row.dataset.userSearch.includes(query)) &&
+        (userFilters.role === 'ALL' || row.dataset.userRole === userFilters.role) &&
+        (userFilters.status === 'ALL' || row.dataset.userStatus === userFilters.status);
+      row.hidden = !matches;
+      if (matches) visible += 1;
+    });
+
+    const empty = $('#users-filter-empty');
+    if (empty) empty.hidden = rows.length === 0 || visible > 0;
+    const count = $('#users-result-count');
+    if (count) {
+      count.textContent = rows.length
+        ? 'Showing ' + visible + ' of ' + rows.length + ' users'
+        : users.length === 0
+          ? 'No users have been added yet.'
+          : 'No valid user records are available.';
+    }
+
+    const activeCount = Number(userFilters.role !== 'ALL') + Number(userFilters.status !== 'ALL');
+    const summary = $('#users-filter-summary');
+    if (summary) summary.textContent = activeCount ? activeCount + ' active' : 'None active';
+  }
+
+  function handleUserFilters(event) {
+    if (event.target.id === 'users-search') {
+      userFilters.query = event.target.value;
+      syncUserFilters();
+    } else if (event.target.id === 'users-filter-role') {
+      userFilters.role = event.target.value;
+      syncUserFilters();
+    } else if (event.target.id === 'users-filter-status') {
+      userFilters.status = event.target.value;
+      syncUserFilters();
+    }
+  }
+
   async function saveUser() {
     try {
       await api('saveUser', {
@@ -2074,9 +2136,13 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     });
 
     $('#view').addEventListener('submit', handleSubmit);
-    $('#view').addEventListener('input', handleAuditFilters);
+    $('#view').addEventListener('input', (event) => {
+      handleUserFilters(event);
+      handleAuditFilters(event);
+    });
     $('#view').addEventListener('change', (event) => {
       handleAccountPreferenceChange(event);
+      handleUserFilters(event);
       handleAuditFilters(event);
     });
   }
