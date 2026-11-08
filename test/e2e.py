@@ -2240,8 +2240,10 @@ with sync_playwright() as p:
         and page.locator('#users-filter-role').input_value() == 'ALL'
         and page.locator('#users-filter-status').input_value() == 'ALL'
         and page.locator('#users-filter-summary').inner_text() == 'None active'
-        and page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 5,
-        'Clear filters resets Users search, role and status together and restores focus to search',
+        and not page.locator('#users-filter-details').evaluate('(element) => element.open')
+        and page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 5
+        and page.evaluate("document.activeElement === document.querySelector('#users-search')"),
+        'Clear filters resets Users search, role and status, closes refinements and restores focus to search',
     )
     page.locator('#users-filter-details > summary').click()
 
