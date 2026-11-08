@@ -99,6 +99,7 @@ const bulk = createBulk({
 
 const administration = createAdministration({
   api,
+  isLaravelShadow: USE_LARAVEL_SHADOW,
   getNavigation: () => navigation,
   signOut: () => auth.signOut(),
 });
