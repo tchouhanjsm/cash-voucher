@@ -59,7 +59,31 @@ async function run() {
     if (String(url).includes('/dashboard/summary?')) {
       return jsonResponse({
         ok: true,
-        data: { from: '2026-11-01', to: '2026-11-07', paid: '0.00' },
+        data: {
+          from: '2026-11-01',
+          to: '2026-11-07',
+          periodDays: 7,
+          trendMonthly: false,
+          paid: '125.50',
+          previousPaid: '100.00',
+          received: '30.25',
+          todayPaid: '10.00',
+          bookBalance: '-15.75',
+          paymentCount: 3,
+          validPaymentCount: 3,
+          receiptCount: 1,
+          todayPaymentCount: 1,
+          approvalExceptionCount: 0,
+          invalidAmountCount: 0,
+          malformedRecordCount: 0,
+          malformedFieldCount: 0,
+          largest: { vendor: 'Test supplier', amount: '75.50' },
+          trend: [{ date: '2026-11-01', amount: '125.50' }],
+          topVendors: [{ k: 'Test supplier', n: 1, s: '75.50' }],
+          byCategory: [{ k: 'Office', n: 1, s: '125.50' }],
+          byTeamMember: [],
+          byPaymentMethod: [{ k: 'UPI', n: 1, s: '125.50' }],
+        },
       });
     }
     if (String(url).includes('/vouchers?')) {
@@ -82,6 +106,64 @@ async function run() {
           limit: 10,
           totalCount: 1,
           hasMore: false,
+        },
+      });
+    }
+    if (String(url).endsWith('/cash-closes/preview')) {
+      return jsonResponse({
+        ok: true,
+        data: {
+          date: '2026-11-08',
+          closed: false,
+          blockedByLaterClose: false,
+          requiresManualOpening: true,
+          openingCash: null,
+          openingReady: false,
+          cashInTotal: '25.50',
+          cashOutTotal: '125.50',
+          noCashCount: 1,
+          activeVoucherCount: 3,
+          expectedCash: null,
+          readyToClose: false,
+          pendingApprovals: [],
+          unclassified: [],
+          invalidVouchers: [],
+        },
+      });
+    }
+    if (String(url).endsWith('/users')) {
+      return jsonResponse({
+        ok: true,
+        data: {
+          items: [
+            { id: 'user-1', name: 'Test owner', email: 'owner@example.test', role: 'owner', active: true },
+          ],
+          count: 1,
+        },
+      });
+    }
+    if (String(url).includes('/audit-events?')) {
+      return jsonResponse({
+        ok: true,
+        data: {
+          items: [
+            {
+              id: 'audit-1',
+              actorUserId: 'user-1',
+              actorEmail: 'owner@example.test',
+              eventType: 'USER_UPDATED',
+              targetType: 'user',
+              targetId: 'user-1',
+              before: { active: false },
+              after: { active: true },
+              reason: 'Audit test reason',
+              occurredAtUtc: '2026-11-08 10:00:00.000000',
+            },
+          ],
+          count: 1,
+          limit: 50,
+          hasMore: true,
+          nextCursor: 'opaque-cursor',
         },
       });
     }
@@ -144,7 +226,11 @@ async function run() {
   assert.equal(requests[1].headers.Accept, 'application/json');
 
   const summary = await api('dashboardSummary', { from: '2026-11-01', to: '2026-11-07' });
-  assert.equal(summary.paid, '0.00');
+  assert.equal(summary.paid, 125.5);
+  assert.equal(summary.bookBalance, -15.75);
+  assert.equal(summary.largest.amount, 75.5);
+  assert.equal(summary.trend[0].amount, 125.5);
+  assert.equal(summary.topVendors[0].s, 75.5);
   assert.match(requests[2].url, /from=2026-11-01/);
   assert.match(requests[2].url, /to=2026-11-07/);
 
@@ -198,6 +284,32 @@ async function run() {
     (error) => error.code === 'PAYLOAD_INVALID',
   );
   assert.equal(requests.length, beforeInvalidVendor);
+
+  const dailyOperations = await api('dailyOperationsSummary');
+  assert.equal(dailyOperations.status, 'OPENING_CASH_REQUIRED');
+  assert.equal(dailyOperations.openingCashRequired, true);
+  assert.equal(dailyOperations.cashOutTotal, 125.5);
+  assert.equal(dailyOperations.expectedCash, null);
+  assert.match(requests[7].url, /\\/cash-closes\\/preview$/);
+
+  const users = await api('listUsers');
+  assert.equal(users.length, 1);
+  assert.equal(users[0].name, 'Test owner');
+  assert.equal(users[0].active, true);
+  assert.match(requests[8].url, /\\/users$/);
+
+  const audit = await api('auditLog');
+  assert.equal(audit.rows.length, 1);
+  assert.equal(audit.rows[0].action, 'USER_UPDATED');
+  assert.equal(audit.rows[0].target, 'user user-1');
+  assert.equal(audit.totalCount, null, 'the cursor API must not invent a total count');
+  assert.equal(audit.nextBeforeRow, 'opaque-cursor');
+  assert.match(audit.rows[0].details, /Audit test reason/);
+  assert.match(requests[9].url, /\\/audit-events\\?/);
+  assert.match(requests[9].url, /limit=50/);
+
+  await api('auditLog', { beforeRow: 'opaque-cursor' });
+  assert.match(requests[10].url, /cursor=opaque-cursor/);
 
   const beforeUnsupported = requests.length;
   await assert.rejects(
