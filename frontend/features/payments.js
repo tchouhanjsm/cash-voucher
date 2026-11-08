@@ -299,23 +299,33 @@ export function createPayments({ api, refresh }) {
       'Choose what actually happened to the drawer. This is separate from the payment method and category.';
     movement.setAttribute('aria-describedby', movementHelp.id);
     movement.append(movementLegend, movementHelp);
-    [
+    const cashImpactChoices = [
       {
-        value: 'CASH_IN',
-        label: 'Cash added to the drawer',
-        description: 'Money was physically put into the drawer.',
-      },
-      {
-        value: 'CASH_OUT',
-        label: 'Cash taken out of the drawer',
-        description: 'Money was physically taken from the drawer.',
+        value: NT === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT',
+        label:
+          NT === 'RECEIPT' ? 'Cash added to the drawer' : 'Cash taken out of the drawer',
+        description:
+          NT === 'RECEIPT'
+            ? 'Money was physically put into the drawer.'
+            : 'Money was physically taken from the drawer.',
       },
       {
         value: 'NO_CASH',
         label: 'No physical cash moved',
         description: 'The drawer did not gain or lose cash.',
       },
-    ].forEach((choice) => {
+      {
+        value: NT === 'RECEIPT' ? 'CASH_OUT' : 'CASH_IN',
+        label:
+          NT === 'RECEIPT' ? 'Cash taken out of the drawer' : 'Cash added to the drawer',
+        description:
+          NT === 'RECEIPT'
+            ? 'Money was physically taken from the drawer.'
+            : 'Money was physically put into the drawer.',
+      },
+    ];
+
+    cashImpactChoices.forEach((choice) => {
       const label = document.createElement('label');
       label.className = 'cash-movement-choice';
       const input = document.createElement('input');
