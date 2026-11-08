@@ -3623,3 +3623,78 @@
     }
   }
 }
+
+/* New Entry — one clear task, readable amount and optional supporting details. */
+@media screen {
+  #nf[data-workspace='entry-form-workspace'] {
+    width: 100%;
+    max-width: 800px;
+    margin-inline: auto;
+  }
+
+  #nf[data-workspace='entry-form-workspace'] .entry-workspace__main {
+    max-width: 100%;
+    gap: 16px;
+  }
+
+  #nf[data-workspace='entry-form-workspace'] .erow .entry-amount-field input {
+    min-height: 58px;
+    font-size: 23px;
+    font-weight: 760;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #nf[data-workspace='entry-form-workspace'] .entry-amount-field input::placeholder {
+    color: var(--workspace-muted, var(--muted));
+    opacity: 0.62;
+    font-weight: 500;
+  }
+
+  #nf[data-workspace='entry-form-workspace'] .entry-supporting-details {
+    min-width: 0;
+    border-top: 1px solid var(--workspace-border, var(--line));
+  }
+
+  #nf[data-workspace='entry-form-workspace'] .entry-supporting-details > summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 2px 0;
+    color: var(--workspace-muted, var(--muted));
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+    list-style-position: inside;
+  }
+
+  #nf[data-workspace='entry-form-workspace'] .entry-supporting-details > summary:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 5px;
+  }
+
+  #nf[data-workspace='entry-form-workspace'] .entry-supporting-details[open] > .entry-supporting-fields {
+    padding: 4px 0 2px;
+  }
+
+  #nf[data-workspace='entry-form-workspace'] .entry-primary-actions [data-act='addrow'] {
+    border-color: transparent;
+    background: transparent;
+    color: var(--workspace-muted, var(--muted));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  #nf[data-workspace='entry-form-workspace'] .entry-primary-actions [data-act='addrow']:hover {
+    background: var(--workspace-soft, var(--surface-subtle));
+    color: var(--workspace-ink, var(--ink));
+  }
+}
+
+@media screen and (max-width: 520px) {
+  #nf[data-workspace='entry-form-workspace'] .erow .entry-amount-field input {
+    min-height: 56px;
+    font-size: 22px;
+  }
+}

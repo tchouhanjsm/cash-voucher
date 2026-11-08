@@ -299,23 +299,33 @@ export function createPayments({ api, refresh }) {
       'Choose what actually happened to the drawer. This is separate from the payment method and category.';
     movement.setAttribute('aria-describedby', movementHelp.id);
     movement.append(movementLegend, movementHelp);
-    [
+    const cashImpactChoices = [
       {
-        value: 'CASH_IN',
-        label: 'Cash added to the drawer',
-        description: 'Money was physically put into the drawer.',
-      },
-      {
-        value: 'CASH_OUT',
-        label: 'Cash taken out of the drawer',
-        description: 'Money was physically taken from the drawer.',
+        value: NT === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT',
+        label:
+          NT === 'RECEIPT' ? 'Cash added to the drawer' : 'Cash taken out of the drawer',
+        description:
+          NT === 'RECEIPT'
+            ? 'Money was physically put into the drawer.'
+            : 'Money was physically taken from the drawer.',
       },
       {
         value: 'NO_CASH',
         label: 'No physical cash moved',
         description: 'The drawer did not gain or lose cash.',
       },
-    ].forEach((choice) => {
+      {
+        value: NT === 'RECEIPT' ? 'CASH_OUT' : 'CASH_IN',
+        label:
+          NT === 'RECEIPT' ? 'Cash taken out of the drawer' : 'Cash added to the drawer',
+        description:
+          NT === 'RECEIPT'
+            ? 'Money was physically taken from the drawer.'
+            : 'Money was physically put into the drawer.',
+      },
+    ];
+
+    cashImpactChoices.forEach((choice) => {
       const label = document.createElement('label');
       label.className = 'cash-movement-choice';
       const input = document.createElement('input');
@@ -357,7 +367,13 @@ export function createPayments({ api, refresh }) {
     chips.append(receiptLabel, preview);
 
     supporting.appendChild(chips);
-    row.append(top, bottom, movement, supporting);
+
+    const optionalDetails = document.createElement('details');
+    optionalDetails.className = 'entry-supporting-details';
+    const optionalSummary = document.createElement('summary');
+    optionalSummary.textContent = 'Optional details · note or receipt';
+    optionalDetails.append(optionalSummary, supporting);
+    row.append(top, bottom, movement, optionalDetails);
     return row;
   }
 
@@ -493,7 +509,7 @@ export function createPayments({ api, refresh }) {
     actions.className = 'actions';
     actions.appendChild(
       resultButton(
-        'New ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
+        'Add another ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
         'newagain',
         'btn primary',
       ),
@@ -537,7 +553,7 @@ export function createPayments({ api, refresh }) {
     actions.className = 'actions';
     actions.appendChild(
       resultButton(
-        'New ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
+        'Save another ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
         'newagain',
         'btn primary',
       ),
@@ -692,6 +708,7 @@ export function createPayments({ api, refresh }) {
     addRow();
     renderRecentVendors();
     updateBatchSummary();
+    $('.rv', $('#rows .erow'))?.focus();
   }
   function recentVendors(limit = 6) {
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
@@ -931,6 +948,8 @@ export function createPayments({ api, refresh }) {
     const row = e.target.closest('.erow');
     if (!row) return;
     const files = [...e.target.files];
+    const optionalDetails = $('.entry-supporting-details', row);
+    if (files.length && optionalDetails) optionalDetails.open = true;
     const revision = row._receiptRevision;
     e.target.value = '';
 
