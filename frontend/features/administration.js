@@ -334,7 +334,9 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
       '<summary>Filters <span id="users-filter-summary">None active</span></summary>' +
       '<div class="users-filter-grid">' +
       '<label for="users-filter-role">Role<select id="users-filter-role"><option value="ALL">All roles</option>' +
-      roles.map((role) => '<option value="' + esc(role) + '">' + esc(displayRole(role)) + '</option>').join('') +
+      roles
+        .map((role) => '<option value="' + esc(role) + '">' + esc(displayRole(role)) + '</option>')
+        .join('') +
       '</select></label>' +
       '<label for="users-filter-status">Status<select id="users-filter-status"><option value="ALL">All users</option><option value="ACTIVE">Active</option><option value="DISABLED">Disabled</option></select></label>' +
       '</div></details>' +
@@ -360,7 +362,9 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
   }
   function syncUserFilters() {
     const query = userFilters.query.trim().toLowerCase();
-    const rows = [...$('#view').querySelectorAll('.management-results-card tbody tr[data-user-search]')];
+    const rows = [
+      ...$('#view').querySelectorAll('.management-results-card tbody tr[data-user-search]'),
+    ];
     let visible = 0;
     rows.forEach((row) => {
       const matches =
@@ -1204,7 +1208,8 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
   }
 
   function updateAuditFilterSummary() {
-    const activeCount = Number(Boolean(auditFilters.user)) +
+    const activeCount =
+      Number(Boolean(auditFilters.user)) +
       Number(Boolean(auditFilters.action)) +
       Number(Boolean(auditFilters.from)) +
       Number(Boolean(auditFilters.to));
