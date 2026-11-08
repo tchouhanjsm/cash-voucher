@@ -178,10 +178,16 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
   function createIdempotencyKey() {
     const cryptoApi = globalThis.crypto;
     if (!cryptoApi || typeof cryptoApi.getRandomValues !== 'function') {
-      throw failure('Secure request identifiers are unavailable in this browser.', 'CRYPTO_UNAVAILABLE');
+      throw failure(
+        'Secure request identifiers are unavailable in this browser.',
+        'CRYPTO_UNAVAILABLE',
+      );
     }
     const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
-    return 'vendor-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return (
+      'vendor-' +
+      Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+    );
   }
 
   async function mutate(route, body = {}, options = {}) {
@@ -301,8 +307,16 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       case 'saveVendor': {
         const vendorId = typeof payload.id === 'string' ? payload.id.trim() : '';
         const body = {};
-        for (const field of ['name', 'company', 'mobile', 'defaultCategory', 'defaultPaymentMethod']) {
-          if (Object.prototype.hasOwnProperty.call(payload, field)) body[field] = payload[field];
+        for (const field of [
+          'name',
+          'company',
+          'mobile',
+          'defaultCategory',
+          'defaultPaymentMethod',
+        ]) {
+          if (Object.prototype.hasOwnProperty.call(payload, field)) {
+            body[field] = payload[field];
+          }
         }
         const route = vendorId ? '/vendors/' + encodeURIComponent(vendorId) : '/vendors';
         const result = await mutate(route, body, {
@@ -317,9 +331,11 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         if (!vendorId || typeof payload.active !== 'boolean') {
           throw failure('A vendor ID and desired active state are required.', 'PAYLOAD_INVALID');
         }
-        const result = await mutate('/vendors/' + encodeURIComponent(vendorId) + '/active', {
-          active: payload.active,
-        }, { idempotency: true });
+        const result = await mutate(
+          '/vendors/' + encodeURIComponent(vendorId) + '/active',
+          { active: payload.active },
+          { idempotency: true },
+        );
         return result.vendor;
       }
 
