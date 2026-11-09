@@ -1246,15 +1246,15 @@ export function createDashboard({ api }) {
     const periodScope = D.r === 'today' ? 'today' : 'selected period';
     const financialPanels = periodIsEmpty
       ? emptyPeriodPanel
-      : \`<section class="dashboard-primary-metrics" aria-label="Approved financial movement for the selected period">
+      : `<section class="dashboard-primary-metrics" aria-label="Approved financial movement for the selected period">
           <article class="dashboard-primary-metric">
             <div class="dashboard-primary-metric__copy">
-              <span>Approved payments · \${esc(periodScope)}</span>
-              <strong>\${money(total)}</strong>
-              <small>\${paymentCount} approved payment vouchers</small>
-              <small class="dashboard-period-comparison" data-direction="\${esc(comparisonDirection)}">\${esc(comparisonText)}</small>
+              <span>Approved payments · ${esc(periodScope)}</span>
+              <strong>${money(total)}</strong>
+              <small>${paymentCount} approved payment vouchers</small>
+              <small class="dashboard-period-comparison" data-direction="${esc(comparisonDirection)}">${esc(comparisonText)}</small>
             </div>
-            \${dashboardDrilldownButton({
+            ${dashboardDrilldownButton({
               key: 'payments-period',
               target: 'reg',
               from,
@@ -1268,11 +1268,11 @@ export function createDashboard({ api }) {
           </article>
           <article class="dashboard-primary-metric">
             <div class="dashboard-primary-metric__copy">
-              <span>Receipts · \${esc(periodScope)}</span>
-              <strong class="cash-received-value">\${money(received)}</strong>
-              <small>\${receiptCount} recorded receipts · all methods</small>
+              <span>Receipts · ${esc(periodScope)}</span>
+              <strong class="cash-received-value">${money(received)}</strong>
+              <small>${receiptCount} recorded receipts · all methods</small>
             </div>
-            \${dashboardDrilldownButton({
+            ${dashboardDrilldownButton({
               key: 'receipts-period',
               target: can('reports') ? 'reports' : 'reg',
               from,
@@ -1287,13 +1287,13 @@ export function createDashboard({ api }) {
         <details class="dashboard-analysis">
           <summary><span>More financial analysis</span><span class="dashboard-analysis__hint">Trends and breakdowns</span></summary>
           <div class="dashboard-analysis__content">
-            <div class="stats dashboard-stats\${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--manager'}">
+            <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--manager'}">
               <div class="card stat">
-                <span class="stat-ic">\${icon('receipt')}</span>
+                <span class="stat-ic">${icon('receipt')}</span>
                 <span>Approved payment vouchers</span>
-                <b>\${paymentCount}</b>
-                <small class="muted">avg \${money(validPaymentCount ? total / validPaymentCount : 0)}</small>
-                \${dashboardDrilldownButton({
+                <b>${paymentCount}</b>
+                <small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small>
+                ${dashboardDrilldownButton({
                   key: 'payment-count',
                   target: 'reg',
                   from,
@@ -1305,11 +1305,11 @@ export function createDashboard({ api }) {
                 })}
               </div>
               <div class="card stat">
-                <span class="stat-ic">\${icon('trend')}</span>
+                <span class="stat-ic">${icon('trend')}</span>
                 <span>Largest payment</span>
-                <b>\${money(summary.largest?.amount ?? 0)}</b>
-                <small class="muted">\${summary.largest ? esc(summary.largest.vendor) : '–'}</small>
-                \${dashboardDrilldownButton({
+                <b>${money(summary.largest?.amount ?? 0)}</b>
+                <small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small>
+                ${dashboardDrilldownButton({
                   key: 'largest-payment',
                   target: 'reg',
                   from,
@@ -1322,11 +1322,11 @@ export function createDashboard({ api }) {
                 })}
               </div>
               <div class="card stat">
-                <span class="stat-ic">\${icon('clock')}</span>
+                <span class="stat-ic">${icon('clock')}</span>
                 <span>Paid today</span>
-                <b>\${money(summary.todayPaid)}</b>
-                <small class="muted">\${summary.todayPaymentCount} vouchers</small>
-                \${dashboardDrilldownButton({
+                <b>${money(summary.todayPaid)}</b>
+                <small class="muted">${summary.todayPaymentCount} vouchers</small>
+                ${dashboardDrilldownButton({
                   key: 'paid-today',
                   target: 'reg',
                   from: today(),
@@ -1337,50 +1337,50 @@ export function createDashboard({ api }) {
                   className: 'btn sm dashboard-kpi-drilldown',
                 })}
               </div>
-              \${can('viewAll')
-                ? \`<div class="card stat">
-                    <span class="stat-ic">\${icon('book')}</span>
+              ${can('viewAll')
+                ? `<div class="card stat">
+                    <span class="stat-ic">${icon('book')}</span>
                     <span>Book balance · all time</span>
-                    <b>\${money(summary.bookBalance)}</b>
+                    <b>${money(summary.bookBalance)}</b>
                     <small class="muted">Opening balance + active receipts − approved payments; not a physical cash count or bank balance</small>
-                    \${dashboardDrilldownButton({
+                    ${dashboardDrilldownButton({
                       key: 'book-balance',
                       target: 'reg',
                       label: 'Review all-time entries',
                       className: 'btn sm dashboard-kpi-drilldown',
                     })}
-                  </div>\`
+                  </div>`
                 : ''}
             </div>
             <div class="dashboard-analysis-grid">
               <div class="dashboard-analysis-primary">
                 <div class="card dashboard-trend">
-                  <h2>Spending trend <span class="muted">\${esc(dmy(from))} – \${esc(dmy(to))}</span></h2>
-                  \${trendSvg(summary.trend, from, to)}
+                  <h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>
+                  ${trendSvg(summary.trend, from, to)}
                 </div>
                 <div class="two dashboard-breakdowns">
-                  <div class="card dashboard-breakdown"><h2>Top vendors</h2>\${bars(summary.topVendors)}</div>
-                  <div class="card dashboard-breakdown"><h2>By category</h2>\${bars(summary.byCategory)}</div>
+                  <div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors)}</div>
+                  <div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory)}</div>
                 </div>
               </div>
               <aside class="dashboard-analysis-secondary" aria-label="Payment analysis">
                 <div class="card dashboard-payment-methods">
                   <h2>Approved payments by method</h2>
                   <p class="muted">Active approved payments in this period. Historical entries without a saved method appear as Not recorded.</p>
-                  \${Array.isArray(summary.byPaymentMethod)
+                  ${Array.isArray(summary.byPaymentMethod)
                     ? bars(summary.byPaymentMethod, 5)
                     : '<p class="muted">Payment-method breakdown is unavailable for this deployment.</p>'}
                 </div>
-                \${can('viewAll')
-                  ? \`<div class="card dashboard-team">
+                ${can('viewAll')
+                  ? `<div class="card dashboard-team">
                       <h2>By team member</h2>
-                      \${bars(summary.byTeamMember.map((row) => ({ ...row, k: nm(row.k) })), 10)}
-                    </div>\`
+                      ${bars(summary.byTeamMember.map((row) => ({ ...row, k: nm(row.k) })), 10)}
+                    </div>`
                   : ''}
               </aside>
             </div>
           </div>
-        </details>\`;
+        </details>`;
 
     const staffDashboardWarnings = malformedFieldCount
       ? `<p class="muted" role="status" aria-live="polite">${malformedFieldCount} voucher detail(s) were handled safely and may need review.</p>`
