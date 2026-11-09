@@ -192,6 +192,18 @@ async function run() {
           limit: 10,
           totalCount: 1,
           hasMore: false,
+          totals: {
+            paid: '125.50',
+            received: '30.25',
+            approvalExceptionCount: 1,
+            invalidAmountCount: 2,
+            malformedRecordCount: 3,
+            malformedFieldCount: 4,
+          },
+          facets: {
+            vendors: ['Test supplier'],
+            users: ['staff@example.test'],
+          },
         },
       });
     }
@@ -489,17 +501,53 @@ async function run() {
   assert.match(requests[2].url, /to=2026-11-07/);
 
   const page = await api('registerPage', {
+    q: 'trip note',
+    vendor: 'Test supplier',
+    cat: 'Office',
+    user: 'staff@example.test',
     from: '2026-11-01',
     to: '2026-11-07',
     st: 'ACTIVE',
     t: 'PAYMENT',
+    approval: 'PENDING',
+    paymentMethod: 'UPI',
+    cashImpact: 'CASH_OUT',
+    amountValidity: 'VALID',
     offset: 0,
     limit: 10,
   });
   assert.equal(page.items[0].no, 204);
   assert.equal(page.items[0].amount, 12.5);
   assert.deepEqual(page.items[0].receipts, ['11111111-1111-4111-8111-111111111111']);
-  assert.deepEqual(page.facets, { vendors: [], users: [] });
+  assert.equal(page.totals.paid, 125.5);
+  assert.equal(page.totals.received, 30.25);
+  assert.equal(page.totals.approvalExceptionCount, 1);
+  assert.equal(page.totals.invalidAmountCount, 2);
+  assert.equal(page.totals.malformedRecordCount, 3);
+  assert.equal(page.totals.malformedFieldCount, 4);
+  assert.deepEqual(page.facets, {
+    vendors: ['Test supplier'],
+    users: ['staff@example.test'],
+  });
+  const registerQuery = new URL(requests[3].url).searchParams;
+  for (const [key, value] of Object.entries({
+    q: 'trip note',
+    vendor: 'Test supplier',
+    cat: 'Office',
+    user: 'staff@example.test',
+    from: '2026-11-01',
+    to: '2026-11-07',
+    status: 'ACTIVE',
+    type: 'PAYMENT',
+    approval: 'PENDING',
+    paymentMethod: 'UPI',
+    cashImpact: 'CASH_OUT',
+    amountValidity: 'VALID',
+    offset: '0',
+    limit: '10',
+  })) {
+    assert.equal(registerQuery.get(key), value, 'Register query must forward ' + key);
+  }
 
   const createdVendor = await api('saveVendor', {
     name: 'Test supplier',
