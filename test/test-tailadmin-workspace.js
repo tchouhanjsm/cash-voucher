@@ -666,7 +666,6 @@ for (const selector of [
   assert.ok(styles.includes(selector), 'minimal workspace styling covers ' + selector);
 }
 
-
 console.log(
   'TailAdmin-inspired workspace OK — local design layer, responsive states, data integrity and PWA integration.',
 );
