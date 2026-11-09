@@ -89,6 +89,8 @@ final class VoucherApiTest extends TestCase
 
         $managerEmail = 'fixture-'.$this->userId.'@example.test';
         $otherEmail = 'fixture-'.$otherUser.'@example.test';
+        $expectedUsers = [$managerEmail, $otherEmail];
+        sort($expectedUsers, SORT_STRING);
 
         $all = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
             'status' => 'ALL',
@@ -111,7 +113,7 @@ final class VoucherApiTest extends TestCase
                 'Cancelled Supplier',
                 'Pending Supplier',
             ])
-            ->assertJsonPath('data.facets.users', [$managerEmail, $otherEmail]);
+            ->assertJsonPath('data.facets.users', $expectedUsers);
 
         $exportPage = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
             'status' => 'ALL',
