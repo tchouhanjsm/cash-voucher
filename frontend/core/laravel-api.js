@@ -388,6 +388,96 @@ function mapVoucherMutation(result, expectedId) {
   };
 }
 
+function mapRegisterPage(page) {
+  if (
+    !page ||
+    typeof page !== 'object' ||
+    Array.isArray(page) ||
+    !Array.isArray(page.items) ||
+    !Number.isSafeInteger(page.offset) ||
+    page.offset < 0 ||
+    !Number.isSafeInteger(page.limit) ||
+    page.limit < 1 ||
+    page.limit > 200 ||
+    !Number.isSafeInteger(page.totalCount) ||
+    page.totalCount < 0 ||
+    typeof page.hasMore !== 'boolean' ||
+    !page.totals ||
+    typeof page.totals !== 'object' ||
+    Array.isArray(page.totals) ||
+    !page.facets ||
+    typeof page.facets !== 'object' ||
+    Array.isArray(page.facets) ||
+    !Array.isArray(page.facets.vendors) ||
+    !Array.isArray(page.facets.users)
+  ) {
+    throw failure('The Laravel Register response is incomplete or invalid.', 'API_RESPONSE_INVALID');
+  }
+
+  const counters = [
+    'approvalExceptionCount',
+    'invalidAmountCount',
+    'malformedRecordCount',
+    'malformedFieldCount',
+  ];
+  const totals = {
+    paid: rupeesToNumber(page.totals.paid, 'Register paid total'),
+    received: rupeesToNumber(page.totals.received, 'Register received total'),
+  };
+  for (const field of counters) {
+    if (!Number.isSafeInteger(page.totals[field]) || page.totals[field] < 0) {
+      throw failure('The Laravel Register totals are incomplete or invalid.', 'API_RESPONSE_INVALID');
+    }
+    totals[field] = page.totals[field];
+  }
+
+  const items = page.items.map((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw failure('The Laravel Register contains an invalid voucher row.', 'API_RESPONSE_INVALID');
+    }
+    const voucherNo = Number(item.voucherNo);
+    if (!Number.isSafeInteger(voucherNo) || voucherNo < 1 || typeof item.id !== 'string' || !item.id) {
+      throw failure('The Laravel Register contains an invalid voucher reference.', 'API_RESPONSE_INVALID');
+    }
+
+    return {
+      ...item,
+      no: voucherNo,
+      voucherNo,
+      amount:
+        item.amount === null || item.amount === undefined
+          ? null
+          : rupeesToNumber(item.amount, 'voucher amount'),
+      createdAt: typeof item.createdAt === 'string' ? item.createdAt : '',
+      updatedBy: typeof item.updatedBy === 'string' ? item.updatedBy : '',
+      updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : '',
+      receipts: Array.isArray(item.receipts) ? item.receipts : [],
+      cancelReason: typeof item.cancelReason === 'string' ? item.cancelReason : '',
+      approvedBy: typeof item.approvedBy === 'string' ? item.approvedBy : '',
+      approvedAt: typeof item.approvedAt === 'string' ? item.approvedAt : '',
+      approvalReason: typeof item.approvalReason === 'string' ? item.approvalReason : '',
+    };
+  });
+
+  const facets = {};
+  for (const field of ['vendors', 'users']) {
+    if (
+      page.facets[field].some((value) => typeof value !== 'string') ||
+      new Set(page.facets[field]).size !== page.facets[field].length
+    ) {
+      throw failure('The Laravel Register filter options are invalid.', 'API_RESPONSE_INVALID');
+    }
+    facets[field] = page.facets[field];
+  }
+
+  return {
+    ...page,
+    items,
+    totals,
+    facets,
+  };
+}
+
 function assertSameOriginBase(raw, origin) {
   if (typeof raw !== 'string' || !raw.trim()) {
     throw failure('Laravel API URL is not configured.', 'NOURL');
@@ -1008,68 +1098,25 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       }
 
       case 'registerPage': {
-        const unsupported = [
-          ['q', payload.q],
-          ['vendor', payload.vendor],
-          ['cat', payload.cat],
-          ['user', payload.user],
-          ['approval', payload.approval && payload.approval !== 'ALL' ? payload.approval : ''],
-          [
-            'paymentMethod',
-            payload.paymentMethod && payload.paymentMethod !== 'ALL' ? payload.paymentMethod : '',
-          ],
-          [
-            'cashImpact',
-            payload.cashImpact && payload.cashImpact !== 'ALL' ? payload.cashImpact : '',
-          ],
-          [
-            'amountValidity',
-            payload.amountValidity && payload.amountValidity !== 'ALL'
-              ? payload.amountValidity
-              : '',
-          ],
-        ].filter(([, value]) => value !== undefined && value !== null && value !== '');
-        if (unsupported.length) {
-          throw failure(
-            'The selected register filters are not yet supported by the Laravel shadow API. Clear the unsupported filters to continue.',
-            'API_ACTION_UNSUPPORTED',
-          );
-        }
-
         const page = await request('/vouchers', {
           query: {
+            q: payload.q,
+            vendor: payload.vendor,
+            cat: payload.cat,
+            user: payload.user,
             from: payload.from,
             to: payload.to,
             type: payload.t,
             status: payload.st || 'ACTIVE',
+            approval: payload.approval,
+            paymentMethod: payload.paymentMethod,
+            cashImpact: payload.cashImpact,
+            amountValidity: payload.amountValidity,
             offset: payload.offset ?? 0,
             limit: payload.limit ?? 100,
           },
         });
-        const items = Array.isArray(page.items)
-          ? page.items.map((item) => ({
-              ...item,
-              no: Number(item.voucherNo),
-              amount:
-                item.amount === null || item.amount === undefined
-                  ? null
-                  : rupeesToNumber(item.amount, 'voucher amount'),
-              createdAt: '',
-              updatedBy: '',
-              updatedAt: '',
-              receipts: Array.isArray(item.receipts) ? item.receipts : [],
-              cancelReason: '',
-              approvedBy: '',
-              approvedAt: '',
-              approvalReason: '',
-            }))
-          : [];
-        return {
-          ...page,
-          items,
-          totals: {},
-          facets: { vendors: [], users: [] },
-        };
+        return mapRegisterPage(page);
       }
 
       case 'saveVendor': {
