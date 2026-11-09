@@ -508,7 +508,7 @@ assert.match(
 );
 assert.match(
   dashboard,
-  /dashboard-primary-action[\s\S]*?data-k=\"PAYMENT\"[\s\S]*?data-k=\"RECEIPT\"/,
+  /dashboard-primary-action[\s\S]*?data-k="PAYMENT"[\s\S]*?data-k="RECEIPT"/,
   'primary actions distinguish Payment from Cash received',
 );
 assert.match(
@@ -518,7 +518,7 @@ assert.match(
 );
 assert.match(
   dashboard,
-  /<details class=\"dashboard-analysis\"/,
+  /<details class="dashboard-analysis"/,
   'secondary financial analysis is progressively disclosed with native details',
 );
 assert.match(
