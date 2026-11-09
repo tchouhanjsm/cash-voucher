@@ -1,11 +1,13 @@
-## Current delivery focus — Laravel receipt transport (9 November 2026)
+## Current delivery focus — PR #282 receipt transport + deterministic entry suggestions (9 November 2026)
 
-- **Branch:** `feat/laravel-receipt-transport-20261109`, based on `client-main` merge commit `1f5de116fb22e16cfbc1da07eff6cb5b98d97007` (PR #280).
-- **Root cause:** Laravel already had authenticated private receipt attach/read routes, MIME/signature/size validation, max-three enforcement, per-voucher ownership/role checks, SHA-256 integrity verification, audit and DB idempotency. The opt-in browser adapter did not map legacy `addReceipt`/`getReceipt`, expected JSON for binary downloads, and Register discarded receipt identifiers.
-- **Implementation:** map receipt upload to `POST /vouchers/{voucherId}/receipts` with caller-stable idempotency key; map authorized binary image retrieval to `GET /receipts/{receiptId}` with MIME/size checks; return receipt IDs from the Laravel Register; add explicit same-receipt retry state. No storage keys or public URLs are exposed.
-- **Financial/release boundary:** no voucher-create mapping, offline outbox drain, Apps Script action/production transport change, schema migration, deployment, dual-write or cutover. Apps Script remains the sole production financial writer.
-- **Verification:** transport regression tests added for register receipt IDs, attach JSON/CSRF/idempotency and image download. Exact-head CI, MySQL integration and browser workflow remain required before merge. Owner-local Network/Console and Laravel log walkthrough is not accessible in this GitHub-only session.
-- **Next:** exact-head CI and Browser E2E; owner-local Laravel-shadow walkthrough for Dashboard, Users, Audit Log, Register and New Entry; then a separately tested deterministic Smart Operations service slice.
+- **PR / branch:** [PR #282](https://github.com/tchouhanjsm/cash-voucher/pull/282), `feat/laravel-receipt-transport-20261109`.
+- **CI repair:** restored the established `vendor-` idempotency-key prefix and applied Prettier formatting to the receipt transport adapter, Register receipt workflow and transport test. The PR description now contains all six required quality-gate sections.
+- **Receipt transport:** browser upload and binary retrieval use the existing authenticated Laravel private receipt endpoints; Register maps receipt IDs; uncertain retries reuse the same prepared image and idempotency key. No storage keys or public URLs are returned.
+- **Smart Operations slice:** `GET /api/v1/entry-suggestions` provides read-only category and payment-method hints from explicit active vendor defaults or active positive-amount voucher history. Staff history is creator-scoped; Manager/Owner history is property-wide; Accountant is denied. Tied leading history candidates return no suggestion.
+- **Employee control:** New Entry displays advisory actions only in local Laravel-shadow mode. A value changes only after the employee clicks the corresponding suggestion button; no voucher or audit write occurs. Ambiguous history stays empty rather than being guessed.
+- **Release boundary:** customer bundles remain pinned to Apps Script; no voucher-create transport, outbox replay, dual-write, production data access, deployment or cutover.
+- **Verification:** previous CI failures were traced to the idempotency prefix, three Prettier failures and incomplete PR sections. The corrected/new head must pass CI, Laravel/MySQL feature tests and Browser E2E. Owner-local Network/Console and Laravel log walkthrough remains outstanding.
+- **Next:** resolve any exact-head CI failures; complete the local shadow walkthrough across Dashboard, Users, Audit Log, Register and New Entry; then implement a separate duplicate-detection/recovery slice.
 
 ---
 
