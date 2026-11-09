@@ -29,6 +29,7 @@ final class PaymentDuplicateGuard
                AND status = :status
                AND business_date = :business_date
                AND amount_paise = :amount_paise
+               AND (client_id IS NULL OR client_id <> :client_id)
              ORDER BY created_at_utc DESC
              LIMIT 101'
         );
@@ -37,6 +38,7 @@ final class PaymentDuplicateGuard
             'status' => 'ACTIVE',
             'business_date' => $voucher['date'],
             'amount_paise' => $voucher['amountPaise'],
+            'client_id' => (string) ($voucher['clientId'] ?? ''),
         ]);
 
         $matches = [];

@@ -206,6 +206,31 @@ final class VoucherApiTest extends TestCase
         );
     }
 
+    public function test_duplicate_review_ignores_the_same_client_operation_after_a_create(): void
+    {
+        $payload = $this->validPayload([
+            'vendor' => 'Replay-safe supplier',
+            'amount' => '325.00',
+            'clientId' => 'replay-safe-client-'.bin2hex(random_bytes(5)),
+        ]);
+
+        $this->withLegacySession()
+            ->postJson('/api/v1/vouchers', $payload, [
+                'Idempotency-Key' => 'voucher-replay-safe-'.bin2hex(random_bytes(5)),
+            ])
+            ->assertCreated();
+
+        $sameOperation = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $payload);
+        $sameOperation->assertOk()->assertJsonPath('data.duplicateCount', 0);
+
+        $newOperation = $payload;
+        $newOperation['clientId'] = 'different-client-'.bin2hex(random_bytes(5));
+        $differentOperation = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $newOperation);
+        $differentOperation->assertOk()->assertJsonPath('data.duplicateCount', 1);
+    }
+
     public function test_unregistered_payee_is_recorded_as_one_time_not_unverified(): void
     {
         $name = 'One-time payee '.bin2hex(random_bytes(5));

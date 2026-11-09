@@ -468,6 +468,115 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     return 'vendor-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
 
+  async function stableIdempotencyKey(namespace, identity) {
+    const cryptoApi = globalThis.crypto;
+    if (
+      !cryptoApi?.subtle ||
+      typeof cryptoApi.subtle.digest !== 'function' ||
+      typeof TextEncoder !== 'function'
+    ) {
+      throw failure(
+        'Secure retry identifiers are unavailable in this browser. Update the browser before saving.',
+        'CRYPTO_UNAVAILABLE',
+      );
+    }
+
+    let digest;
+    try {
+      digest = await cryptoApi.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(namespace + ':' + identity),
+      );
+    } catch {
+      throw failure('A secure retry identifier could not be prepared.', 'CRYPTO_UNAVAILABLE');
+    }
+
+    const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0'))
+      .join('');
+    return namespace + '-' + hex;
+  }
+
+  function normalizeCreateEntry(entry, index) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw failure('Entry ' + (index + 1) + ' contains invalid details.', 'PAYLOAD_INVALID');
+    }
+
+    const clientId = typeof entry.clientId === 'string' ? entry.clientId.trim() : '';
+    const date = typeof entry.date === 'string' ? entry.date : '';
+    const vendor = typeof entry.vendor === 'string' ? entry.vendor.trim() : '';
+    const type = entry.type || 'PAYMENT';
+    const cashImpact = entry.cashImpact || '';
+    const paymentMethod = entry.paymentMethod ?? '';
+    const category = entry.category === undefined || entry.category === '' ? 'Other' : entry.category;
+    const notes = entry.notes === undefined || entry.notes === null ? '' : entry.notes;
+    const vendorId = entry.vendorId === undefined || entry.vendorId === null || entry.vendorId === ''
+      ? null
+      : entry.vendorId;
+    const amountNumber = typeof entry.amount === 'number' || typeof entry.amount === 'string'
+      ? Number(entry.amount)
+      : NaN;
+    const amountPaise = Math.round(amountNumber * 100);
+    const receipts = entry.receipts === undefined || entry.receipts === null ? [] : entry.receipts;
+
+    if (
+      !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(clientId) ||
+      !/^\\d{4}-\\d{2}-\\d{2}$/.test(date) ||
+      !vendor ||
+      vendor.length > 200 ||
+      !Number.isFinite(amountNumber) ||
+      amountNumber <= 0 ||
+      Math.abs(amountNumber * 100 - amountPaise) > 0.000001 ||
+      !Number.isSafeInteger(amountPaise) ||
+      amountPaise > 1000000000 ||
+      !['PAYMENT', 'RECEIPT'].includes(type) ||
+      !['CASH_IN', 'CASH_OUT', 'NO_CASH'].includes(cashImpact) ||
+      !['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod) ||
+      typeof category !== 'string' ||
+      category.trim().length > 80 ||
+      typeof notes !== 'string' ||
+      notes.length > 500 ||
+      (vendorId !== null &&
+        (typeof vendorId !== 'string' ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            vendorId,
+          ))) ||
+      !Array.isArray(receipts) ||
+      receipts.length > 3 ||
+      receipts.some(
+        (receipt) =>
+          !receipt ||
+          typeof receipt !== 'object' ||
+          !['image/jpeg', 'image/png', 'image/webp'].includes(receipt.mime) ||
+          typeof receipt.data !== 'string' ||
+          !receipt.data.length ||
+          receipt.data.length > 2200000,
+      ) ||
+      (entry.duplicateConfirmationToken !== undefined &&
+        (typeof entry.duplicateConfirmationToken !== 'string' ||
+          entry.duplicateConfirmationToken.length > 2048))
+    ) {
+      throw failure(
+        'Entry ' + (index + 1) + ' is incomplete or invalid. Check its date, payee, amount and receipt images.',
+        'PAYLOAD_INVALID',
+      );
+    }
+
+    return {
+      clientId,
+      date,
+      type,
+      vendor,
+      vendorId,
+      amount: (amountPaise / 100).toFixed(2),
+      category: category.trim() || 'Other',
+      notes,
+      cashImpact,
+      paymentMethod,
+      duplicateConfirmationToken: entry.duplicateConfirmationToken || '',
+      receipts,
+    };
+  }
+
   async function mutate(route, body = {}, options = {}) {
     const csrf = await refreshCsrf();
     return request(route, {
@@ -555,6 +664,174 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           },
         });
         return mapAuditPage(page);
+      }
+
+      case 'createVouchers': {
+        if (payload.bulk) {
+          throw failure(
+            'Bulk import is not yet supported by the Laravel shadow API. No entries were submitted.',
+            'API_ACTION_UNSUPPORTED',
+          );
+        }
+        if (!Array.isArray(payload.entries) || payload.entries.length < 1 || payload.entries.length > 25) {
+          throw failure('Save between 1 and 25 entries at a time.', 'PAYLOAD_INVALID');
+        }
+
+        const entries = payload.entries.map(normalizeCreateEntry);
+        const clientIds = new Set();
+        for (const entry of entries) {
+          if (clientIds.has(entry.clientId)) {
+            throw failure('Each entry must have a different transaction ID.', 'PAYLOAD_INVALID');
+          }
+          clientIds.add(entry.clientId);
+        }
+
+        // Prepare every retry identity before the first write. The same client ID and
+        // receipt bytes therefore produce the same keys after a timeout or app restart.
+        const prepared = [];
+        for (const entry of entries) {
+          const voucherKey = await stableIdempotencyKey('voucher', 'create:' + entry.clientId);
+          const receiptKeys = [];
+          for (let index = 0; index < entry.receipts.length; index += 1) {
+            const receipt = entry.receipts[index];
+            receiptKeys.push(
+              await stableIdempotencyKey(
+                'receipt',
+                'attach:' +
+                  entry.clientId +
+                  ':' +
+                  index +
+                  ':' +
+                  receipt.mime +
+                  ':' +
+                  receipt.data,
+              ),
+            );
+          }
+          prepared.push({ entry, voucherKey, receiptKeys });
+        }
+
+        const created = [];
+        let skipped = 0;
+        try {
+          // Keep the legacy New Entry batch order. Each voucher is its own idempotent,
+          // audited transaction so approval totals and voucher numbering see prior rows.
+          for (const operation of prepared) {
+            const { entry, voucherKey, receiptKeys } = operation;
+            const result = await mutate(
+              '/vouchers',
+              {
+                date: entry.date,
+                vendor: entry.vendor,
+                vendorId: entry.vendorId,
+                amount: entry.amount,
+                category: entry.category,
+                notes: entry.notes,
+                type: entry.type,
+                cashImpact: entry.cashImpact,
+                paymentMethod: entry.paymentMethod,
+                clientId: entry.clientId,
+                duplicateConfirmationToken: entry.duplicateConfirmationToken,
+              },
+              { idempotency: true, idempotencyKey: voucherKey },
+            );
+
+            const voucher = result?.voucher;
+            const voucherNo = Number(voucher?.voucherNo);
+            const voucherId = typeof voucher?.id === 'string' ? voucher.id : '';
+            if (
+              !voucher ||
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+                voucherId,
+              ) ||
+              !Number.isSafeInteger(voucherNo) ||
+              voucherNo < 1 ||
+              voucher.date !== entry.date ||
+              voucher.type !== entry.type ||
+              typeof voucher.vendor !== 'string' ||
+              !['PENDING', 'NOT_REQUIRED'].includes(voucher.approvalStatus)
+            ) {
+              throw failure(
+                'The server may have saved this entry, but its confirmation was incomplete. Retry using the same entry; do not enter it again.',
+                'BAD',
+              );
+            }
+
+            const mapped = {
+              ...voucher,
+              no: voucherNo,
+              voucherNo,
+              amount: rupeesToNumber(voucher.amount, 'created voucher amount'),
+              receipts: [],
+            };
+            if (result.replayed === true) skipped += 1;
+
+            for (let index = 0; index < entry.receipts.length; index += 1) {
+              try {
+                const attachment = await api('addReceipt', {
+                  id: voucherId,
+                  receipt: entry.receipts[index],
+                  idempotencyKey: receiptKeys[index],
+                  existingReceiptIds: mapped.receipts,
+                });
+                mapped.receipts = attachment.receipts;
+              } catch (error) {
+                const pending = failure(
+                  'Voucher #' +
+                    voucherNo +
+                    ' was saved, but receipt ' +
+                    (index + 1) +
+                    ' of ' +
+                    entry.receipts.length +
+                    ' could not be confirmed. The entry and receipt will be kept for safe retry. Do not enter this transaction again.',
+                  'RECEIPT_SYNC_PENDING',
+                );
+                pending.voucherId = voucherId;
+                pending.voucherNo = voucherNo;
+                pending.cause = error;
+                throw pending;
+              }
+            }
+
+            created.push(mapped);
+          }
+        } catch (error) {
+          if (['DUPLICATE_CONFIRMATION_REQUIRED', 'RECEIPT_SYNC_PENDING'].includes(error?.code)) {
+            throw error;
+          }
+          if (['NET', 'BAD'].includes(error?.code)) {
+            if (created.length) {
+              error.message =
+                'The connection was interrupted after ' +
+                created.length +
+                ' of ' +
+                entries.length +
+                ' entries were confirmed. Keep the entries and retry; the same transaction IDs will safely replay already-saved vouchers.';
+            }
+            throw error;
+          }
+          if (created.length) {
+            const partial = failure(
+              'The batch stopped after ' +
+                created.length +
+                ' of ' +
+                entries.length +
+                ' entries were saved. ' +
+                created.map((voucher) => '#' + voucher.voucherNo).join(', ') +
+                ' are already recorded. The remaining entries have not been confirmed. Keep this batch and retry; the saved rows will replay safely.',
+              'BATCH_PARTIAL_FAILURE',
+            );
+            partial.partialCreated = created.map((voucher) => ({
+              id: voucher.id,
+              voucherNo: voucher.voucherNo,
+            }));
+            partial.cause = error;
+            throw partial;
+          }
+          throw error;
+        }
+
+        return { created, skipped };
       }
 
       case 'registerPage': {

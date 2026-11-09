@@ -1362,10 +1362,19 @@ export function createPayments({ api, refresh, isLaravelShadow = false }) {
         }
         // A lost connection or non-JSON response can happen after the server committed the voucher.
         // Preserve each original client ID locally, then retry those same IDs once through the outbox.
-        if (!['NET', 'BAD'].includes(String(e?.code || ''))) return fail(e);
-        const queued = await saveOnDevice(
-          'The server response did not confirm whether this entry was saved. It is stored on this device under the same transaction ID. Do not enter it again while we confirm the result.',
-        );
+        const failureCode = String(e?.code || '');
+        if (
+          !['NET', 'BAD', 'RECEIPT_SYNC_PENDING', 'BATCH_PARTIAL_FAILURE'].includes(failureCode)
+        ) {
+          return fail(e);
+        }
+        const recoveryMessage = ['RECEIPT_SYNC_PENDING', 'BATCH_PARTIAL_FAILURE'].includes(
+          failureCode,
+        )
+          ? e.message +
+            ' The original entries and receipt images are being preserved on this device for retry.'
+          : 'The server response did not confirm whether this entry was saved. It is stored on this device under the same transaction ID. Do not enter it again while we confirm the result.';
+        const queued = await saveOnDevice(recoveryMessage);
         if (!queued || !navigator.onLine || !S.token || S.offlineMode) return;
 
         await flushOutbox();

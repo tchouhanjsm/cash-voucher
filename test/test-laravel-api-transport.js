@@ -60,12 +60,24 @@ for (const field of ['category', 'notes', 'cashImpact', 'paymentMethod']) {
   );
 }
 
+const createRecoveryContract = paymentsSource.slice(
+  paymentsSource.indexOf('const failureCode = String(e?.code || \'\');'),
+  paymentsSource.indexOf('await flushOutbox();', paymentsSource.indexOf('const failureCode = String(e?.code || \'\');')),
+);
+assert.ok(
+  createRecoveryContract.includes('RECEIPT_SYNC_PENDING') &&
+    createRecoveryContract.includes('BATCH_PARTIAL_FAILURE'),
+  'New Entry must preserve partial voucher/receipt outcomes in the local outbox',
+);
+
 async function run() {
   const { createLaravelApi } = await import(
     'data:text/javascript;base64,' + Buffer.from(source).toString('base64')
   );
   const csrf = 'a'.repeat(64);
   const requests = [];
+  const createdVoucherOperations = new Map();
+  const attachedReceiptOperations = new Map();
   const fetchImpl = async (url, options) => {
     requests.push({ url: String(url), ...options });
     if (String(url).endsWith('/sessions') && options.method === 'POST') {
@@ -284,6 +296,66 @@ async function run() {
         },
         201,
       );
+    }
+    if (String(url).endsWith('/vouchers') && options.method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      const idempotencyKey = options.headers['Idempotency-Key'];
+      const previous = createdVoucherOperations.get(idempotencyKey);
+      if (previous) {
+        if (JSON.stringify(previous.body) !== JSON.stringify(body)) {
+          return jsonResponse(
+            { ok: false, error: { code: 'IDEMPOTENCY_CONFLICT', message: 'Key reused.' } },
+            409,
+          );
+        }
+        return jsonResponse({ ok: true, data: { voucher: previous.voucher, replayed: true } });
+      }
+      const suffix = String(createdVoucherOperations.size + 1).padStart(12, '0');
+      const voucher = {
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-' + suffix,
+        voucherNo: 301 + createdVoucherOperations.size,
+        date: body.date,
+        vendor: body.vendor,
+        vendorId: body.vendorId,
+        vendorType: body.vendorId ? 'REGISTERED' : 'ONE_TIME',
+        amount: body.amount,
+        amountPaise: Math.round(Number(body.amount) * 100),
+        category: body.category,
+        notes: body.notes,
+        type: body.type,
+        status: 'ACTIVE',
+        cashImpact: body.cashImpact,
+        paymentMethod: body.paymentMethod,
+        approvalStatus: Number(body.amount) >= 10000 ? 'PENDING' : 'NOT_REQUIRED',
+        clientId: body.clientId,
+        createdBy: 'staff@example.test',
+      };
+      createdVoucherOperations.set(idempotencyKey, { body, voucher });
+      return jsonResponse({ ok: true, data: { voucher, replayed: false } }, 201);
+    }
+    if (String(url).includes('/vouchers/aaaaaaaa-aaaa-4aaa-8aaa-')) {
+      const match = String(url).match(/\\/vouchers\\/([^/]+)\\/receipts$/);
+      if (match && options.method === 'POST') {
+        const idempotencyKey = options.headers['Idempotency-Key'];
+        const previous = attachedReceiptOperations.get(idempotencyKey);
+        if (previous) {
+          return jsonResponse({ ok: true, data: previous });
+        }
+        const receipt = {
+          id: 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001',
+          voucherId: match[1],
+          contentType: 'image/png',
+          byteSize: 12,
+          sha256: 'c'.repeat(64),
+        };
+        const value = {
+          receipt,
+          receiptCount: 1,
+          replayed: false,
+        };
+        attachedReceiptOperations.set(idempotencyKey, value);
+        return jsonResponse({ ok: true, data: value }, 201);
+      }
     }
     if (String(url).endsWith('/sessions/current/logout')) {
       return jsonResponse({ ok: true, data: { signedOut: true } });
@@ -533,13 +605,191 @@ async function run() {
     'invalid duplicate-check input must not reach the server',
   );
 
+  const createEntries = [
+    {
+      clientId: 'create-client-001',
+      date: '2026-11-09',
+      type: 'PAYMENT',
+      vendor: 'Create supplier',
+      vendorId: null,
+      amount: 125.5,
+      category: 'Maintenance',
+      notes: 'Create transport payment',
+      cashImpact: 'CASH_OUT',
+      paymentMethod: 'UPI',
+      duplicateConfirmationToken: '',
+      receipts: [],
+    },
+    {
+      clientId: 'create-client-002',
+      date: '2026-11-09',
+      type: 'RECEIPT',
+      vendor: 'Cash customer',
+      vendorId: null,
+      amount: 55,
+      category: 'Other',
+      notes: 'Cash received',
+      cashImpact: 'CASH_IN',
+      paymentMethod: 'CASH',
+      receipts: [{ mime: 'image/png', data: 'aGVsbG8=' }],
+    },
+  ];
+  const createResult = await api('createVouchers', { entries: createEntries });
+  assert.equal(createResult.created.length, 2);
+  assert.equal(createResult.skipped, 0);
+  assert.equal(createResult.created[0].no, 301);
+  assert.equal(createResult.created[0].amount, 125.5);
+  assert.deepEqual(createResult.created[0].receipts, []);
+  assert.equal(createResult.created[1].no, 302);
+  assert.equal(createResult.created[1].amount, 55);
+  assert.deepEqual(createResult.created[1].receipts, [
+    'bbbbbbbb-bbbb-4bbb-8bbb-000000000001',
+  ]);
+  const createWrites = requests.filter(
+    (request) => request.url.endsWith('/vouchers') && request.method === 'POST',
+  );
+  assert.equal(createWrites.length, 2);
+  assert.match(createWrites[0].headers['Idempotency-Key'], /^voucher-[a-f0-9]{64}$/);
+  assert.match(createWrites[1].headers['Idempotency-Key'], /^voucher-[a-f0-9]{64}$/);
+  assert.notEqual(
+    createWrites[0].headers['Idempotency-Key'],
+    createWrites[1].headers['Idempotency-Key'],
+  );
+  assert.equal(createWrites[0].headers['X-CSRF-Token'], csrf);
+  assert.deepEqual(JSON.parse(createWrites[0].body), {
+    date: '2026-11-09',
+    vendor: 'Create supplier',
+    vendorId: null,
+    amount: '125.50',
+    category: 'Maintenance',
+    notes: 'Create transport payment',
+    type: 'PAYMENT',
+    cashImpact: 'CASH_OUT',
+    paymentMethod: 'UPI',
+    clientId: 'create-client-001',
+    duplicateConfirmationToken: '',
+  });
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(JSON.parse(createWrites[1].body), 'receipts'),
+    false,
+    'receipt images must use the dedicated private attachment endpoint',
+  );
+  const attachmentWrite = requests.find((request) =>
+    request.url.endsWith('/vouchers/aaaaaaaa-aaaa-4aaa-8aaa-000000000002/receipts'),
+  );
+  assert.ok(attachmentWrite);
+  assert.match(attachmentWrite.headers['Idempotency-Key'], /^receipt-[a-f0-9]{64}$/);
+  assert.equal(attachmentWrite.headers['X-CSRF-Token'], csrf);
+  assert.deepEqual(JSON.parse(attachmentWrite.body), {
+    receipt: { mime: 'image/png', data: 'aGVsbG8=' },
+  });
+
+  const replayedCreate = await api('createVouchers', { entries: createEntries });
+  assert.equal(replayedCreate.created.length, 2);
+  assert.equal(replayedCreate.skipped, 2);
+  assert.equal(replayedCreate.created[0].id, createResult.created[0].id);
+  assert.deepEqual(replayedCreate.created[1].receipts, createResult.created[1].receipts);
+  const repeatedCreateWrites = requests.filter(
+    (request) => request.url.endsWith('/vouchers') && request.method === 'POST',
+  );
+  assert.equal(
+    repeatedCreateWrites[0].headers['Idempotency-Key'],
+    repeatedCreateWrites[2].headers['Idempotency-Key'],
+    'voucher retry keys must be stable across calls',
+  );
+  const repeatedAttachment = requests.filter((request) =>
+    request.url.endsWith('/vouchers/aaaaaaaa-aaaa-4aaa-8aaa-000000000002/receipts'),
+  );
+  assert.equal(repeatedAttachment.length, 2);
+  assert.equal(
+    repeatedAttachment[0].headers['Idempotency-Key'],
+    repeatedAttachment[1].headers['Idempotency-Key'],
+    'receipt retry keys must be stable for the same image and entry',
+  );
+
+  const partialRequests = [];
+  const partialOperations = new Map();
+  let failSecondCreate = true;
+  const recoveryApi = createLaravelApi({
+    getUrl: () => 'https://cash-voucher.example/api/v1',
+    getOrigin: () => 'https://cash-voucher.example',
+    fetchImpl: async (url, options) => {
+      partialRequests.push({ url: String(url), ...options });
+      if (String(url).endsWith('/sessions/current')) {
+        return jsonResponse({ ok: true, data: { user: { id: 'user-1' }, csrfToken: csrf } });
+      }
+      if (String(url).endsWith('/vouchers') && options.method === 'POST') {
+        if (failSecondCreate && partialOperations.size === 1) {
+          failSecondCreate = false;
+          throw new Error('simulated connection loss after the first commit');
+        }
+        const body = JSON.parse(options.body);
+        const key = options.headers['Idempotency-Key'];
+        if (partialOperations.has(key)) {
+          return jsonResponse({
+            ok: true,
+            data: { voucher: partialOperations.get(key), replayed: true },
+          });
+        }
+        const voucher = {
+          id: 'cccccccc-cccc-4ccc-8ccc-' + String(partialOperations.size + 1).padStart(12, '0'),
+          voucherNo: 401 + partialOperations.size,
+          date: body.date,
+          vendor: body.vendor,
+          amount: body.amount,
+          type: body.type,
+          approvalStatus: 'NOT_REQUIRED',
+        };
+        partialOperations.set(key, voucher);
+        return jsonResponse({ ok: true, data: { voucher, replayed: false } }, 201);
+      }
+      return jsonResponse(
+        { ok: false, error: { code: 'SESSION_EXPIRED', message: 'Session expired.' } },
+        401,
+      );
+    },
+  });
+  const recoverEntries = createEntries.map((entry, index) => ({
+    ...entry,
+    clientId: 'recovery-client-00' + (index + 1),
+    receipts: [],
+  }));
+  await assert.rejects(
+    () => recoveryApi('createVouchers', { entries: recoverEntries }),
+    (error) => error.code === 'NET',
+  );
+  const firstAttemptKey = partialRequests.find(
+    (request) => request.url.endsWith('/vouchers') && request.method === 'POST',
+  ).headers['Idempotency-Key'];
+  const recovered = await recoveryApi('createVouchers', { entries: recoverEntries });
+  assert.equal(recovered.created.length, 2);
+  assert.equal(recovered.skipped, 1);
+  const firstEntryWrites = partialRequests.filter((request) => {
+    if (!request.url.endsWith('/vouchers') || request.method !== 'POST') return false;
+    return JSON.parse(request.body).clientId === recoverEntries[0].clientId;
+  });
+  assert.equal(firstEntryWrites.length, 2);
+  assert.equal(firstEntryWrites[0].headers['Idempotency-Key'], firstAttemptKey);
+  assert.equal(firstEntryWrites[1].headers['Idempotency-Key'], firstAttemptKey);
+
+  const beforeInvalidCreate = requests.length;
+  await assert.rejects(
+    () => api('createVouchers', { entries: [] }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  await assert.rejects(
+    () => api('createVouchers', { bulk: true, entries: createEntries }),
+    (error) => error.code === 'API_ACTION_UNSUPPORTED',
+  );
+  assert.equal(
+    requests.length,
+    beforeInvalidCreate,
+    'invalid or bulk create payloads must not reach the Laravel server',
+  );
+
   const beforeUnsupported = requests.length;
   await assert.rejects(
     () => api('registerPage', { vendor: 'Test supplier', offset: 0, limit: 10 }),
-    (error) => error.code === 'API_ACTION_UNSUPPORTED',
-  );
-  await assert.rejects(
-    () => api('createVouchers', { entries: [{ clientId: 'client-1' }] }),
     (error) => error.code === 'API_ACTION_UNSUPPORTED',
   );
   assert.equal(requests.length, beforeUnsupported, 'unsupported actions must not reach any server');
