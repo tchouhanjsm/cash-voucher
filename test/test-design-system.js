@@ -706,11 +706,11 @@ assert.match(
   navigation,
   /if \(focusHeading(?: && view !== 'new')?\) \{[\s\S]*?focusPageHeading\(\)/,
   'heading focus remains opt-in and yields to New Entry task-specific focus',
+);
 assert.match(
   navigation,
   /if \(focusHeading && view !== 'new'\)/,
   'New Entry retains first-field focus instead of being overridden by page-heading focus',
-);
 );
 assert.match(
   navigation,
