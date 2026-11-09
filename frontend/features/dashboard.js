@@ -1201,12 +1201,6 @@ export function createDashboard({ api }) {
         : `<p class="needs-clear">${icon('check')}<span>No dashboard issues need your attention right now. Backup and recovery status are checked separately.</span></p>`
     }</section>`;
 
-    const emptyPeriodActions = can('create')
-      ? `<div class="dashboard-empty-state__actions">
-          <button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">${icon('wallet')}<span>Record a payment</span>${icon('arrow-right')}</button>
-          <button type="button" class="btn" data-act="ntype" data-k="RECEIPT">${icon('cash')}<span>Record a receipt</span>${icon('arrow-right')}</button>
-        </div>`
-      : `<div class="dashboard-empty-state__actions"><button type="button" class="btn primary" data-act="goto" data-k="reg">Open register ${icon('arrow-right')}</button></div>`;
     const emptyNextSteps = can('create')
       ? `<ol class="dashboard-empty-state__steps">
           <li><span class="dashboard-empty-state__step-number" aria-hidden="true">01</span><div><strong>Record the movement</strong><p>Choose Payment out or Cash received.</p></div></li>
