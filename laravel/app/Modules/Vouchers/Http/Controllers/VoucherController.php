@@ -168,7 +168,7 @@ final class VoucherController
         } elseif ($paymentMethod === 'UNRECOGNIZED') {
             $query
                 ->whereRaw("TRIM(payment_method) <> ''")
-                ->whereNotIn('payment_method', ['CASH', 'UPI', 'BANK_TRANSFER']);
+                ->whereRaw("TRIM(payment_method) NOT IN (?, ?, ?)", ['CASH', 'UPI', 'BANK_TRANSFER']);
         } elseif ($paymentMethod !== 'ALL') {
             $query->whereRaw('TRIM(payment_method) = ?', [$paymentMethod]);
         }
