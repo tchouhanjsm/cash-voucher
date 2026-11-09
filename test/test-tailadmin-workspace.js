@@ -653,6 +653,21 @@ assert.match(
   /Load older adds earlier events; search, filters and CSV export apply to loaded pages only/i,
   'Audit Log retains its pagination/export scope disclosure',
 );
+assert.match(
+  administration,
+  /let auditRequestId = 0/,
+  'Audit Log gives each view load a monotonic request identity',
+);
+assert.match(
+  administration,
+  /\.then\(\(page\) => \{\s*if \(requestId !== auditRequestId \|\| S\.view !== 'audit'\) return;/,
+  'a late first-page response cannot overwrite a newer Audit Log view',
+);
+assert.match(
+  administration,
+  /const requestId = auditRequestId;[\s\S]*?if \(requestId !== auditRequestId \|\| S\.view !== 'audit'\) return;/,
+  'older-page pagination is cancelled from the current view when navigation changes',
+);
 for (const selector of [
   '.users-list-toolbar',
   '.users-filter-details',
