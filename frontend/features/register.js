@@ -62,6 +62,20 @@ export function createRegister({ api, go }) {
       ? String(value)
       : '';
 
+  function voucherMutationKey(action) {
+    const cryptoApi = globalThis.crypto;
+    if (!cryptoApi || typeof cryptoApi.getRandomValues !== 'function') {
+      throw new Error('Secure voucher retry identifiers are unavailable in this browser.');
+    }
+    const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
+    return (
+      'voucher-' +
+      action +
+      '-' +
+      Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+    );
+  }
+
   function voucherRows() {
     return Array.isArray(pageRows) ? pageRows.filter(isRecord) : [];
   }
@@ -1117,6 +1131,7 @@ export function createRegister({ api, go }) {
     reason.rows = 3;
     body.appendChild(labeledControl('Correction reason (required)', reason));
 
+    const idempotencyKey = voucherMutationKey('edit');
     dialog(
       'Classify physical cash · ' + voucherNo(voucher),
       body,
@@ -1125,6 +1140,7 @@ export function createRegister({ api, go }) {
           id,
           reason: reason.value,
           fields: { cashImpact: movement.value },
+          idempotencyKey,
         });
         Object.assign(voucher, updated);
         closeModal();
@@ -1239,6 +1255,7 @@ export function createRegister({ api, go }) {
     reason.rows = 3;
     body.appendChild(labeledControl('Correction reason (required)', reason));
 
+    const idempotencyKey = voucherMutationKey('edit');
     dialog('Edit #' + voucherNo(voucher), body, async () => {
       const fields = {
         date: $('#ed').value,
@@ -1256,6 +1273,7 @@ export function createRegister({ api, go }) {
         id,
         reason: $('#er').value,
         fields,
+        idempotencyKey,
       });
 
       Object.assign(voucher, updated);
@@ -1281,11 +1299,15 @@ export function createRegister({ api, go }) {
     reason.maxLength = 200;
     body.append(summary, labeledControl('Reason (required)', reason));
 
+    const idempotencyKey = voucherMutationKey('cancel');
     dialog(
       `Cancel #${voucherNo(voucher)}?`,
       body,
       async () => {
-        Object.assign(voucher, await api('cancelVoucher', { id, reason: $('#cr').value }));
+        Object.assign(
+          voucher,
+          await api('cancelVoucher', { id, reason: $('#cr').value, idempotencyKey }),
+        );
         closeModal();
         toast('Voucher cancelled.', 'ok');
         go(S.view);
@@ -2054,11 +2076,12 @@ export function createRegister({ api, go }) {
     note.textContent =
       'Approval makes this payment eligible for approved totals and daily cash close. The creator cannot approve their own voucher.';
     body.appendChild(note);
+    const idempotencyKey = voucherMutationKey('approve');
     dialog(
       `Approve payment ${voucherNo(voucher)}?`,
       body,
       async () => {
-        Object.assign(voucher, await api('approveVoucher', { id }));
+        Object.assign(voucher, await api('approveVoucher', { id, idempotencyKey }));
         closeModal();
         toast('Payment approved.', 'ok');
         go(S.view);
@@ -2099,11 +2122,15 @@ export function createRegister({ api, go }) {
     reason.maxLength = 200;
     reason.rows = 3;
     body.appendChild(labeledControl('Rejection reason (required)', reason));
+    const idempotencyKey = voucherMutationKey('reject');
     dialog(
       `Reject payment ${voucherNo(voucher)}?`,
       body,
       async () => {
-        Object.assign(voucher, await api('rejectVoucher', { id, reason: $('#apr-reason').value }));
+        Object.assign(
+          voucher,
+          await api('rejectVoucher', { id, reason: $('#apr-reason').value, idempotencyKey }),
+        );
         closeModal();
         toast(
           'Payment rejected. It remains visible and blocks cash close until cancelled or otherwise resolved.',
