@@ -111,7 +111,8 @@ async function run() {
               amount: '12.50',
               type: 'PAYMENT',
               status: 'ACTIVE',
-              createdBy: 'staff@example.test',\n              receipts: ['11111111-1111-4111-8111-111111111111'],
+              createdBy: 'staff@example.test',
+              receipts: ['11111111-1111-4111-8111-111111111111'],
             },
           ],
           offset: 0,
@@ -270,7 +271,8 @@ async function run() {
     limit: 10,
   });
   assert.equal(page.items[0].no, 204);
-  assert.equal(page.items[0].amount, 12.5);\n  assert.deepEqual(page.items[0].receipts, ['11111111-1111-4111-8111-111111111111']);
+  assert.equal(page.items[0].amount, 12.5);
+  assert.deepEqual(page.items[0].receipts, ['11111111-1111-4111-8111-111111111111']);
   assert.deepEqual(page.facets, { vendors: [], users: [] });
 
   const createdVendor = await api('saveVendor', {
