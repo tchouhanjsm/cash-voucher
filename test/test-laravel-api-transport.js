@@ -873,11 +873,13 @@ async function run() {
   assert.equal(updatedVoucher.date, '2026-11-08');
   assert.equal(updatedVoucher.vendor, 'Updated supplier');
   assert.equal(updatedVoucher.cashImpact, 'NO_CASH');
-  const updateRequest = requests.filter(
-    (request) =>
-      new URL(request.url).pathname === '/api/v1/vouchers/' + lifecycleIds.update &&
-      request.method === 'PATCH',
-  ).at(-1);
+  const updateRequest = requests
+    .filter(
+      (request) =>
+        new URL(request.url).pathname === '/api/v1/vouchers/' + lifecycleIds.update &&
+        request.method === 'PATCH',
+    )
+    .at(-1);
   assert.ok(updateRequest);
   assert.equal(updateRequest.credentials, 'same-origin');
   assert.equal(updateRequest.headers['X-CSRF-Token'], csrf);
