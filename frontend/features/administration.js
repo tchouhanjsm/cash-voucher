@@ -926,17 +926,17 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         );
       }
     } catch (error) {
-      if (requestId !== auditRequestId || S.view !== 'audit') return;
-      fail(error);
+      if (requestId === auditRequestId && S.view === 'audit') fail(error);
     } finally {
-      if (requestId !== auditRequestId || S.view !== 'audit') return;
-      auditLoadingOlder = false;
-      const currentButton = $('#aud-more');
-      if (currentButton) {
-        currentButton.disabled = false;
-        currentButton.textContent = 'Load older events';
-        currentButton.hidden = !auditNextBeforeRow;
-        currentButton.classList.toggle('hidden', !auditNextBeforeRow);
+      if (requestId === auditRequestId && S.view === 'audit') {
+        auditLoadingOlder = false;
+        const currentButton = $('#aud-more');
+        if (currentButton) {
+          currentButton.disabled = false;
+          currentButton.textContent = 'Load older events';
+          currentButton.hidden = !auditNextBeforeRow;
+          currentButton.classList.toggle('hidden', !auditNextBeforeRow);
+        }
       }
     }
   }
