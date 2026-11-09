@@ -81,6 +81,36 @@ async function run() {
   const requests = [];
   const createdVoucherOperations = new Map();
   const attachedReceiptOperations = new Map();
+  const lifecycleIds = {
+    update: '44444444-4444-4444-8444-444444444444',
+    cancel: '55555555-5555-4555-8555-555555555555',
+    approve: '66666666-6666-4666-8666-666666666666',
+    reject: '77777777-7777-4777-8777-777777777777',
+  };
+  function lifecycleVoucher(id, overrides = {}) {
+    const amount = overrides.amount || '230.75';
+    return {
+      id,
+      voucherNo: '601',
+      date: '2026-11-09',
+      vendor: 'Lifecycle supplier',
+      vendorId: null,
+      vendorType: 'ONE_TIME',
+      amount,
+      amountPaise: Math.round(Number(amount) * 100),
+      category: 'Maintenance',
+      notes: 'Lifecycle test',
+      type: 'PAYMENT',
+      status: 'ACTIVE',
+      cashImpact: 'CASH_OUT',
+      paymentMethod: 'UPI',
+      approvalStatus: 'PENDING',
+      approvalReason: '',
+      cancelReason: '',
+      createdBy: 'creator@example.test',
+      ...overrides,
+    };
+  }
   const fetchImpl = async (url, options) => {
     requests.push({ url: String(url), ...options });
     if (String(url).endsWith('/sessions') && options.method === 'POST') {
@@ -299,6 +329,56 @@ async function run() {
         },
         201,
       );
+    }
+    const pathname = new URL(String(url)).pathname;
+    if (pathname === '/api/v1/vouchers/' + lifecycleIds.update && options.method === 'PATCH') {
+      const body = JSON.parse(options.body || '{}');
+      return jsonResponse({
+        ok: true,
+        data: {
+          voucher: lifecycleVoucher(lifecycleIds.update, body.fields || {}),
+          replayed: false,
+        },
+      });
+    }
+    if (pathname === '/api/v1/vouchers/' + lifecycleIds.cancel + '/cancel') {
+      const body = JSON.parse(options.body || '{}');
+      return jsonResponse({
+        ok: true,
+        data: {
+          voucher: lifecycleVoucher(lifecycleIds.cancel, {
+            status: 'CANCELLED',
+            cancelReason: body.reason,
+          }),
+          replayed: false,
+        },
+      });
+    }
+    if (pathname === '/api/v1/vouchers/' + lifecycleIds.approve + '/approval') {
+      return jsonResponse({
+        ok: true,
+        data: {
+          voucher: lifecycleVoucher(lifecycleIds.approve, {
+            approvalStatus: 'APPROVED',
+            approvedByUserId: 'manager-1',
+            approvedAtUtc: '2026-11-09 12:00:00.000000',
+          }),
+          replayed: false,
+        },
+      });
+    }
+    if (pathname === '/api/v1/vouchers/' + lifecycleIds.reject + '/rejection') {
+      const body = JSON.parse(options.body || '{}');
+      return jsonResponse({
+        ok: true,
+        data: {
+          voucher: lifecycleVoucher(lifecycleIds.reject, {
+            approvalStatus: 'REJECTED',
+            approvalReason: body.reason,
+          }),
+          replayed: false,
+        },
+      });
     }
     if (String(url).endsWith('/vouchers') && options.method === 'POST') {
       const body = JSON.parse(options.body || '{}');
@@ -774,6 +854,130 @@ async function run() {
   assert.equal(firstEntryWrites.length, 2);
   assert.equal(firstEntryWrites[0].headers['Idempotency-Key'], firstAttemptKey);
   assert.equal(firstEntryWrites[1].headers['Idempotency-Key'], firstAttemptKey);
+
+  const updatePayload = {
+    id: lifecycleIds.update,
+    reason: 'Corrected classification and amount',
+    fields: {
+      date: '2026-11-08',
+      vendor: 'Updated supplier',
+      amount: 230.75,
+      cashImpact: 'NO_CASH',
+    },
+    idempotencyKey: 'voucher-edit-test-001',
+  };
+  const updatedVoucher = await api('updateVoucher', updatePayload);
+  assert.equal(updatedVoucher.id, lifecycleIds.update);
+  assert.equal(updatedVoucher.no, 601);
+  assert.equal(updatedVoucher.amount, 230.75);
+  assert.equal(updatedVoucher.date, '2026-11-08');
+  assert.equal(updatedVoucher.vendor, 'Updated supplier');
+  assert.equal(updatedVoucher.cashImpact, 'NO_CASH');
+  const updateRequest = requests.filter(
+    (request) =>
+      new URL(request.url).pathname === '/api/v1/vouchers/' + lifecycleIds.update &&
+      request.method === 'PATCH',
+  ).at(-1);
+  assert.ok(updateRequest);
+  assert.equal(updateRequest.credentials, 'same-origin');
+  assert.equal(updateRequest.headers['X-CSRF-Token'], csrf);
+  assert.equal(updateRequest.headers['Idempotency-Key'], 'voucher-edit-test-001');
+  assert.deepEqual(JSON.parse(updateRequest.body), {
+    fields: {
+      date: '2026-11-08',
+      vendor: 'Updated supplier',
+      amount: '230.75',
+      cashImpact: 'NO_CASH',
+    },
+    reason: 'Corrected classification and amount',
+  });
+  await api('updateVoucher', updatePayload);
+  const updateAttempts = requests.filter(
+    (request) =>
+      new URL(request.url).pathname === '/api/v1/vouchers/' + lifecycleIds.update &&
+      request.method === 'PATCH',
+  );
+  assert.equal(updateAttempts.length, 2);
+  assert.equal(
+    updateAttempts[0].headers['Idempotency-Key'],
+    updateAttempts[1].headers['Idempotency-Key'],
+    'retrying the same open Register operation must reuse its idempotency key',
+  );
+
+  const cancelledVoucher = await api('cancelVoucher', {
+    id: lifecycleIds.cancel,
+    reason: 'Entered against the wrong day',
+    idempotencyKey: 'voucher-cancel-test-001',
+  });
+  assert.equal(cancelledVoucher.status, 'CANCELLED');
+  assert.equal(cancelledVoucher.cancelReason, 'Entered against the wrong day');
+  const cancelRequest = requests.find(
+    (request) =>
+      new URL(request.url).pathname === '/api/v1/vouchers/' + lifecycleIds.cancel + '/cancel',
+  );
+  assert.equal(cancelRequest.method, 'POST');
+  assert.equal(cancelRequest.headers['X-CSRF-Token'], csrf);
+  assert.equal(cancelRequest.headers['Idempotency-Key'], 'voucher-cancel-test-001');
+  assert.deepEqual(JSON.parse(cancelRequest.body), {
+    reason: 'Entered against the wrong day',
+  });
+
+  const approvedVoucher = await api('approveVoucher', {
+    id: lifecycleIds.approve,
+    idempotencyKey: 'voucher-approve-test-001',
+  });
+  assert.equal(approvedVoucher.approvalStatus, 'APPROVED');
+  const approveRequest = requests.find(
+    (request) =>
+      new URL(request.url).pathname === '/api/v1/vouchers/' + lifecycleIds.approve + '/approval',
+  );
+  assert.equal(approveRequest.method, 'POST');
+  assert.equal(approveRequest.headers['X-CSRF-Token'], csrf);
+  assert.equal(approveRequest.headers['Idempotency-Key'], 'voucher-approve-test-001');
+  assert.deepEqual(JSON.parse(approveRequest.body), {});
+
+  const rejectedVoucher = await api('rejectVoucher', {
+    id: lifecycleIds.reject,
+    reason: 'Supporting document is incomplete',
+    idempotencyKey: 'voucher-reject-test-001',
+  });
+  assert.equal(rejectedVoucher.approvalStatus, 'REJECTED');
+  assert.equal(rejectedVoucher.approvalReason, 'Supporting document is incomplete');
+  const rejectRequest = requests.find(
+    (request) =>
+      new URL(request.url).pathname === '/api/v1/vouchers/' + lifecycleIds.reject + '/rejection',
+  );
+  assert.equal(rejectRequest.method, 'POST');
+  assert.equal(rejectRequest.headers['X-CSRF-Token'], csrf);
+  assert.equal(rejectRequest.headers['Idempotency-Key'], 'voucher-reject-test-001');
+  assert.deepEqual(JSON.parse(rejectRequest.body), {
+    reason: 'Supporting document is incomplete',
+  });
+
+  const beforeInvalidLifecycle = requests.length;
+  await assert.rejects(
+    () =>
+      api('updateVoucher', {
+        id: lifecycleIds.update,
+        reason: 'x',
+        fields: { unsupportedField: 'value' },
+      }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  await assert.rejects(
+    () =>
+      api('cancelVoucher', {
+        id: lifecycleIds.cancel,
+        reason: 'x',
+        idempotencyKey: 'bad key',
+      }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  assert.equal(
+    requests.length,
+    beforeInvalidLifecycle,
+    'invalid lifecycle operations must be rejected before any API request',
+  );
 
   const beforeInvalidCreate = requests.length;
   await assert.rejects(
