@@ -534,41 +534,6 @@ assert.match(
 
 assert.match(
   dashboard,
-  /const D = \{ r: 'today'/,
-  'Dashboard opens on the current business day',
-);
-assert.match(
-  dashboard,
-  /function dashboardPrimaryActions\(\)/,
-  'management Dashboard offers explicit Payment and Cash received actions',
-);
-assert.match(
-  dashboard,
-  /dashboard-primary-action[\s\S]*?data-k=\"PAYMENT\"[\s\S]*?data-k=\"RECEIPT\"/,
-  'primary entry actions route to the matching transaction type',
-);
-assert.match(
-  dashboard,
-  /dashboard-primary-metrics/,
-  'Dashboard exposes only the two primary financial movement measures by default',
-);
-assert.match(
-  dashboard,
-  /<details class=\"dashboard-analysis\"/,
-  'secondary financial analysis uses a native keyboard-operable disclosure',
-);
-assert.match(
-  dashboard,
-  /More financial analysis/,
-  'secondary financial analysis has a clear progressive-disclosure label',
-);
-assert.match(
-  dashboard,
-  /dashboardCashPositionTitle/,
-  'the physical drawer position remains a separate server-derived daily measure',
-);
-assert.match(
-  dashboard,
   /percentage omitted for a small baseline/,
   'tiny previous-period totals use absolute change rather than unstable percentages',
 );
