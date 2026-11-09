@@ -61,8 +61,11 @@ for (const field of ['category', 'notes', 'cashImpact', 'paymentMethod']) {
 }
 
 const createRecoveryContract = paymentsSource.slice(
-  paymentsSource.indexOf('const failureCode = String(e?.code || \'\');'),
-  paymentsSource.indexOf('await flushOutbox();', paymentsSource.indexOf('const failureCode = String(e?.code || \'\');')),
+  paymentsSource.indexOf("const failureCode = String(e?.code || '');"),
+  paymentsSource.indexOf(
+    'await flushOutbox();',
+    paymentsSource.indexOf("const failureCode = String(e?.code || '');"),
+  ),
 );
 assert.ok(
   createRecoveryContract.includes('RECEIPT_SYNC_PENDING') &&
@@ -336,9 +339,7 @@ async function run() {
     if (String(url).includes('/vouchers/aaaaaaaa-aaaa-4aaa-8aaa-')) {
       const pathParts = new URL(String(url)).pathname.split('/');
       const voucherId =
-        pathParts[pathParts.length - 1] === 'receipts'
-          ? pathParts[pathParts.length - 2]
-          : '';
+        pathParts[pathParts.length - 1] === 'receipts' ? pathParts[pathParts.length - 2] : '';
       if (voucherId && options.method === 'POST') {
         const idempotencyKey = options.headers['Idempotency-Key'];
         const previous = attachedReceiptOperations.get(idempotencyKey);
@@ -646,9 +647,7 @@ async function run() {
   assert.deepEqual(createResult.created[0].receipts, []);
   assert.equal(createResult.created[1].no, 302);
   assert.equal(createResult.created[1].amount, 55);
-  assert.deepEqual(createResult.created[1].receipts, [
-    'bbbbbbbb-bbbb-4bbb-8bbb-000000000001',
-  ]);
+  assert.deepEqual(createResult.created[1].receipts, ['bbbbbbbb-bbbb-4bbb-8bbb-000000000001']);
   const createWrites = requests.filter(
     (request) => request.url.endsWith('/vouchers') && request.method === 'POST',
   );

@@ -491,8 +491,9 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       throw failure('A secure retry identifier could not be prepared.', 'CRYPTO_UNAVAILABLE');
     }
 
-    const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0'))
-      .join('');
+    const hex = Array.from(new Uint8Array(digest), (byte) =>
+      byte.toString(16).padStart(2, '0'),
+    ).join('');
     return namespace + '-' + hex;
   }
 
@@ -507,14 +508,17 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     const type = entry.type || 'PAYMENT';
     const cashImpact = entry.cashImpact || '';
     const paymentMethod = entry.paymentMethod ?? '';
-    const category = entry.category === undefined || entry.category === '' ? 'Other' : entry.category;
+    const category =
+      entry.category === undefined || entry.category === '' ? 'Other' : entry.category;
     const notes = entry.notes === undefined || entry.notes === null ? '' : entry.notes;
-    const vendorId = entry.vendorId === undefined || entry.vendorId === null || entry.vendorId === ''
-      ? null
-      : entry.vendorId;
-    const amountNumber = typeof entry.amount === 'number' || typeof entry.amount === 'string'
-      ? Number(entry.amount)
-      : NaN;
+    const vendorId =
+      entry.vendorId === undefined || entry.vendorId === null || entry.vendorId === ''
+        ? null
+        : entry.vendorId;
+    const amountNumber =
+      typeof entry.amount === 'number' || typeof entry.amount === 'string'
+        ? Number(entry.amount)
+        : NaN;
     const amountPaise = Math.round(amountNumber * 100);
     const receipts = entry.receipts === undefined || entry.receipts === null ? [] : entry.receipts;
 
@@ -556,7 +560,9 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           entry.duplicateConfirmationToken.length > 2048))
     ) {
       throw failure(
-        'Entry ' + (index + 1) + ' is incomplete or invalid. Check its date, payee, amount and receipt images.',
+        'Entry ' +
+          (index + 1) +
+          ' is incomplete or invalid. Check its date, payee, amount and receipt images.',
         'PAYLOAD_INVALID',
       );
     }
@@ -673,7 +679,11 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             'API_ACTION_UNSUPPORTED',
           );
         }
-        if (!Array.isArray(payload.entries) || payload.entries.length < 1 || payload.entries.length > 25) {
+        if (
+          !Array.isArray(payload.entries) ||
+          payload.entries.length < 1 ||
+          payload.entries.length > 25
+        ) {
           throw failure('Save between 1 and 25 entries at a time.', 'PAYLOAD_INVALID');
         }
 
@@ -697,14 +707,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             receiptKeys.push(
               await stableIdempotencyKey(
                 'receipt',
-                'attach:' +
-                  entry.clientId +
-                  ':' +
-                  index +
-                  ':' +
-                  receipt.mime +
-                  ':' +
-                  receipt.data,
+                'attach:' + entry.clientId + ':' + index + ':' + receipt.mime + ':' + receipt.data,
               ),
             );
           }
