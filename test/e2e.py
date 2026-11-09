@@ -714,7 +714,7 @@ with sync_playwright() as p:
     ]:
         comparison_case = case
         page.click('[data-act=range][data-k="7d"]')
-    page.locator('.dashboard-analysis > summary').click()
+        page.locator('.dashboard-analysis > summary').click()
         page.wait_for_function(
             "direction => document.querySelector('.dashboard-period-comparison')?.dataset.direction === direction",
             arg=case['direction'],
