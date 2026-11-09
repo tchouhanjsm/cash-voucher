@@ -1,12 +1,15 @@
-## Current delivery focus — Dashboard daily-operations workspace (9 November 2026)
+## Current delivery focus — PR #280 novice-first workspace consolidation (9 November 2026)
 
-- **Branch:** `feat/dashboard-daily-operations-workspace-20261109`, based on the current `client-main` integration head after PR #278.
-- **Scope:** Dashboard opens on Today, presents distinct Payment and Cash received actions, then needs-attention items, the server-derived daily cash position/close, and recent transactions. Two primary movement figures remain visible; secondary KPIs and charts are retained behind the native “More financial analysis” disclosure.
-- **Financial integrity:** no calculation, server read contract, voucher payload, approval rule, cash-impact classification, idempotency, offline queue or authorization logic is changed. Missing/invalid Dashboard data continues to fail closed; current drawer values remain sourced from the daily-operations API.
-- **Accessibility and responsive layout:** action controls and disclosure retain visible labels, keyboard focus and 44px+ touch targets. The browser matrix captures the default collapsed analysis state on mobile and desktop, then separately validates expanded analytics.
-- **Verification:** source-contract and browser E2E assertions are being updated for Today default, primary actions, collapsed secondary analysis, four owner analysis measures and responsive geometry. Exact-head CI, Browser E2E and monitor results are pending for this PR.
-- **Release boundary:** customer builds and financial writes remain unchanged. Apps Script remains the sole production financial writer. No schema change, migration, deploy, Clasp push, dual write, import or cutover.
-- **Next:** once this slice is green, review the Register screenshots and test the existing search-first, collapsed-filter interaction before deciding whether any further Register changes are needed. Do not duplicate its existing pagination, facets or totals.
+- **PR / branch:** [PR #280](https://github.com/tchouhanjsm/cash-voucher/pull/280), `feat/dashboard-admin-minimal-workspaces-20261108` → `client-main`, based on the merged Register search-first milestone.
+- **Completed screens:** New Entry is simplified in merged PR #278; Register is search-first with collapsed refinements and explicit row status in merged PR #279; this PR consolidates the Today-first Dashboard and compact Users/Audit Log workspaces.
+- **Dashboard:** distinct Payment and Cash received actions, daily cash position and close readiness before historical analysis, two primary movement figures, secondary analytics behind “More financial analysis”, plus recent transactions and existing permission-checked drilldowns.
+- **Administration:** Users search is primary, role/status refinements and Add user are secondary; Audit Log search and CSV export stay primary, with filters/health secondary. Mobile rows retain semantic headers and labels.
+- **Reliability addition:** Audit Log first-page and older-page requests carry a view request identity. A delayed response from a previous visit is ignored after navigation, so it cannot replace the latest loaded rows. Browser E2E exercises the stale-response race with synthetic audit entries.
+- **Financial and access safeguards:** no route, API contract, schema, amount/cash calculation, approval rule, idempotency, offline outbox, audit record, retention rule or authorization check is changed. Dashboard totals stay server-derived and invalid/incomplete data remains fail-closed.
+- **Verification:** the prior PR #280 exact head passed CI, Browser E2E and the Autonomous Development Monitor. The Audit Log stale-response follow-up is being re-run on the new head; do not infer a pass until those exact-head workflows complete. Owner-local Network/Console and Laravel logs remain a separate manual check.
+- **Release boundary:** Apps Script remains the sole production financial writer. No production endpoint switch, schema migration, deploy, Clasp push, dual write, import or cutover.
+- **Next:** complete exact-head verification, then conduct the synthetic-owner local-shadow walkthrough and observe ordinary staff completing Payment, Cash received, Register search and Users/Audit tasks. Record real completion time, hesitation and recoverable errors before claiming usability improvement; no score is assigned from synthetic tests.
+
 
 ---
 
