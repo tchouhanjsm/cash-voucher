@@ -14,7 +14,7 @@ import {
 import { head, icon, refreshBtn } from '../core/ui.js';
 
 export function createDashboard({ api }) {
-  const D = { r: '30d', from: '', to: '', customDraft: false };
+  const D = { r: 'today', from: '', to: '', customDraft: false };
 
   function isStaffWorkspace() {
     return can('viewOwn') && !can('viewAll') && !can('cashClose');
@@ -32,6 +32,17 @@ export function createDashboard({ api }) {
       </div>
       <div class="dashboard-staff-home__actions">${actions}</div>
     </section>`;
+  }
+
+  function dashboardPrimaryActions() {
+    if (!can('create')) return '';
+    return (
+      '<div class="dashboard-primary-actions" role="group" aria-label="Record a new entry">' +
+      '<button type="button" class="btn primary dashboard-primary-action" data-act="ntype" data-k="PAYMENT">' +
+      icon('wallet') + '<span>Record payment</span></button>' +
+      '<button type="button" class="btn dashboard-primary-action" data-act="ntype" data-k="RECEIPT">' +
+      icon('cash') + '<span>Cash received</span></button></div>'
+    );
   }
 
   function appendStaffHomeActions(body) {
@@ -470,15 +481,6 @@ export function createDashboard({ api }) {
 
     const actions = document.createElement('div');
     actions.className = 'page-header-actions';
-    if (can('create') && !staffHome) {
-      const create = document.createElement('button');
-      create.type = 'button';
-      create.className = 'btn primary';
-      create.dataset.act = 'ntype';
-      create.dataset.k = 'PAYMENT';
-      create.textContent = '+ New entry';
-      actions.appendChild(create);
-    }
     const refresh = document.createElement('button');
     refresh.type = 'button';
     refresh.className = 'btn sm';
@@ -490,6 +492,7 @@ export function createDashboard({ api }) {
     const body = document.createElement('div');
     body.className = 'dashboard-body';
     if (staffHome) appendStaffHomeActions(body);
+    else body.insertAdjacentHTML('beforeend', dashboardPrimaryActions());
     const periods = document.createElement('div');
     periods.className = 'seg dashboard-period';
     [
@@ -1302,7 +1305,7 @@ export function createDashboard({ api }) {
       `<div class="dashboard-view">` +
       head(
         staffHome ? 'My day' : can('viewAll') ? 'Dashboard' : 'My Dashboard',
-        `${staffHome ? '' : can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
+        `${refreshBtn}`,
         {
           section: 'Work',
           description: staffHome
