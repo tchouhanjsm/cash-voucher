@@ -737,6 +737,86 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         };
       }
 
+      case 'checkPaymentDuplicates': {
+        const entries = payload.entries;
+        if (!Array.isArray(entries) || entries.length < 1 || entries.length > 100) {
+          throw failure('Check between 1 and 100 entries for possible duplicates.', 'PAYLOAD_INVALID');
+        }
+
+        const results = [];
+        for (let index = 0; index < entries.length; index += 1) {
+          const entry = entries[index];
+          const date = typeof entry?.date === 'string' ? entry.date : '';
+          const vendor = typeof entry?.vendor === 'string' ? entry.vendor.trim() : '';
+          const amount = typeof entry?.amount === 'string' ? entry.amount.trim() : '';
+          const type = entry?.type || 'PAYMENT';
+          const cashImpact = entry?.cashImpact || '';
+          const paymentMethod = entry?.paymentMethod || '';
+          const category = entry?.category || 'Other';
+          const notes = typeof entry?.notes === 'string' ? entry.notes : '';
+          const clientId = typeof entry?.clientId === 'string' ? entry.clientId : '';
+          const vendorId = entry?.vendorId ?? null;
+
+          if (
+            !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+            !vendor ||
+            vendor.length > 200 ||
+            !/^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(amount) ||
+            !['PAYMENT', 'RECEIPT'].includes(type) ||
+            !['CASH_IN', 'CASH_OUT', 'NO_CASH'].includes(cashImpact) ||
+            !['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod) ||
+            typeof category !== 'string' ||
+            category.length > 80 ||
+            notes.length > 500 ||
+            !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(clientId) ||
+            (vendorId !== null &&
+              vendorId !== '' &&
+              (typeof vendorId !== 'string' ||
+                !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+                  vendorId,
+                )))
+          ) {
+            throw failure('An entry is incomplete or invalid. Check its date, payee and amount.', 'PAYLOAD_INVALID');
+          }
+
+          const checked = await mutate('/vouchers/duplicate-check', {
+            date,
+            vendor,
+            vendorId,
+            amount,
+            category,
+            notes,
+            type,
+            cashImpact,
+            paymentMethod,
+            clientId,
+          });
+          if (
+            !checked ||
+            !Array.isArray(checked.matches) ||
+            !Number.isSafeInteger(checked.duplicateCount) ||
+            checked.duplicateCount < 0 ||
+            !Number.isSafeInteger(checked.hiddenCount) ||
+            checked.hiddenCount < 0 ||
+            checked.hiddenCount > checked.duplicateCount ||
+            typeof checked.confirmationToken !== 'string'
+          ) {
+            throw failure('The duplicate-check API returned an invalid response.', 'API_RESPONSE_INVALID');
+          }
+
+          results.push({
+            index,
+            clientId,
+            matches: checked.matches,
+            duplicateCount: checked.duplicateCount,
+            hiddenCount: checked.hiddenCount,
+            confirmationToken: checked.confirmationToken,
+          });
+        }
+
+        return { results };
+      }
+
       case 'entrySuggestions': {
         const vendor = typeof payload.vendor === 'string' ? payload.vendor.trim() : '';
         const type = payload.type || 'PAYMENT';

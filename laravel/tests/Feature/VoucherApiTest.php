@@ -177,6 +177,35 @@ final class VoucherApiTest extends TestCase
             ->assertCreated();
     }
 
+    public function test_duplicate_check_reuses_a_stable_token_for_the_review_window_without_writing(): void
+    {
+        $this->insertVoucherFixture($this->userId, 'Review window supplier', 45000);
+        $payload = $this->validPayload([
+            'vendor' => 'Review window supplier',
+            'amount' => '450.00',
+        ]);
+        $beforeCount = DB::table('vouchers')->count();
+
+        $first = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $payload);
+        $second = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $payload);
+
+        $first->assertOk()->assertJsonPath('data.duplicateCount', 1);
+        $second->assertOk()->assertJsonPath('data.duplicateCount', 1);
+        self::assertNotSame('', $first->json('data.confirmationToken'));
+        self::assertSame(
+            $first->json('data.confirmationToken'),
+            $second->json('data.confirmationToken'),
+            'A stable candidate snapshot must keep one review token throughout its ten-minute window.',
+        );
+        self::assertSame(
+            $beforeCount,
+            DB::table('vouchers')->count(),
+            'Duplicate review must not create or mutate vouchers.',
+        );
+    }
+
     public function test_unregistered_payee_is_recorded_as_one_time_not_unverified(): void
     {
         $name = 'One-time payee '.bin2hex(random_bytes(5));

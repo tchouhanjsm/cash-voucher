@@ -225,6 +225,21 @@ async function run() {
         },
       });
     }
+    if (String(url).endsWith('/vouchers/duplicate-check')) {
+      const body = JSON.parse(options.body || '{}');
+      const matched = body.vendor === 'Matched supplier';
+      return jsonResponse({
+        ok: true,
+        data: {
+          matches: matched
+            ? [{ voucherNo: '208', date: '2026-11-08', vendor: body.vendor, amountPaise: 45000 }]
+            : [],
+          duplicateCount: matched ? 1 : 0,
+          hiddenCount: 0,
+          confirmationToken: matched ? 'opaque-review-token' : '',
+        },
+      });
+    }
     if (String(url).endsWith('/sessions/current')) {
       return jsonResponse({ ok: true, data: { user: { id: 'user-1' }, csrfToken: csrf } });
     }
@@ -417,6 +432,75 @@ async function run() {
   assert.equal(new URL(suggestionsRequest.url).searchParams.get('type'), 'PAYMENT');
   assert.equal(suggestionsRequest.method, 'GET');
 
+  const duplicateReview = await api('checkPaymentDuplicates', {
+    entries: [
+      {
+        clientId: 'duplicate-client-1',
+        date: '2026-11-09',
+        type: 'PAYMENT',
+        vendor: 'Matched supplier',
+        vendorId: null,
+        amount: '450.00',
+        category: 'Other',
+        notes: 'First entry',
+        cashImpact: 'CASH_OUT',
+        paymentMethod: 'UPI',
+      },
+      {
+        clientId: 'duplicate-client-2',
+        date: '2026-11-09',
+        type: 'PAYMENT',
+        vendor: 'New supplier',
+        vendorId: null,
+        amount: '125.50',
+        category: 'Office',
+        notes: '',
+        cashImpact: 'CASH_OUT',
+        paymentMethod: 'CASH',
+      },
+    ],
+  });
+  assert.equal(duplicateReview.results.length, 2);
+  assert.equal(duplicateReview.results[0].index, 0);
+  assert.equal(duplicateReview.results[0].duplicateCount, 1);
+  assert.equal(duplicateReview.results[0].confirmationToken, 'opaque-review-token');
+  assert.equal(duplicateReview.results[0].matches[0].voucherNo, '208');
+  assert.equal(duplicateReview.results[1].duplicateCount, 0);
+  assert.equal(duplicateReview.results[1].confirmationToken, '');
+  const duplicateRequests = requests.filter((request) =>
+    request.url.endsWith('/vouchers/duplicate-check'),
+  );
+  assert.equal(duplicateRequests.length, 2, 'each batch entry is checked against the Laravel history');
+  assert.equal(duplicateRequests[0].method, 'POST');
+  assert.equal(duplicateRequests[0].credentials, 'same-origin');
+  assert.equal(duplicateRequests[0].headers['X-CSRF-Token'], csrf);
+  assert.equal(duplicateRequests[0].headers['Idempotency-Key'], undefined, 'a read-only duplicate check is not a financial write');
+  assert.deepEqual(JSON.parse(duplicateRequests[0].body), {
+    date: '2026-11-09',
+    vendor: 'Matched supplier',
+    vendorId: null,
+    amount: '450.00',
+    category: 'Other',
+    notes: 'First entry',
+    type: 'PAYMENT',
+    cashImpact: 'CASH_OUT',
+    paymentMethod: 'UPI',
+    clientId: 'duplicate-client-1',
+  });
+  const beforeInvalidDuplicate = requests.length;
+  await assert.rejects(
+    () =>
+      api('checkPaymentDuplicates', {
+        entries: [{ clientId: 'invalid', date: 'not-a-date', vendor: '', amount: 0 }],
+      }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  await assert.rejects(
+    () => api('checkPaymentDuplicates', { entries: [] }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  assert.equal(requests.length, beforeInvalidDuplicate, 'invalid duplicate-check input must not reach the server');
+
   const beforeUnsupported = requests.length;
   await assert.rejects(
     () => api('registerPage', { vendor: 'Test supplier', offset: 0, limit: 10 }),
@@ -509,7 +593,7 @@ async function run() {
   assert.match(buildSource, /LARAVEL_API_URL: ""/);
 
   console.log(
-    'Laravel cookie transport OK — same-origin session, vendor and receipt upload/download, receipt IDs, CSRF and idempotency contracts, and fail-closed unsupported writes.',
+    'Laravel cookie transport OK — same-origin session, duplicate review, vendor and receipt upload/download, receipt IDs, CSRF/idempotency contracts, and fail-closed unsupported writes.',
   );
 }
 
