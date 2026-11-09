@@ -39,9 +39,11 @@ export function createDashboard({ api }) {
     return (
       '<div class="dashboard-primary-actions" role="group" aria-label="Record a new entry">' +
       '<button type="button" class="btn primary dashboard-primary-action" data-act="ntype" data-k="PAYMENT">' +
-      icon('wallet') + '<span>Record payment</span></button>' +
+      icon('wallet') +
+      '<span>Record payment</span></button>' +
       '<button type="button" class="btn dashboard-primary-action" data-act="ntype" data-k="RECEIPT">' +
-      icon('cash') + '<span>Cash received</span></button></div>'
+      icon('cash') +
+      '<span>Cash received</span></button></div>'
     );
   }
 
@@ -492,7 +494,6 @@ export function createDashboard({ api }) {
     const body = document.createElement('div');
     body.className = 'dashboard-body';
     if (staffHome) appendStaffHomeActions(body);
-    else body.insertAdjacentHTML('beforeend', dashboardPrimaryActions());
     const periods = document.createElement('div');
     periods.className = 'seg dashboard-period';
     [
