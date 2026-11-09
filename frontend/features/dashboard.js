@@ -14,7 +14,7 @@ import {
 import { head, icon, refreshBtn } from '../core/ui.js';
 
 export function createDashboard({ api }) {
-  const D = { r: '30d', from: '', to: '', customDraft: false };
+  const D = { r: 'today', from: '', to: '', customDraft: false };
 
   function isStaffWorkspace() {
     return can('viewOwn') && !can('viewAll') && !can('cashClose');
@@ -32,6 +32,19 @@ export function createDashboard({ api }) {
       </div>
       <div class="dashboard-staff-home__actions">${actions}</div>
     </section>`;
+  }
+
+  function dashboardPrimaryActions() {
+    if (!can('create')) return '';
+    return (
+      '<div class="dashboard-primary-actions" role="group" aria-label="Record a new entry">' +
+      '<button type="button" class="btn primary dashboard-primary-action" data-act="ntype" data-k="PAYMENT">' +
+      icon('wallet') +
+      '<span>Record payment</span></button>' +
+      '<button type="button" class="btn dashboard-primary-action" data-act="ntype" data-k="RECEIPT">' +
+      icon('cash') +
+      '<span>Cash received</span></button></div>'
+    );
   }
 
   function appendStaffHomeActions(body) {
@@ -470,15 +483,6 @@ export function createDashboard({ api }) {
 
     const actions = document.createElement('div');
     actions.className = 'page-header-actions';
-    if (can('create') && !staffHome) {
-      const create = document.createElement('button');
-      create.type = 'button';
-      create.className = 'btn primary';
-      create.dataset.act = 'ntype';
-      create.dataset.k = 'PAYMENT';
-      create.textContent = '+ New entry';
-      actions.appendChild(create);
-    }
     const refresh = document.createElement('button');
     refresh.type = 'button';
     refresh.className = 'btn sm';
@@ -1198,12 +1202,6 @@ export function createDashboard({ api }) {
         : `<p class="needs-clear">${icon('check')}<span>No dashboard issues need your attention right now. Backup and recovery status are checked separately.</span></p>`
     }</section>`;
 
-    const emptyPeriodActions = can('create')
-      ? `<div class="dashboard-empty-state__actions">
-          <button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">${icon('wallet')}<span>Record a payment</span>${icon('arrow-right')}</button>
-          <button type="button" class="btn" data-act="ntype" data-k="RECEIPT">${icon('cash')}<span>Record a receipt</span>${icon('arrow-right')}</button>
-        </div>`
-      : `<div class="dashboard-empty-state__actions"><button type="button" class="btn primary" data-act="goto" data-k="reg">Open register ${icon('arrow-right')}</button></div>`;
     const emptyNextSteps = can('create')
       ? `<ol class="dashboard-empty-state__steps">
           <li><span class="dashboard-empty-state__step-number" aria-hidden="true">01</span><div><strong>Record the movement</strong><p>Choose Payment out or Cash received.</p></div></li>
@@ -1223,7 +1221,6 @@ export function createDashboard({ api }) {
             <h2 id="dashboardEmptyTitle">No approved payments or recorded receipts for these dates</h2>
             <p class="dashboard-empty-state__copy">No approved payments or recorded receipts are included in the selected period’s totals.</p>
             <p class="dashboard-empty-state__scope">This is a date-filtered summary, not a statement that your full voucher book is empty. Pending or rejected payments remain separate from approved totals.</p>
-            ${emptyPeriodActions}
           </div>
           <aside class="dashboard-empty-state__next" aria-label="What to do next">
             <p class="dashboard-empty-state__next-title">WHAT TO DO NEXT</p>
@@ -1246,37 +1243,153 @@ export function createDashboard({ api }) {
       recentTransactionsCard(recentTransactions, recentTransactionsError, from, to) +
       '</div>';
 
+    const periodScope = D.r === 'today' ? 'today' : 'selected period';
     const financialPanels = periodIsEmpty
-      ? ''
-      : `
-      <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--manager'}">
-        <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Approved payments · period</span><b>${money(total)}</b><small class="dashboard-period-comparison" data-direction="${comparisonDirection}">${esc(comparisonText)}</small>${dashboardDrilldownButton({ key: 'payments-period', target: 'reg', from, to, type: 'PAYMENT', approval: 'APPROVED', label: 'Review approved payments', ariaLabel: 'Open selected-period payment context', className: 'btn sm dashboard-kpi-drilldown' })}</div>
-        <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Approved payment vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small>${dashboardDrilldownButton({ key: 'payment-count', target: 'reg', from, to, type: 'PAYMENT', approval: 'APPROVED', label: 'Review payment records', className: 'btn sm dashboard-kpi-drilldown' })}</div>
-        <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest payment</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small>${dashboardDrilldownButton({ key: 'largest-payment', target: 'reg', from, to, type: 'PAYMENT', approval: 'APPROVED', vendor: typeof summary.largest?.vendor === 'string' ? summary.largest.vendor : '', label: 'View vendor entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>
-        <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Paid today</span><b>${money(summary.todayPaid)}</b><small class="muted">${summary.todayPaymentCount} vouchers</small>${dashboardDrilldownButton({ key: 'paid-today', target: 'reg', from: today(), to: today(), type: 'PAYMENT', approval: 'APPROVED', label: 'View today’s payments', className: 'btn sm dashboard-kpi-drilldown' })}</div>
-        <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Receipts · period</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receiptCount} recorded receipts · all methods</small>${dashboardDrilldownButton({ key: 'receipts-period', target: can('reports') ? 'reports' : 'reg', from, to, type: 'RECEIPT', label: can('reports') ? 'Open receipt report' : 'View receipt entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>
-        ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance · all time</span><b>${money(summary.bookBalance)}</b><small class="muted">Opening balance + active receipts − approved payments; not a physical cash count or bank balance</small>${dashboardDrilldownButton({ key: 'book-balance', target: 'reg', label: 'Review all-time entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>` : ''}
-      </div>
-      ${dashboardWarnings}
-      ${operationsPanels}
-      <div class="dashboard-analysis-grid">
-        <div class="dashboard-analysis-primary">
-      <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend, from, to)}</div>
-      <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors)}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory)}</div></div>
-        </div>
-        <aside class="dashboard-analysis-secondary" aria-label="Payment analysis">
-      <div class="card dashboard-payment-methods"><h2>Approved payments by method</h2><p class="muted">Active approved payments in this period. Historical entries without a saved method appear as Not recorded.</p>${Array.isArray(summary.byPaymentMethod) ? bars(summary.byPaymentMethod, 5) : '<p class="muted">Payment-method breakdown is unavailable for this deployment.</p>'}</div>
-      ${
-        can('viewAll')
-          ? `<div class="card dashboard-team"><h2>By team member</h2>${bars(
-              summary.byTeamMember.map((row) => ({ ...row, k: nm(row.k) })),
-              10,
-            )}</div>`
-          : ''
-      }
-      </aside>
-      </div>
-    `;
+      ? emptyPeriodPanel
+      : `<section class="dashboard-primary-metrics" aria-label="Approved financial movement for the selected period">
+          <article class="dashboard-primary-metric">
+            <div class="dashboard-primary-metric__copy">
+              <span>Approved payments · ${esc(periodScope)}</span>
+              <strong>${money(total)}</strong>
+              <small>${paymentCount} approved payment vouchers</small>
+              <small class="dashboard-period-comparison" data-direction="${esc(comparisonDirection)}">${esc(comparisonText)}</small>
+            </div>
+            ${dashboardDrilldownButton({
+              key: 'payments-period',
+              target: 'reg',
+              from,
+              to,
+              type: 'PAYMENT',
+              approval: 'APPROVED',
+              label: 'View payments',
+              ariaLabel: 'View approved payments for the selected period',
+              className: 'btn sm dashboard-primary-metric__open',
+            })}
+          </article>
+          <article class="dashboard-primary-metric">
+            <div class="dashboard-primary-metric__copy">
+              <span>Receipts · ${esc(periodScope)}</span>
+              <strong class="cash-received-value">${money(received)}</strong>
+              <small>${receiptCount} recorded receipts · all methods</small>
+            </div>
+            ${dashboardDrilldownButton({
+              key: 'receipts-period',
+              target: can('reports') ? 'reports' : 'reg',
+              from,
+              to,
+              type: 'RECEIPT',
+              label: 'View receipts',
+              ariaLabel: 'View receipts for the selected period',
+              className: 'btn sm dashboard-primary-metric__open',
+            })}
+          </article>
+        </section>
+        <details class="dashboard-analysis">
+          <summary><span>More financial analysis</span><span class="dashboard-analysis__hint">Trends and breakdowns</span></summary>
+          <div class="dashboard-analysis__content">
+            <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--manager'}">
+              <div class="card stat">
+                <span class="stat-ic">${icon('receipt')}</span>
+                <span>Approved payment vouchers</span>
+                <b>${paymentCount}</b>
+                <small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small>
+                ${dashboardDrilldownButton({
+                  key: 'payment-count',
+                  target: 'reg',
+                  from,
+                  to,
+                  type: 'PAYMENT',
+                  approval: 'APPROVED',
+                  label: 'Review payment records',
+                  className: 'btn sm dashboard-kpi-drilldown',
+                })}
+              </div>
+              <div class="card stat">
+                <span class="stat-ic">${icon('trend')}</span>
+                <span>Largest payment</span>
+                <b>${money(summary.largest?.amount ?? 0)}</b>
+                <small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small>
+                ${dashboardDrilldownButton({
+                  key: 'largest-payment',
+                  target: 'reg',
+                  from,
+                  to,
+                  type: 'PAYMENT',
+                  approval: 'APPROVED',
+                  vendor: typeof summary.largest?.vendor === 'string' ? summary.largest.vendor : '',
+                  label: 'View vendor entries',
+                  className: 'btn sm dashboard-kpi-drilldown',
+                })}
+              </div>
+              <div class="card stat">
+                <span class="stat-ic">${icon('clock')}</span>
+                <span>Paid today</span>
+                <b>${money(summary.todayPaid)}</b>
+                <small class="muted">${summary.todayPaymentCount} vouchers</small>
+                ${dashboardDrilldownButton({
+                  key: 'paid-today',
+                  target: 'reg',
+                  from: today(),
+                  to: today(),
+                  type: 'PAYMENT',
+                  approval: 'APPROVED',
+                  label: 'View today’s payments',
+                  className: 'btn sm dashboard-kpi-drilldown',
+                })}
+              </div>
+              ${
+                can('viewAll')
+                  ? `<div class="card stat">
+                    <span class="stat-ic">${icon('book')}</span>
+                    <span>Book balance · all time</span>
+                    <b>${money(summary.bookBalance)}</b>
+                    <small class="muted">Opening balance + active receipts − approved payments; not a physical cash count or bank balance</small>
+                    ${dashboardDrilldownButton({
+                      key: 'book-balance',
+                      target: 'reg',
+                      label: 'Review all-time entries',
+                      className: 'btn sm dashboard-kpi-drilldown',
+                    })}
+                  </div>`
+                  : ''
+              }
+            </div>
+            <div class="dashboard-analysis-grid">
+              <div class="dashboard-analysis-primary">
+                <div class="card dashboard-trend">
+                  <h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>
+                  ${trendSvg(summary.trend, from, to)}
+                </div>
+                <div class="two dashboard-breakdowns">
+                  <div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors)}</div>
+                  <div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory)}</div>
+                </div>
+              </div>
+              <aside class="dashboard-analysis-secondary" aria-label="Payment analysis">
+                <div class="card dashboard-payment-methods">
+                  <h2>Approved payments by method</h2>
+                  <p class="muted">Active approved payments in this period. Historical entries without a saved method appear as Not recorded.</p>
+                  ${
+                    Array.isArray(summary.byPaymentMethod)
+                      ? bars(summary.byPaymentMethod, 5)
+                      : '<p class="muted">Payment-method breakdown is unavailable for this deployment.</p>'
+                  }
+                </div>
+                ${
+                  can('viewAll')
+                    ? `<div class="card dashboard-team">
+                        <h2>By team member</h2>
+                        ${bars(
+                          summary.byTeamMember.map((row) => ({ ...row, k: nm(row.k) })),
+                          10,
+                        )}
+                      </div>`
+                    : ''
+                }
+              </aside>
+            </div>
+          </div>
+        </details>`;
 
     const staffDashboardWarnings = malformedFieldCount
       ? `<p class="muted" role="status" aria-live="polite">${malformedFieldCount} voucher detail(s) were handled safely and may need review.</p>`
@@ -1288,28 +1401,23 @@ export function createDashboard({ api }) {
           staffDashboardWarnings,
           recentTransactionsCard(recentTransactions, recentTransactionsError, from, to, true),
         ].join('')
-      : periodIsEmpty
-        ? [
-            needsAttention,
-            periodControls(from, to),
-            emptyPeriodPanel,
-            dashboardWarnings,
-            operationsPanels,
-          ].join('')
-        : [needsAttention, periodControls(from, to), financialPanels].join('');
+      : [
+          dashboardPrimaryActions(),
+          operationsPanels,
+          needsAttention,
+          dashboardWarnings,
+          periodControls(from, to),
+          financialPanels,
+        ].join('');
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +
-      head(
-        staffHome ? 'My day' : can('viewAll') ? 'Dashboard' : 'My Dashboard',
-        `${staffHome ? '' : can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
-        {
-          section: 'Work',
-          description: staffHome
-            ? 'Record a payment or cash received, then check your recent entries.'
-            : 'Review approved movement, today’s drawer position and the actions that need attention.',
-        },
-      ) +
+      head(staffHome ? 'My day' : can('viewAll') ? 'Dashboard' : 'My Dashboard', `${refreshBtn}`, {
+        section: 'Work',
+        description: staffHome
+          ? 'Record a payment or cash received, then check your recent entries.'
+          : 'Review approved movement, today’s drawer position and the actions that need attention.',
+      }) +
       `<div class="dashboard-body">${dashboardContent}</div></div>`;
   }
 

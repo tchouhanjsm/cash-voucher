@@ -166,7 +166,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v59'/,
+  /const C = 'cv2-v60'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -495,6 +495,39 @@ assert.match(
   'recent activity uses the server-paginated register read model',
 );
 assert.match(dashboard, /\['today', 'Today'\]/, 'Today is available as a dashboard period preset');
+
+assert.match(dashboard, /const D = \{ r: 'today'/, 'Dashboard opens on the current business day');
+assert.match(
+  dashboard,
+  /function dashboardPrimaryActions\(\)/,
+  'management Dashboard exposes one shared pair of entry actions',
+);
+assert.match(
+  dashboard,
+  /dashboard-primary-action[\s\S]*?data-k="PAYMENT"[\s\S]*?data-k="RECEIPT"/,
+  'primary actions distinguish Payment from Cash received',
+);
+assert.match(
+  dashboard,
+  /dashboard-primary-metrics/,
+  'Dashboard presents approved payments and receipts as primary movement measures',
+);
+assert.match(
+  dashboard,
+  /<details class="dashboard-analysis"/,
+  'secondary financial analysis is progressively disclosed with native details',
+);
+assert.match(
+  dashboard,
+  /More financial analysis/,
+  'secondary analytics disclosure has a clear label',
+);
+assert.match(
+  dashboard,
+  /dashboardCashPositionTitle/,
+  'physical drawer cash remains a separate server-calculated measure',
+);
+
 assert.match(
   dashboard,
   /percentage omitted for a small baseline/,
@@ -502,6 +535,37 @@ assert.match(
 );
 assert.match(dashboard, /summary\.trend/, 'trend data remains API-derived');
 assert.match(dashboard, /summary\.topVendors/, 'vendor breakdown remains API-derived');
+
+assert.match(
+  styles,
+  /\.dashboard-primary-actions/,
+  'Dashboard has one shared primary-action group',
+);
+assert.match(
+  styles,
+  /\.dashboard-primary-action\s*\{[^}]*min-height:\s*48px/s,
+  'Dashboard entry actions retain a comfortable touch target',
+);
+assert.match(
+  styles,
+  /\.dashboard-primary-metrics\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s,
+  'primary financial movement uses a calm two-column desktop layout',
+);
+assert.match(
+  styles,
+  /\.dashboard-analysis > summary\s*\{[^}]*min-height:\s*48px/s,
+  'secondary dashboard analysis has an accessible disclosure target',
+);
+assert.match(
+  styles,
+  /\.dashboard-analysis > summary:focus-visible/,
+  'secondary analysis disclosure has a visible keyboard focus state',
+);
+assert.match(
+  styles,
+  /@media screen and \(max-width: 560px\)[\s\S]*?\.dashboard-primary-metrics\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s,
+  'primary financial movement stacks cleanly on narrow screens',
+);
 assert.match(
   dashboard,
   /dashboard-trend__gridline/,
@@ -538,6 +602,84 @@ assert.match(
   /No change vs previous/,
   'flat period comparisons are not presented as downward movement',
 );
+
+assert.match(
+  administration,
+  /users-list-toolbar[\s\S]*?users-search[\s\S]*?users-filter-details/,
+  'Users opens with contextual search and secondary role/status filters',
+);
+assert.match(
+  administration,
+  /data-user-search="[\s\S]*?data-user-role="[\s\S]*?data-user-status="/,
+  'user list filters operate on escaped fields from the authorized result set',
+);
+assert.match(
+  administration,
+  /<td data-label="Name">[\s\S]*?<td data-label="Email">[\s\S]*?<td data-label="Role">[\s\S]*?<td data-label="Status">[\s\S]*?<td data-label="Actions"/,
+  'Users table rows carry explicit mobile labels for every data and action column',
+);
+assert.match(
+  administration,
+  /label: 'When'[\s\S]*?label: 'User'[\s\S]*?label: 'Action'[\s\S]*?label: 'Target'[\s\S]*?label: 'Details'/,
+  'Audit Log renderer adds explicit mobile labels without changing event values',
+);
+assert.match(
+  administration,
+  /<details class="users-add-details">/,
+  'Add user is available as a secondary disclosure without removing the workflow',
+);
+assert.match(
+  administration,
+  /data-act="usersclear"/,
+  'Users exposes a visible one-step filter reset action',
+);
+assert.match(
+  administration,
+  /function clearUserFilters\(\)[\s\S]*?query: '', role: 'ALL', status: 'ALL'[\s\S]*?syncUserFilters\(\)[\s\S]*?search\?\.focus\(\)/,
+  'clearing Users filters resets search, role and status and returns focus to search',
+);
+assert.match(
+  administration,
+  /<div class="audit-primary-tools"[\s\S]*?id="aud-q"[\s\S]*?data-act="audcsv"/,
+  'Audit Log keeps search and CSV export in its primary toolbar',
+);
+assert.match(
+  administration,
+  /<details class="audit-filter-details" id="auditFilters">[\s\S]*?aud-user[\s\S]*?aud-action[\s\S]*?audhealth/,
+  'Audit Log refinements and technical health export are grouped under Filters',
+);
+assert.match(
+  administration,
+  /Load older adds earlier events; search, filters and CSV export apply to loaded pages only/i,
+  'Audit Log retains its pagination/export scope disclosure',
+);
+assert.match(
+  administration,
+  /let auditRequestId = 0/,
+  'Audit Log gives each view load a monotonic request identity',
+);
+assert.match(
+  administration,
+  /\.then\(\(page\) => \{\s*if \(requestId !== auditRequestId \|\| S\.view !== 'audit'\) return;/,
+  'a late first-page response cannot overwrite a newer Audit Log view',
+);
+assert.match(
+  administration,
+  /const requestId = auditRequestId;[\s\S]*?if \(requestId !== auditRequestId \|\| S\.view !== 'audit'\) return;/,
+  'older-page pagination is cancelled from the current view when navigation changes',
+);
+for (const selector of [
+  '.users-list-toolbar',
+  '.users-filter-details',
+  '.users-filter-actions',
+  '.users-add-details',
+  '.audit-primary-tools',
+  '.audit-filter-details',
+  '.management-results-card tbody td::before',
+  '.audit-panel tbody td::before',
+]) {
+  assert.ok(styles.includes(selector), 'minimal workspace styling covers ' + selector);
+}
 
 console.log(
   'TailAdmin-inspired workspace OK — local design layer, responsive states, data integrity and PWA integration.',

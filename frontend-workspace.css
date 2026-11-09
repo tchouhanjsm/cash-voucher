@@ -1496,7 +1496,7 @@
       grid-template-columns: minmax(0, 1fr);
     }
     .dashboard-analysis-secondary {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       align-items: start;
     }
     #nf[data-workspace='entry-form-workspace'] {
@@ -3682,5 +3682,547 @@
   #nf[data-workspace='entry-form-workspace'] .erow .entry-amount-field input {
     min-height: 56px;
     font-size: 22px;
+  }
+}
+
+/* Dashboard daily workspace — prioritize today's work and disclose secondary analysis. */
+@media screen {
+  .dashboard-primary-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 0 2px;
+  }
+
+  .dashboard-primary-action {
+    display: flex;
+    min-width: 0;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 11px 14px;
+    font-size: 13px;
+    font-weight: 760;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .dashboard-primary-action .i {
+    flex: 0 0 auto;
+  }
+
+  .dashboard-primary-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+  }
+
+  .dashboard-primary-metric {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 17px 18px;
+    border: 1px solid var(--workspace-border);
+    border-radius: var(--workspace-radius);
+    background: var(--workspace-surface);
+    box-shadow: none;
+  }
+
+  .dashboard-primary-metric__copy {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .dashboard-primary-metric__copy > span {
+    color: var(--workspace-muted);
+    font-size: 10px;
+    font-weight: 820;
+    letter-spacing: 0.075em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .dashboard-primary-metric__copy > strong {
+    color: var(--workspace-ink);
+    font-size: clamp(22px, 2vw, 30px);
+    font-weight: 810;
+    letter-spacing: -0.05em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-primary-metric__copy > small {
+    color: var(--workspace-muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .dashboard-primary-metric__open {
+    min-height: 44px;
+    align-self: center;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+
+  .dashboard-analysis {
+    min-width: 0;
+    border: 1px solid var(--workspace-border);
+    border-radius: var(--workspace-radius);
+    background: var(--workspace-surface);
+  }
+
+  .dashboard-analysis > summary {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 16px;
+    color: var(--workspace-ink);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 760;
+    list-style-position: inside;
+  }
+
+  .dashboard-analysis > summary:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: var(--workspace-radius);
+  }
+
+  .dashboard-analysis[open] > summary {
+    border-bottom: 1px solid var(--workspace-border);
+  }
+
+  .dashboard-analysis__hint {
+    color: var(--workspace-muted);
+    font-size: 11px;
+    font-weight: 500;
+    text-align: right;
+  }
+
+  .dashboard-analysis__content {
+    display: grid;
+    min-width: 0;
+    gap: 14px;
+    padding: 15px;
+  }
+
+  .dashboard-analysis__content > * {
+    min-width: 0;
+  }
+
+  .dashboard-analysis .dashboard-stats--owner {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dashboard-analysis .dashboard-stats--manager {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-analysis .dashboard-stats > .stat {
+    min-width: 0;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .dashboard-analysis .dashboard-stats--owner,
+  .dashboard-analysis .dashboard-stats--manager {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-analysis .dashboard-analysis-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media screen and (max-width: 560px) {
+  .dashboard-primary-actions {
+    gap: 8px;
+  }
+
+  .dashboard-primary-action {
+    min-height: 48px;
+    gap: 7px;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .dashboard-primary-metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .dashboard-primary-metric {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 14px;
+  }
+
+  .dashboard-primary-metric__open {
+    font-size: 11px;
+  }
+
+  .dashboard-analysis > summary {
+    min-height: 48px;
+    padding: 11px 12px;
+  }
+
+  .dashboard-analysis__content {
+    padding: 11px;
+  }
+
+  .dashboard-analysis .dashboard-stats--owner,
+  .dashboard-analysis .dashboard-stats--manager {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Novice-first Dashboard and administration workspaces. */
+@media screen {
+  .app #view .dashboard-view > .page-header .page-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .app #view .dashboard-view > .page-header .page-header-actions > .btn {
+    min-height: 44px;
+  }
+  .app #view .dashboard-analysis-disclosure,
+  .app #view .users-filter-details,
+  .app #view .users-add-details,
+  .app #view .audit-filter-details {
+    min-width: 0;
+    border: 1px solid var(--workspace-border);
+    border-radius: 12px;
+    background: var(--workspace-surface);
+  }
+  .app #view .dashboard-analysis-disclosure > summary,
+  .app #view .users-filter-details > summary,
+  .app #view .users-add-details > summary,
+  .app #view .audit-filter-details > summary {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 14px;
+    color: var(--workspace-ink);
+    font-size: 13px;
+    font-weight: 760;
+    cursor: pointer;
+    list-style-position: inside;
+  }
+  .app #view .dashboard-analysis-disclosure > summary:focus-visible,
+  .app #view .users-filter-details > summary:focus-visible,
+  .app #view .users-add-details > summary:focus-visible,
+  .app #view .audit-filter-details > summary:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+  .app #view .dashboard-analysis-disclosure > summary span,
+  .app #view .users-add-details > summary span,
+  .app #view .users-filter-details > summary span,
+  .app #view .audit-filter-details > summary span {
+    color: var(--workspace-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: right;
+  }
+  .app #view .dashboard-analysis-disclosure[open] > summary,
+  .app #view .users-filter-details[open] > summary,
+  .app #view .users-add-details[open] > summary,
+  .app #view .audit-filter-details[open] > summary {
+    border-bottom: 1px solid var(--workspace-border);
+  }
+  .app #view .dashboard-analysis-disclosure__content {
+    padding: 14px;
+  }
+  .app #view .users-workspace {
+    display: grid;
+    min-width: 0;
+    gap: 10px;
+  }
+  .app #view .users-list-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+    align-items: end;
+    gap: 12px;
+  }
+  .app #view .users-search-field,
+  .app #view .audit-search-field {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    font-weight: 720;
+  }
+  .app #view .users-search-field input,
+  .app #view .audit-search-field input {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-surface);
+    color: var(--workspace-ink);
+    box-shadow: none;
+  }
+  .app #view .users-filter-details {
+    align-self: stretch;
+  }
+  .app #view .users-filter-details[open] {
+    position: relative;
+    z-index: 2;
+  }
+  .app #view .users-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 12px 14px 14px;
+  }
+  .app #view .users-filter-grid label {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .app #view .users-filter-actions {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid var(--workspace-border);
+  }
+  .app #view .users-filter-actions > .btn {
+    min-height: 44px;
+  }
+  .app #view .users-filter-grid select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 9px;
+    background: var(--workspace-surface);
+    color: var(--workspace-ink);
+  }
+  .app #view .users-result-count {
+    margin: 0;
+    color: var(--workspace-muted);
+    font-size: 12px;
+  }
+  .app #view .users-filter-empty {
+    margin: 0;
+    padding: 18px;
+    border: 1px dashed var(--workspace-border);
+    border-radius: 10px;
+    text-align: center;
+  }
+  .app #view .users-add-details {
+    margin-top: 4px;
+    padding: 0;
+  }
+  .app #view .users-add-details > .form-panel {
+    margin: 12px;
+  }
+  .app #view .management-results-card {
+    margin-top: 0;
+  }
+  .app #view .audit-panel {
+    gap: 12px;
+  }
+  .app #view .audit-primary-tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+  }
+  .app #view .audit-primary-tools > .btn {
+    min-height: 48px;
+  }
+  .app #view .audit-filter-details > #aud-health {
+    margin: 12px 14px 0;
+  }
+  .app #view .audit-filter-details .audit-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+    margin: 0;
+    padding: 12px 14px 14px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .app #view .audit-filter-actions {
+    display: flex;
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--workspace-border);
+  }
+  .app #view .audit-filter-actions > .btn {
+    min-height: 44px;
+  }
+}
+
+@media screen and (max-width: 560px) {
+  .app #view .dashboard-view > .page-header .page-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .app #view .dashboard-view > .page-header .page-header-actions > .btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .app #view .dashboard-view > .page-header .page-header-actions > .btn:last-child {
+    grid-column: 1 / -1;
+  }
+  .app #view .users-list-toolbar,
+  .app #view .audit-primary-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .users-filter-grid,
+  .app #view .audit-filter-details .audit-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .users-filter-actions > .btn {
+    width: 100%;
+  }
+  .app #view .audit-primary-tools > .btn {
+    width: 100%;
+  }
+  .app #view .audit-filter-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .audit-filter-actions > .btn {
+    width: 100%;
+  }
+  .app #view .dashboard-analysis-disclosure__content {
+    padding: 10px;
+  }
+}
+
+/* Admin tables become labelled records rather than horizontally clipped grids on phones. */
+@media screen and (max-width: 560px) {
+  .app #view .management-results-card .table-wrap,
+  .app #view .audit-panel .table-wrap {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app #view .management-results-card table,
+  .app #view .audit-panel table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .app #view .management-results-card thead,
+  .app #view .audit-panel thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .app #view .management-results-card tbody,
+  .app #view .audit-panel tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .app #view .management-results-card tbody tr,
+  .app #view .audit-panel tbody tr {
+    display: grid;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-surface);
+  }
+
+  .app #view .management-results-card tbody tr[hidden] {
+    display: none;
+  }
+
+  .app #view .management-results-card tbody td,
+  .app #view .audit-panel tbody td {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--workspace-border);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .app #view .management-results-card tbody td::before,
+  .app #view .audit-panel tbody td::before {
+    content: attr(data-label);
+    color: var(--workspace-muted);
+    font-size: 10px;
+    font-weight: 760;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .app #view .management-results-card tbody td:last-child,
+  .app #view .audit-panel tbody td:last-child {
+    border-bottom: 0;
+  }
+
+  .app #view .management-results-card tbody td[data-label='Actions'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app #view .management-results-card tbody td[data-label='Actions'] > button {
+    min-height: 40px;
+    justify-self: start;
+  }
+
+  .app #view .management-results-card tbody td[data-label='Role'] select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .app #view .management-results-card tbody td[colspan],
+  .app #view .audit-panel tbody td[colspan] {
+    display: block;
+    grid-column: 1 / -1;
+  }
+
+  .app #view .management-results-card tbody td[colspan]::before,
+  .app #view .audit-panel tbody td[colspan]::before {
+    content: none;
   }
 }

@@ -69,6 +69,16 @@ def click_with_draft_discard(page, button):
         page.remove_listener('dialog', handle_dialog)
 
 
+def open_disclosure(page, selector):
+    disclosure = page.locator(selector)
+    if disclosure.count() != 1:
+        raise AssertionError(f'Expected one disclosure for {selector!r}, found {disclosure.count()}.')
+    if not disclosure.evaluate('(element) => element.open'):
+        disclosure.locator('summary').click()
+    if not disclosure.evaluate('(element) => element.open'):
+        raise AssertionError(f'Disclosure {selector!r} did not open after activating its summary.')
+
+
 def go_view(page, view):
     """Navigate through the visible mobile shortcut or the accessible More sheet."""
     shortcut = page.locator(f'#nav [data-v="{view}"]')
@@ -630,16 +640,16 @@ with sync_playwright() as p:
             'empty approved-activity period does not present zero KPIs and empty analytics as useful metrics',
         )
         check(
-            page.locator('.dashboard-empty-state [data-act=ntype][data-k="PAYMENT"]').count() == 1
-            and page.locator('.dashboard-empty-state [data-act=ntype][data-k="RECEIPT"]').count() == 1,
+            page.locator('.dashboard-primary-actions [data-act=ntype][data-k="PAYMENT"]').count() == 1
+            and page.locator('.dashboard-primary-actions [data-act=ntype][data-k="RECEIPT"]').count() == 1,
             'create-permitted owner receives direct payment and receipt actions',
         )
-        page.click('.dashboard-empty-state [data-act=ntype][data-k="RECEIPT"]')
+        page.click('.dashboard-primary-actions [data-act=ntype][data-k="RECEIPT"]')
         page.wait_for_selector('#nf.entry-form')
         check(
             page.locator('#view .page-header h1').inner_text() == 'Cash Received'
             and page.locator('.entry-type-switch button[data-k="RECEIPT"].on').count() == 1,
-            'empty-state receipt action opens the correctly selected Cash Received workflow',
+            'primary Cash received action opens the correctly selected Cash Received workflow',
         )
     finally:
         page.unroute('**/api?*', inject_empty_dashboard_summary)
@@ -647,11 +657,11 @@ with sync_playwright() as p:
     go_view(page, 'dash')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included') || "
-        "document.querySelector('#view')?.innerText.includes('Spending trend')"
+        "document.querySelector('#view')?.querySelector('.dashboard-primary-metrics') !== null"
     )
     check(
         page.locator('#view .page-header h1').inner_text() == 'Dashboard'
-        and page.locator('#view .dashboard-empty-state, #view .dashboard-trend').count() == 1,
+        and page.locator('#view .dashboard-empty-state, #view .dashboard-primary-metrics').count() == 1,
         'dashboard recovers after the controlled empty-summary response is removed',
     )
 
@@ -704,6 +714,7 @@ with sync_playwright() as p:
     ]:
         comparison_case = case
         page.click('[data-act=range][data-k="7d"]')
+        page.locator('.dashboard-analysis > summary').click()
         page.wait_for_function(
             "direction => document.querySelector('.dashboard-period-comparison')?.dataset.direction === direction",
             arg=case['direction'],
@@ -787,6 +798,11 @@ with sync_playwright() as p:
     )
     comparison_case = {'paid': 1250, 'previousPaid': 1000}
     page.click('[data-act=range][data-k="7d"]')
+    check(
+        not page.locator('.dashboard-analysis').evaluate('(element) => element.open'),
+        'Dashboard period analysis stays collapsed until requested',
+    )
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.dashboard-trend-chart', state='visible')
     page.unroute('**/api?*', inject_dashboard_comparison)
 
@@ -1074,7 +1090,7 @@ with sync_playwright() as p:
         ('cash-close', 'cashClose', '.cc-controls'),
         ('bulk-upload', 'bulk', '#bt'),
         ('vendors', 'vend', '#vf'),
-        ('users', 'users', '#uf'),
+        ('users', 'users', '#users-search'),
         ('settings', 'set', '#sf'),
         ('audit', 'audit', '.audit-panel'),
         ('account', 'acct', '#pf'),
@@ -1124,6 +1140,11 @@ with sync_playwright() as p:
         route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
 
     page.route('**/api?*', inject_visual_dashboard_summary)
+    # Login already lands on Dashboard. Move to Register first so the first
+    # Dashboard item below is a real route transition and its focus assertion
+    # measures navigation behavior rather than the browser's initial state.
+    go_view(page, 'reg')
+    page.wait_for_selector('#rf', state='visible', timeout=10000)
     visual_widths = [320, 360, 390, 440, 441, 768, 800, 801, 1024, 1100, 1101, 1280, 1440]
     for route_name, route_id, ready_selector in visual_routes:
         if route_id == 'acct':
@@ -1132,46 +1153,64 @@ with sync_playwright() as p:
         else:
             go_view(page, route_id)
         page.wait_for_selector(ready_selector, state='visible', timeout=10000)
-        if route_id == 'dash':
-            page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
-            chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
-                role: svg.getAttribute('role'),
-                title: svg.querySelector('title')?.textContent || '',
-                description: svg.querySelector('desc')?.textContent || '',
-                labelledBy: svg.getAttribute('aria-labelledby') || '',
-                pointCount: svg.querySelectorAll('.dashboard-trend__point').length,
-                guideCount: svg.querySelectorAll('.dashboard-trend__gridline').length,
-                hasArea: Boolean(svg.querySelector('.dashboard-trend__area[d]')),
-                hasLine: Boolean(svg.querySelector('.dashboard-trend__line[d]')),
-                viewBox: svg.getAttribute('viewBox') || '',
-                pointBuckets: Number(svg.dataset.chartPoints || 0),
-            })""")
-            check(
-                chart_metrics['role'] == 'img'
-                and chart_metrics['title'] == 'Approved payment trend'
-                and chart_metrics['description']
-                and chart_metrics['labelledBy'] == 'dashboardTrendChartTitle dashboardTrendChartDescription'
-                and chart_metrics['hasArea'] and chart_metrics['hasLine']
-                and chart_metrics['pointCount'] == chart_metrics['pointBuckets']
-                and chart_metrics['pointBuckets'] > 0
-                and chart_metrics['guideCount'] >= 1
-                and chart_metrics['viewBox'] == '0 0 920 260',
-                f'dashboard trend is a responsive, titled SVG with exact-value points; metrics={chart_metrics}',
-            )
         page.wait_for_selector('#view .page-header h1', state='visible', timeout=10000)
         check(
             page.locator('#view .page-header h1').count() == 1
             and page.locator('#view .page-header h1').inner_text().strip() != '',
             f'{route_name}: one non-empty shared page heading is rendered',
         )
-        page.wait_for_function(
-            "document.activeElement === document.querySelector('#view .page-header h1')",
-            timeout=2000,
-        )
-        check(
-            page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
-            f'{route_name}: route navigation places focus on the destination heading',
-        )
+        if route_id == 'new':
+            page.wait_for_function(
+                "document.activeElement === document.querySelector('#rows .erow .rv')",
+                timeout=5000,
+            )
+            check(
+                page.evaluate("document.activeElement === document.querySelector('#rows .erow .rv')"),
+                'New Entry opens with focus on the first vendor/payee field',
+            )
+        else:
+            page.wait_for_function(
+                "document.activeElement === document.querySelector('#view .page-header h1')",
+                timeout=10000,
+            )
+            check(
+                page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
+                f'{route_name}: route navigation places focus on the destination heading',
+            )
+        if route_id == 'dash':
+            analysis_disclosure = page.locator('.dashboard-analysis')
+            if analysis_disclosure.count() == 1:
+                open_disclosure(page, '.dashboard-analysis')
+                page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
+                chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
+                    role: svg.getAttribute('role'),
+                    title: svg.querySelector('title')?.textContent || '',
+                    description: svg.querySelector('desc')?.textContent || '',
+                    labelledBy: svg.getAttribute('aria-labelledby') || '',
+                    pointCount: svg.querySelectorAll('.dashboard-trend__point').length,
+                    guideCount: svg.querySelectorAll('.dashboard-trend__gridline').length,
+                    hasArea: Boolean(svg.querySelector('.dashboard-trend__area[d]')),
+                    hasLine: Boolean(svg.querySelector('.dashboard-trend__line[d]')),
+                    viewBox: svg.getAttribute('viewBox') || '',
+                    pointBuckets: Number(svg.dataset.chartPoints || 0),
+                })""")
+                check(
+                    chart_metrics['role'] == 'img'
+                    and chart_metrics['title'] == 'Approved payment trend'
+                    and chart_metrics['description']
+                    and chart_metrics['labelledBy'] == 'dashboardTrendChartTitle dashboardTrendChartDescription'
+                    and chart_metrics['hasArea'] and chart_metrics['hasLine']
+                    and chart_metrics['pointCount'] == chart_metrics['pointBuckets']
+                    and chart_metrics['pointBuckets'] > 0
+                    and chart_metrics['guideCount'] >= 1
+                    and chart_metrics['viewBox'] == '0 0 920 260',
+                    f'dashboard trend is a responsive, titled SVG with exact-value points; metrics={chart_metrics}',
+                )
+            else:
+                check(
+                    analysis_disclosure.count() == 0,
+                    'Dashboard omits period analysis when the current role/state has no authorized analysis model',
+                )
 
         if route_id == 'new':
             # Synthetic fixture is applied after the destination focus assertion.
@@ -1358,11 +1397,11 @@ with sync_playwright() as p:
                 )
                 if route_id == 'dash':
                     dashboard_metrics = layout['dashboardStatMetrics']
-                    expected_columns = 3 if width >= 801 else 2
+                    expected_columns = 1 if width <= 560 else 2 if width <= 900 else 4
                     check(
                         dashboard_metrics is not None
                         and dashboard_metrics['role'] == 'owner'
-                        and dashboard_metrics['cardCount'] == 6
+                        and dashboard_metrics['cardCount'] == 4
                         and dashboard_metrics['columns'] == expected_columns,
                         f'owner dashboard KPI grid matches the role and breakpoint contract at {width}px in {theme_name} theme; metrics={dashboard_metrics}',
                     )
@@ -1380,14 +1419,27 @@ with sync_playwright() as p:
                     f'{route_name}: visible form controls remain at least 40px high at {width}px in {theme_name} theme; found {layout["tooShortControls"]}',
                 )
                 if width in (390, 1280):
+                    if route_id == 'dash':
+                        page.locator('.dashboard-analysis > summary').click()
                     screenshot_name = f'{route_name}-{theme_name}-{width}.png'
                     # A previous transient toast should not obscure the review artifact.
                     page.locator('#toast').evaluate("element => element.classList.add('hidden')")
+                    page.evaluate("""() => {
+                        window.scrollTo({top: 0, left: 0, behavior: 'instant'});
+                        document.documentElement.scrollTop = 0;
+                        document.body.scrollTop = 0;
+                    }""")
+                    check(
+                        page.evaluate('window.scrollY === 0'),
+                        f'{route_name}: visual capture starts at the top of the workspace',
+                    )
                     page.screenshot(
                         path=os.path.join(visual_matrix_dir, screenshot_name),
                         full_page=width == 1280,
                         animations='disabled',
                     )
+                    if route_id == 'dash':
+                        page.locator('.dashboard-analysis > summary').click()
 
     page.unroute('**/api?*', inject_visual_dashboard_summary)
 
@@ -1716,8 +1768,11 @@ with sync_playwright() as p:
     page.wait_for_selector('#view .daily-close-readiness')
 
     check(
-        page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
-        'Dashboard exposes the create-permitted primary action in its page header',
+        page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').is_visible()
+        and page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').inner_text() == 'Record payment'
+        and page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').is_visible()
+        and page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').inner_text() == 'Cash received',
+        'Dashboard exposes distinct payment and cash-received actions in its page header',
     )
     check(
         page.locator('[data-v=dash]').get_attribute('aria-current') == 'page',
@@ -2097,7 +2152,7 @@ with sync_playwright() as p:
     })""")
 
     go_view(page, 'users')
-    page.wait_for_selector('#uf')
+    page.wait_for_selector('#uf', state='attached')
     user_label_metrics = page.locator('#uf').evaluate("""(form) => {
         const controls = [...form.querySelectorAll('input, select, textarea')].map((field) => ({
             id: field.id,
@@ -2128,8 +2183,10 @@ with sync_playwright() as p:
     check(
         page.locator('#uf').evaluate("(form) => form.parentElement.classList.contains('form-panel')")
         and page.locator('#view .table-wrap[role=region]').count() == 1
-        and page.locator('#view table caption').inner_text() == 'Saved users',
-        'user administration uses the shared form panel and accessible table shell',
+        and page.locator('#view table caption').inner_text() == 'Saved users'
+        and page.locator('#users-search').is_visible()
+        and not page.locator('.users-add-details').evaluate('(element) => element.open'),
+        'Users opens on a searchable list while Add user stays a secondary disclosure',
     )
     check(
         page.locator('#nav [data-v=users]').get_attribute('aria-current') == 'page'
@@ -2143,6 +2200,7 @@ with sync_playwright() as p:
         ('Nina Accountant', 'accountant@test.com', 'accountant', 'Account#Start2026'),
         ('Approval Manager', 'approval-manager@test.com', 'manager', 'Lock#Start2026'),
     ]):
+        open_disclosure(page, '.users-add-details')
         page.fill('#un', name)
         page.fill('#ue', email)
         page.select_option('#ur', role)
@@ -2183,6 +2241,64 @@ with sync_playwright() as p:
             )
             raise
     check(page.locator('#view tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
+    page.set_viewport_size({'width': 390, 'height': 800})
+    user_mobile_metrics = page.locator('.management-results-card .table-wrap').evaluate("""wrap => ({
+        clientWidth: wrap.clientWidth,
+        scrollWidth: wrap.scrollWidth,
+        labelledCells: [...wrap.querySelectorAll('tbody tr[data-user-search] td')].every(cell => Boolean(cell.dataset.label)),
+        headersPresent: Boolean(wrap.querySelector('thead th')),
+    })""")
+    check(
+        user_mobile_metrics['scrollWidth'] <= user_mobile_metrics['clientWidth'] + 1
+        and user_mobile_metrics['labelledCells']
+        and user_mobile_metrics['headersPresent'],
+        f'Users mobile rows expose labelled status/actions without horizontal table overflow; metrics={user_mobile_metrics}',
+    )
+    page.fill('#users-search', 'nina accountant')
+    mobile_filtered_rows = page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count()
+    mobile_hidden_rows = page.locator('.management-results-card tbody tr[data-user-search][hidden]').evaluate_all(
+        '(rows) => rows.every((row) => getComputedStyle(row).display === "none")'
+    )
+    check(
+        mobile_filtered_rows == 1 and mobile_hidden_rows,
+        'Users search continues hiding non-matching stacked rows on mobile',
+    )
+    page.fill('#users-search', '')
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.fill('#users-search', 'nina accountant')
+    check(
+        page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 1
+        and 'Nina Accountant' in page.locator('.management-results-card tbody').inner_text()
+        and 'Mona' not in page.locator('.management-results-card tbody').inner_text(),
+        'Users search narrows the current authorized list by name and email',
+    )
+    page.fill('#users-search', 'no matching user')
+    check(
+        page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 0
+        and page.locator('#users-filter-empty').is_visible()
+        and 'No users match this search' in page.locator('#users-filter-empty').inner_text(),
+        'Users distinguishes an empty search result from an empty authorized user list',
+    )
+    page.fill('#users-search', '')
+    open_disclosure(page, '#users-filter-details')
+    page.select_option('#users-filter-role', 'accountant')
+    check(
+        page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 1
+        and page.locator('#users-filter-summary').inner_text() == '1 active',
+        'Users role refinement reports its active state and filters without changing records',
+    )
+    page.click('#users-filter-details [data-act=usersclear]')
+    check(
+        page.locator('#users-search').input_value() == ''
+        and page.locator('#users-filter-role').input_value() == 'ALL'
+        and page.locator('#users-filter-status').input_value() == 'ALL'
+        and page.locator('#users-filter-summary').inner_text() == 'None active'
+        and not page.locator('#users-filter-details').evaluate('(element) => element.open')
+        and page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 5
+        and page.evaluate("document.activeElement === document.querySelector('#users-search')"),
+        'Clear filters resets Users search, role and status, closes refinements and restores focus to search',
+    )
+    page.locator('#users-filter-details > summary').click()
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.
     go_view(page, 'new')
@@ -2657,8 +2773,26 @@ with sync_playwright() as p:
         }
         route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
 
+    page.evaluate(
+        """async () => {
+            const { S } = await import('/frontend/core/state.js');
+            window.__dashboardOriginalMe = S.me;
+            S.me = { ...S.me, perms: { ...S.me.perms, viewAll: true } };
+        }"""
+    )
     page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_function(
+        "document.querySelector('.dashboard-analysis') || "
+        "document.querySelector('#view [role=alert]')",
+        timeout=15000,
+    )
+    check(
+        len(dashboard_summary_interceptions) > 0
+        and page.locator('.dashboard-analysis').count() == 1,
+        'authorized Dashboard analysis renders after the period summary request completes',
+    )
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('Spending trend') || "
         "document.querySelector('#view')?.innerText.includes('Dashboard totals unavailable')"
@@ -2683,6 +2817,13 @@ with sync_playwright() as p:
     check(
         dashboard_recovery_response.value.ok and recovered_summary.get('ok') is True,
         'dashboard recovers with a successful live read after hostile test data is removed',
+    )
+    page.evaluate(
+        """async () => {
+            const { S } = await import('/frontend/core/state.js');
+            S.me = window.__dashboardOriginalMe;
+            delete window.__dashboardOriginalMe;
+        }"""
     )
     try:
         page.wait_for_function(
@@ -2881,15 +3022,43 @@ with sync_playwright() as p:
         }""",
         timeout=10000,
     )
-    manager_stats = manager_page.locator('.dashboard-stats--owner > .stat').count()
+    manager_stats = manager_page.locator('.dashboard-analysis .dashboard-stats > .stat').count()
     manager_empty_period = manager_page.locator('.dashboard-empty-state').count()
+    check(
+        manager_page.locator('.dashboard-primary-actions .dashboard-primary-action').count() == 2
+        and manager_page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').is_visible()
+        and manager_page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').is_visible()
+        and 'on' in manager_page.locator('[data-act="range"][data-k="today"]').get_attribute('class').split()
+        and manager_page.locator('.dashboard-primary-metrics, .dashboard-empty-state').count() == 1
+        and (
+            manager_page.locator('.dashboard-analysis').count() == 0
+            or not manager_page.locator('.dashboard-analysis').evaluate('(element) => element.open')
+        ),
+        'manager Dashboard starts with distinct entry actions, Today and collapsed secondary analysis',
+    )
     check(
         manager_page.locator('#view .page-header h1').inner_text() == 'Dashboard'
         and manager_page.locator('.dashboard-staff-home').count() == 0
+        and manager_page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').inner_text() == 'Record payment'
+        and manager_page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').inner_text() == 'Cash received'
         and manager_page.locator('.dashboard-cash-position').count() == 1
         and manager_page.locator('.daily-close-readiness').count() == 1
+        and manager_page.locator('.dashboard-cash-position').evaluate("(element) => element.compareDocumentPosition(document.querySelector('.needs')) & Node.DOCUMENT_POSITION_FOLLOWING") != 0
+        and manager_page.locator('.needs').evaluate("(element) => element.compareDocumentPosition(document.querySelector('.dashboard-period')) & Node.DOCUMENT_POSITION_FOLLOWING") != 0
         and (
-            manager_stats == 6
+            (
+                manager_stats == 4
+                and manager_page.locator('.dashboard-analysis').count() == 1
+                and not manager_page.locator('.dashboard-analysis').evaluate('(element) => element.open')
+            )
+            or (
+                manager_stats == 0
+                and manager_empty_period == 1
+                and manager_page.locator('.dashboard-analysis').count() == 0
+            )
+        )
+        and (
+            manager_stats == 4
             or (
                 manager_stats == 0
                 and manager_empty_period == 1
@@ -3281,7 +3450,8 @@ with sync_playwright() as p:
     accountant_page.set_viewport_size({'width': 390, 'height': 800})
     accountant_context.close()
     go_view(page, 'users')
-    page.wait_for_selector('#uf')
+    page.wait_for_selector('#uf', state='attached')
+    open_disclosure(page, '.users-add-details')
     xss_payload = '<svg onload=window.__xssFired=true></svg>'
     page.fill('#un', xss_payload)
     page.fill('#ue', 'stored-xss@test.com')
@@ -3348,7 +3518,7 @@ with sync_playwright() as p:
         'Users request failure is explicit and offers an in-context retry instead of an endless loading state',
     )
     page.click('#users-load-error [data-act=usersRetry]')
-    page.wait_for_selector('#uf', timeout=10000)
+    page.wait_for_selector('#uf', state='attached', timeout=10000)
     check(
         page.locator('#users-load-error').count() == 0
         and page.locator('#view tbody tr').count() > 0
@@ -3456,11 +3626,12 @@ with sync_playwright() as p:
     page.unroute('**/api?*', inject_malformed_user_rows)
     go_view(page, 'dash')
     go_view(page, 'users')
-    page.wait_for_selector('#uf')
+    page.wait_for_selector('#uf', state='attached')
     check(
         page.locator('#view tbody tr').count() == 6
-        and page.locator('#view [role=status]').count() == 0,
-        'owner Users view recovers after a valid list response returns',
+        and page.locator('#view [role=status]:not(#users-result-count)').count() == 0
+        and page.locator('#users-result-count').inner_text() == 'Showing 6 of 6 users',
+        'owner Users view recovers after a valid list response and reports its loaded result count',
     )
 
     # A late user-list response must not replace a route selected while loading.
@@ -3770,6 +3941,29 @@ with sync_playwright() as p:
     page.route('**/api?*', inject_hostile_audit_detail)
     go_view(page, 'audit')
     page.wait_for_selector('#aud tr')
+    page.set_viewport_size({'width': 390, 'height': 800})
+    audit_mobile_metrics = page.locator('.audit-panel .table-wrap').evaluate("""wrap => ({
+        clientWidth: wrap.clientWidth,
+        scrollWidth: wrap.scrollWidth,
+        labelledCells: [...wrap.querySelectorAll('tbody tr td:not([colspan])')].every(cell => Boolean(cell.dataset.label)),
+        headersPresent: Boolean(wrap.querySelector('thead th')),
+    })""")
+    check(
+        audit_mobile_metrics['scrollWidth'] <= audit_mobile_metrics['clientWidth'] + 1
+        and audit_mobile_metrics['labelledCells']
+        and audit_mobile_metrics['headersPresent'],
+        f'Audit Log mobile events stack into labelled rows without horizontal overflow; metrics={audit_mobile_metrics}',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    check(
+        page.locator('#aud-q').is_visible()
+        and page.locator('[data-act=audcsv]').is_visible()
+        and not page.locator('#auditFilters').evaluate('(element) => element.open')
+        and page.locator('#aud-health').evaluate("(element) => element.closest('#auditFilters') !== null")
+        and not page.locator('#aud-health').is_visible()
+        and 'retention is not guaranteed' in page.locator('#audit-scope').inner_text(),
+        'Audit Log keeps search and CSV export visible while filters and technical health start collapsed',
+    )
     page.wait_for_function(
         "document.querySelector('#aud').innerText.includes('<svg onload=window.__xssFired=true></svg>')"
     )
@@ -3784,6 +3978,7 @@ with sync_playwright() as p:
         and 'loaded pages only' in page.locator('#audit-scope').inner_text(),
         'audit page explains cursor pagination and filtered export scope',
     )
+    open_disclosure(page, '#auditFilters')
     healthy_audit_text = page.locator('#aud-health').inner_text()
     check(
         'No audit-write failure marker is currently visible' in healthy_audit_text
@@ -3793,6 +3988,7 @@ with sync_playwright() as p:
         and page.locator('#aud-health [role=alert]').count() == 0,
         'no-known-failure state explains the dual-store blind spot without claiming complete audit history',
     )
+    open_disclosure(page, '#auditFilters')
     with page.expect_download() as audit_health_snapshot_download_info:
         page.click('[data-act=audhealth]')
     audit_health_snapshot_download = audit_health_snapshot_download_info.value
@@ -3831,6 +4027,7 @@ with sync_playwright() as p:
         and audit_download.suggested_filename.endswith('.csv'),
         'audit export downloads a CSV for the active filters',
     )
+    open_disclosure(page, '#auditFilters')
     page.click('[data-act=audclear]')
     check(
         'No audit events match these filters.' not in page.locator('#aud').inner_text()
@@ -4495,6 +4692,7 @@ with sync_playwright() as p:
         route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
 
     page.route('**/api?*', inject_staff_dashboard_summary)
+    page.set_viewport_size({'width': 390, 'height': 800})
     login('s@test.com', 'Staff#Start2026')
     page.wait_for_selector('#currentPassword')
     page.fill('#currentPassword', 'Staff#Start2026')
@@ -6168,6 +6366,8 @@ with sync_playwright() as p:
 
     page.route('**/api?*', inject_manager_dashboard_drilldowns)
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.dashboard-stats--owner .dashboard-kpi-drilldown')
     page.wait_for_selector('.needs-item [data-drill-key="cash-readiness-unavailable"]')
     manager_attention = page.locator('.needs-item [data-act="dashboardDrilldown"]')
@@ -6278,6 +6478,8 @@ with sync_playwright() as p:
                 'manager ' + drill_key + ' opens Register with its intended period/type/vendor context',
             )
         go_view(page, 'dash')
+        page.wait_for_selector('.dashboard-analysis')
+        page.locator('.dashboard-analysis > summary').click()
         page.wait_for_selector('[data-drill-key="' + drill_key + '"]')
     go_view(page, 'dash')
     page.wait_for_selector('.dashboard-recent-item__open')
@@ -6471,16 +6673,59 @@ with sync_playwright() as p:
     )
 
     go_view(page, 'dash')
-    page.wait_for_selector('svg.chart')
-    page.click('[data-k=mtd]')
-    page.wait_for_selector('.stats')
-    check(
-        'book balance' in page.inner_text('.stats').lower()
-        and 'cash in hand' not in page.inner_text('.stats').lower()
-        and 'not a physical cash count' in page.inner_text('.stats').lower(),
-        'dashboard clearly labels recorded net movement as book balance, not physical cash',
+    page.wait_for_function(
+        """() => {
+            const view = document.querySelector('#view');
+            return Boolean(
+                view?.querySelector('.dashboard-cash-position')
+                && view.querySelector('.daily-close-readiness')
+                && (
+                    view.querySelector('.dashboard-analysis')
+                    || view.querySelector('.dashboard-empty-state')
+                    || view.querySelector('[role=alert]')
+                )
+            );
+        }""",
+        timeout=10000,
     )
-    check(page.locator('.hb').count() >= 3, 'dashboard bars')
+    initial_analysis = page.locator('.dashboard-analysis')
+    if initial_analysis.count() == 1:
+        check(
+            not initial_analysis.evaluate('(element) => element.open'),
+            'owner Dashboard keeps secondary period analysis collapsed on arrival',
+        )
+        open_disclosure(page, '.dashboard-analysis')
+        page.wait_for_selector('svg.chart', state='visible')
+    else:
+        check(
+            page.locator('.dashboard-empty-state').count() == 1
+            and page.locator('.dashboard-stats').count() == 0,
+            'an empty Dashboard period has no analysis disclosure or fabricated financial statistics',
+        )
+
+    page.click('[data-k=mtd]')
+    page.wait_for_function(
+        "document.querySelector('.dashboard-analysis') || document.querySelector('.dashboard-empty-state')",
+        timeout=10000,
+    )
+    analysis = page.locator('.dashboard-analysis')
+    if analysis.count() == 1:
+        if not analysis.evaluate('(element) => element.open'):
+            open_disclosure(page, '.dashboard-analysis')
+        page.wait_for_selector('svg.chart', state='visible')
+        check(
+            'book balance' in page.inner_text('.stats').lower()
+            and 'cash in hand' not in page.inner_text('.stats').lower()
+            and 'not a physical cash count' in page.inner_text('.stats').lower(),
+            'dashboard clearly labels recorded net movement as book balance, not physical cash',
+        )
+        check(page.locator('.hb').count() >= 3, 'dashboard bars')
+    else:
+        check(
+            page.locator('.dashboard-empty-state').count() == 1
+            and page.locator('.dashboard-stats').count() == 0,
+            'an empty monthly period still withholds unverified financial statistics',
+        )
 
     # Prototype-named user data must be ordinary aggregation keys, not Object properties.
     prototype_group_values = ['constructor', '__proto__', 'toString', 'hasOwnProperty']
@@ -6629,7 +6874,9 @@ with sync_playwright() as p:
         page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
-    page.wait_for_selector('.hb-l')
+    page.wait_for_selector('.dashboard-analysis', state='attached')
+    open_disclosure(page, '.dashboard-analysis')
+    page.wait_for_selector('.hb-l', state='visible')
     vendor_labels = page.locator('.two .card').nth(0).locator('.hb-l').all_inner_texts()
     category_labels = page.locator('.two .card').nth(1).locator('.hb-l').all_inner_texts()
     check(
@@ -6783,6 +7030,8 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-primary-metrics')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.stats')
     page.wait_for_selector('svg.chart')
     recovered_dashboard_text = page.locator('#view').inner_text()
@@ -6853,7 +7102,7 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
-    page.wait_for_selector('.stats')
+    page.wait_for_selector('.dashboard-primary-metrics')
 
     # A malformed dashboard summary must never degrade into zero-like financial KPIs.
     dashboard_summary_fault = {'field': 'paid'}
@@ -6925,6 +7174,7 @@ with sync_playwright() as p:
         "document.querySelector('.dashboard-recent-transactions .dashboard-recent-empty')?.innerText.includes('Recent activity could not be loaded')",
         timeout=10000,
     )
+    page.locator('.dashboard-analysis > summary').click()
     check(
         len(recent_activity_failures) == 1
         and page.locator('#view .stats').count() == 1
@@ -6936,6 +7186,8 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-primary-metrics')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.stats')
     page.wait_for_selector('svg.chart')
     check(
@@ -7090,6 +7342,8 @@ with sync_playwright() as p:
         page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.hb-l')
     dashboard_amount_text = page.locator('.stats').inner_text()
     check(
@@ -7193,6 +7447,8 @@ with sync_playwright() as p:
             f'{suffix} is handled safely by voucher amount-in-words printing',
         )
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.hb-l')
     page.unroute('**/api?*', tamper_dashboard_numeric_values)
     page.reload(wait_until='domcontentloaded')
@@ -7756,6 +8012,7 @@ with sync_playwright() as p:
         and not audit_page.evaluate('window.__xssFired === true'),
         'legacy free-text update details remain compatible and render as inert text',
     )
+    open_disclosure(audit_page, '#auditFilters')
     healthy_audit_text = audit_page.locator('#aud-health').inner_text()
     check(
         'an outage affecting every marker store may still be undetectable'
@@ -7766,6 +8023,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'DEGRADED'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-health [role=alert]')?.innerText.includes('3 write failure(s) recorded')",
         timeout=10000,
@@ -7786,6 +8044,7 @@ with sync_playwright() as p:
         and not audit_page.evaluate('window.__xssFired === true'),
         'hostile monitor failure kind remains inert and does not execute',
     )
+    open_disclosure(audit_page, '#auditFilters')
     with audit_page.expect_download() as degraded_snapshot_download_info:
         audit_page.click('[data-act=audhealth]')
     degraded_snapshot_download = degraded_snapshot_download_info.value
@@ -7800,6 +8059,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'MONITORING_UNAVAILABLE_WITH_MARKER'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-health [role=alert]')?.innerText.includes('2 write failure(s) recorded')",
         timeout=10000,
@@ -7812,6 +8072,7 @@ with sync_playwright() as p:
         and audit_page.locator('#aud-health [role=alert]').count() == 1,
         'partial marker-store outage stays unavailable while exposing a known failure marker',
     )
+    open_disclosure(audit_page, '#auditFilters')
     with audit_page.expect_download() as mixed_snapshot_download_info:
         audit_page.click('[data-act=audhealth]')
     mixed_snapshot_download = mixed_snapshot_download_info.value
@@ -7827,6 +8088,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'INVALID_RESPONSE'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-health [role=alert]')?.innerText.includes('server response was invalid')",
         timeout=10000,
@@ -7836,6 +8098,7 @@ with sync_playwright() as p:
         and 'Historical audit completeness is not verified.' not in audit_page.locator('#aud-health').inner_text(),
         'invalid audit-health response is visibly reported as unverified rather than as known healthy',
     )
+    open_disclosure(audit_page, '#auditFilters')
     with audit_page.expect_download() as invalid_snapshot_download_info:
         audit_page.click('[data-act=audhealth]')
     invalid_snapshot_download = invalid_snapshot_download_info.value
@@ -7851,6 +8114,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'UNAVAILABLE'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-health [role=alert]')?.innerText.includes('audit request failed')",
         timeout=10000,
@@ -7860,6 +8124,7 @@ with sync_playwright() as p:
         and audit_page.locator('#aud [data-act=audretry]').is_visible(),
         'audit monitoring request failure stays visibly unknown and offers a retry',
     )
+    open_disclosure(audit_page, '#auditFilters')
     with audit_page.expect_download() as unavailable_snapshot_download_info:
         audit_page.click('[data-act=audhealth]')
     unavailable_snapshot_download = unavailable_snapshot_download_info.value
@@ -7875,6 +8140,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'NO_KNOWN_FAILURE'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-more') && !document.querySelector('#aud-more').classList.contains('hidden')",
         timeout=10000,
@@ -8668,6 +8934,8 @@ with sync_playwright() as p:
 
     page.set_viewport_size({'width': 1280, 'height': 800})
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.two')
     page.screenshot(path='/tmp/desktop.png')
 
@@ -8893,6 +9161,8 @@ with sync_playwright() as p:
 
     page.set_viewport_size({'width': 1280, 'height': 800})
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.two')
     amount_style = page.locator('.stats b').first.evaluate(
         '(element) => getComputedStyle(element).fontVariantNumeric'
@@ -9149,6 +9419,7 @@ with sync_playwright() as p:
     audit_page.wait_for_selector('[data-v=audit]')
     go_view(audit_page, 'audit')
     audit_page.wait_for_selector('#aud [data-act=audretry]', timeout=10000)
+    open_disclosure(audit_page, '#auditFilters')
     audit_layout = audit_page.locator('.audit-filters').evaluate(
         "el => ({display:getComputedStyle(el).display,columns:getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0})"
     )
@@ -9245,6 +9516,65 @@ with sync_playwright() as p:
         'unavailable' not in audit_page.locator('#aud-count').inner_text().lower()
         and 'malformed audit event(s) omitted' not in audit_page.locator('#aud-count').inner_text(),
         'audit view recovers when a valid response returns',
+    )
+
+    # A delayed older Audit Log request must not replace the newer page after navigation.
+    audit_page.evaluate("""() => {
+        const nativeFetch = window.fetch.bind(window);
+        const gate = {calls: 0, pending: false, finished: false, release: null};
+        window.__auditRouteGate = gate;
+        window.fetch = async (input, init = {}) => {
+            let action = '';
+            try { action = JSON.parse(init.body || '{}').action || ''; } catch {}
+            if (action !== 'auditLog') return nativeFetch(input, init);
+            const call = ++gate.calls;
+            if (call === 1) {
+                gate.pending = true;
+                await new Promise((resolve) => { gate.release = resolve; });
+                gate.pending = false;
+            }
+            const response = await nativeFetch(input, init);
+            const payload = await response.json();
+            if (payload?.ok && payload.data && Array.isArray(payload.data.rows)) {
+                payload.data = {
+                    ...payload.data,
+                    rows: [{
+                        time: '2026-10-12T10:00:00',
+                        user: 'owner@test.com',
+                        action: call === 1 ? 'STALE_AUDIT_RACE' : 'CURRENT_AUDIT_RACE',
+                        target: '#audit-race',
+                        details: 'synthetic navigation race',
+                    }],
+                    nextBeforeRow: null,
+                    totalCount: 1,
+                    auditHealth: null,
+                };
+            }
+            if (call === 1) gate.finished = true;
+            return new Response(JSON.stringify(payload), {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+            });
+        };
+    }""")
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
+    audit_page.wait_for_function(
+        "window.__auditRouteGate?.pending === true && typeof window.__auditRouteGate.release === 'function'"
+    )
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud')?.innerText.includes('CURRENT_AUDIT_RACE')",
+        timeout=10000,
+    )
+    audit_page.evaluate("window.__auditRouteGate.release()")
+    audit_page.wait_for_function("window.__auditRouteGate?.finished === true")
+    check(
+        'CURRENT_AUDIT_RACE' in audit_page.locator('#aud').inner_text()
+        and 'STALE_AUDIT_RACE' not in audit_page.locator('#aud').inner_text(),
+        'a delayed earlier Audit Log response cannot replace the latest page after leaving and returning',
     )
 
     backup_status_failure_once = True

@@ -408,7 +408,7 @@ export function createNavigation({
     const renderResult = render();
     window.scrollTo(0, 0);
 
-    if (focusHeading) {
+    if (focusHeading && view !== 'new') {
       focusPageHeading();
 
       // Restore focus after synchronous render work has settled. Do not leave

@@ -20,7 +20,11 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
   let deferredInstall;
   let users = [];
   let usersRequestId = 0;
+  let usersResponseValid = true;
+  let malformedUserCount = 0;
+  const userFilters = { query: '', role: 'ALL', status: 'ALL' };
   let auditRows = [];
+  let auditRequestId = 0;
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
   let malformedAuditCount = 0;
   let auditResponseInvalid = false;
@@ -241,6 +245,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
 
   async function usersView() {
     if (S.view !== 'users') return;
+    Object.assign(userFilters, { query: '', role: 'ALL', status: 'ALL' });
     const requestId = ++usersRequestId;
     renderUsersLoadState();
 
@@ -273,6 +278,8 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         typeof user.active === 'boolean',
     );
     const malformedCount = receivedUsers.length - users.length;
+    usersResponseValid = envelopeValid;
+    malformedUserCount = malformedCount;
     const status = !envelopeValid
       ? '<p class="muted" role="status" aria-live="polite">User data is unavailable because the server response was invalid. Refresh and try again.</p>'
       : malformedCount
@@ -286,8 +293,8 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     const rows = users
       .map(
         (user) =>
-          `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option value="${esc(role)}"${role === user.role ? ' selected' : ''}>${esc(displayRole(role))}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
-     <td class="r nw"><button class="btn sm" data-act="upassword" data-id="${esc(user.id)}">Reset password</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
+          `<tr data-user-search="${esc((user.name + ' ' + user.email).toLowerCase())}" data-user-role="${esc(user.role)}" data-user-status="${user.active ? 'ACTIVE' : 'DISABLED'}"><td data-label="Name">${esc(user.name)}</td><td data-label="Email">${esc(user.email)}</td><td data-label="Role"><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option value="${esc(role)}"${role === user.role ? ' selected' : ''}>${esc(displayRole(role))}</option>`).join('')}</select></td><td data-label="Status"><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
+     <td data-label="Actions" class="r nw"><button class="btn sm" data-act="upassword" data-id="${esc(user.id)}">Reset password</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
       )
       .join('');
 
@@ -318,9 +325,32 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     $('#view').innerHTML =
       head('Users', refreshBtn, {
         section: 'Manage',
-        description: 'Manage team access and role assignments.',
+        description: 'Find a team member, check their access and update it when needed.',
       }) +
       status +
+      '<section class="users-workspace" aria-label="Team members">' +
+      '<div class="users-list-toolbar">' +
+      '<label class="users-search-field" for="users-search">Search users<input id="users-search" type="search" autocomplete="off" placeholder="Name or email address"></label>' +
+      '<details class="users-filter-details" id="users-filter-details">' +
+      '<summary>Filters <span id="users-filter-summary">None active</span></summary>' +
+      '<div class="users-filter-grid">' +
+      '<label for="users-filter-role">Role<select id="users-filter-role"><option value="ALL">All roles</option>' +
+      roles
+        .map((role) => '<option value="' + esc(role) + '">' + esc(displayRole(role)) + '</option>')
+        .join('') +
+      '</select></label>' +
+      '<label for="users-filter-status">Status<select id="users-filter-status"><option value="ALL">All users</option><option value="ACTIVE">Active</option><option value="DISABLED">Disabled</option></select></label>' +
+      '<div class="users-filter-actions"><button type="button" class="btn" data-act="usersclear">Clear filters</button></div>' +
+      '</div></details>' +
+      '</div>' +
+      '<p id="users-result-count" class="users-result-count" role="status" aria-live="polite"></p>' +
+      '<p id="users-filter-empty" class="muted users-filter-empty" hidden>No users match this search. Clear the search or filters and try again.</p>' +
+      '<div class="card management-results-card">' +
+      userTable +
+      '</div>' +
+      '</section>' +
+      '<details class="users-add-details">' +
+      '<summary>Add user <span>Create a new account and assign its role</span></summary>' +
       formPanel({
         id: 'uf',
         title: 'Add user',
@@ -329,10 +359,69 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         footer:
           '<p class="muted"><b>User</b>: create and view own entries · <b>Admin</b>: manage daily operations, vendors, bulk uploads, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p>',
       }) +
-      '<div class="card management-results-card">' +
-      userTable +
-      '</div>';
+      '</details>';
+    syncUserFilters();
   }
+  function syncUserFilters() {
+    const query = userFilters.query.trim().toLowerCase();
+    const rows = [
+      ...$('#view').querySelectorAll('.management-results-card tbody tr[data-user-search]'),
+    ];
+    let visible = 0;
+    rows.forEach((row) => {
+      const matches =
+        (!query || row.dataset.userSearch.includes(query)) &&
+        (userFilters.role === 'ALL' || row.dataset.userRole === userFilters.role) &&
+        (userFilters.status === 'ALL' || row.dataset.userStatus === userFilters.status);
+      row.hidden = !matches;
+      if (matches) visible += 1;
+    });
+
+    const empty = $('#users-filter-empty');
+    if (empty) empty.hidden = rows.length === 0 || visible > 0;
+    const count = $('#users-result-count');
+    if (count) {
+      count.textContent = rows.length
+        ? 'Showing ' + visible + ' of ' + rows.length + ' users'
+        : !usersResponseValid || malformedUserCount
+          ? 'No valid user records are available.'
+          : users.length === 0
+            ? 'No users have been added yet.'
+            : 'No valid user records are available.';
+    }
+
+    const activeCount = Number(userFilters.role !== 'ALL') + Number(userFilters.status !== 'ALL');
+    const summary = $('#users-filter-summary');
+    if (summary) summary.textContent = activeCount ? activeCount + ' active' : 'None active';
+  }
+
+  function handleUserFilters(event) {
+    if (event.target.id === 'users-search') {
+      userFilters.query = event.target.value;
+      syncUserFilters();
+    } else if (event.target.id === 'users-filter-role') {
+      userFilters.role = event.target.value;
+      syncUserFilters();
+    } else if (event.target.id === 'users-filter-status') {
+      userFilters.status = event.target.value;
+      syncUserFilters();
+    }
+  }
+
+  function clearUserFilters() {
+    Object.assign(userFilters, { query: '', role: 'ALL', status: 'ALL' });
+    const search = $('#users-search');
+    const role = $('#users-filter-role');
+    const status = $('#users-filter-status');
+    if (search) search.value = '';
+    if (role) role.value = 'ALL';
+    if (status) status.value = 'ALL';
+    syncUserFilters();
+    const filters = $('#users-filter-details');
+    if (filters) filters.open = false;
+    search?.focus();
+  }
+
   async function saveUser() {
     try {
       await api('saveUser', {
@@ -668,6 +757,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
   }
 
   function auditView() {
+    const requestId = ++auditRequestId;
     auditFilters.query = '';
     auditFilters.user = '';
     auditFilters.action = '';
@@ -688,25 +778,34 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         description: 'Review administrative events and export the loaded records.',
       }) +
       `<section class="card audit-panel" aria-describedby="audit-scope">
-        <p id="audit-scope" class="muted">Audit events load newest-first. Load older adds earlier events; filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
-        <div id="aud-health" aria-live="polite"><p class="muted">Loading audit-write health…</p></div>
-        <div class="filters audit-filters">
-          <label>Search<input id="aud-q" type="search" aria-label="Search audit events" placeholder="Search details, target or user"></label>
-          <label>User<select id="aud-user" aria-label="Filter audit events by user"><option value="">All users</option></select></label>
-          <label>Action<select id="aud-action" aria-label="Filter audit events by action"><option value="">All actions</option></select></label>
-          <label>From<input id="aud-from" type="date" aria-label="Audit start date"></label>
-          <label>To<input id="aud-to" type="date" aria-label="Audit end date"></label>
-          <button class="btn" type="button" data-act="audclear">Clear filters</button>
-          <button class="btn" type="button" data-act="audhealth">Export health snapshot (JSON)</button>
+        <p id="audit-scope" class="muted">Audit events load newest-first. Load older adds earlier events; search, filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
+        <div class="audit-primary-tools">
+          <label class="audit-search-field" for="aud-q">Search audit events<input id="aud-q" type="search" aria-label="Search audit events" placeholder="Search details, target or user"></label>
           <button class="btn primary" type="button" data-act="audcsv">Export filtered CSV</button>
         </div>
+        <details class="audit-filter-details" id="auditFilters">
+          <summary>Filters &amp; audit health <span id="audit-filter-summary">None active</span></summary>
+          <div id="aud-health" aria-live="polite"><p class="muted">Loading audit monitoring status…</p></div>
+          <div class="filters audit-filters">
+            <label>User<select id="aud-user" aria-label="Filter audit events by user"><option value="">All users</option></select></label>
+            <label>Action<select id="aud-action" aria-label="Filter audit events by action"><option value="">All actions</option></select></label>
+            <label>From<input id="aud-from" type="date" aria-label="Audit start date"></label>
+            <label>To<input id="aud-to" type="date" aria-label="Audit end date"></label>
+            <div class="audit-filter-actions">
+              <button class="btn" type="button" data-act="audclear">Clear filters</button>
+              <button class="btn" type="button" data-act="audhealth">Export health snapshot (JSON)</button>
+            </div>
+          </div>
+        </details>
         <p id="aud-count" class="muted" role="status" aria-live="polite">Loading audit events…</p>
         <button id="aud-more" class="btn hidden" type="button" data-act="audmore">Load older events</button>
         <div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="aud"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
       </section>`;
+    updateAuditFilterSummary();
 
     api('auditLog')
       .then((page) => {
+        if (requestId !== auditRequestId || S.view !== 'audit') return;
         if (!setAuditPage(page, false)) {
           auditResponseInvalid = true;
           auditRows = [];
@@ -718,6 +817,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         }
       })
       .catch((error) => {
+        if (requestId !== auditRequestId || S.view !== 'audit') return;
         auditRequestFailed = true;
         renderAuditHealth();
         const body = $('#aud');
@@ -809,6 +909,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
 
   async function loadOlderAuditEvents() {
     if (!auditNextBeforeRow || auditLoadingOlder) return;
+    const requestId = auditRequestId;
     auditLoadingOlder = true;
     const button = $('#aud-more');
     if (button) {
@@ -817,6 +918,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     }
     try {
       const page = await api('auditLog', { beforeRow: auditNextBeforeRow });
+      if (requestId !== auditRequestId || S.view !== 'audit') return;
       if (!setAuditPage(page, true)) {
         toast(
           'Older audit events returned an invalid response. Loaded events were kept; retry later.',
@@ -824,15 +926,17 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         );
       }
     } catch (error) {
-      fail(error);
+      if (requestId === auditRequestId && S.view === 'audit') fail(error);
     } finally {
-      auditLoadingOlder = false;
-      const currentButton = $('#aud-more');
-      if (currentButton) {
-        currentButton.disabled = false;
-        currentButton.textContent = 'Load older events';
-        currentButton.hidden = !auditNextBeforeRow;
-        currentButton.classList.toggle('hidden', !auditNextBeforeRow);
+      if (requestId === auditRequestId && S.view === 'audit') {
+        auditLoadingOlder = false;
+        const currentButton = $('#aud-more');
+        if (currentButton) {
+          currentButton.disabled = false;
+          currentButton.textContent = 'Load older events';
+          currentButton.hidden = !auditNextBeforeRow;
+          currentButton.classList.toggle('hidden', !auditNextBeforeRow);
+        }
       }
     }
   }
@@ -1091,13 +1195,14 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     rows.forEach((row) => {
       const tr = document.createElement('tr');
       [
-        { value: String(row.time ?? '').replace('T', ' '), className: 'nw' },
-        { value: row.user },
-        { value: row.action, className: 'nw' },
-        { value: row.target },
-        { value: auditDetailsText(row) },
-      ].forEach(({ value, className }) => {
+        { label: 'When', value: String(row.time ?? '').replace('T', ' '), className: 'nw' },
+        { label: 'User', value: row.user },
+        { label: 'Action', value: row.action, className: 'nw' },
+        { label: 'Target', value: row.target },
+        { label: 'Details', value: auditDetailsText(row) },
+      ].forEach(({ label, value, className }) => {
         const cell = document.createElement('td');
+        cell.dataset.label = label;
         if (className) cell.className = className;
         cell.textContent = String(value ?? '');
         tr.appendChild(cell);
@@ -1126,12 +1231,23 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         : '');
   }
 
+  function updateAuditFilterSummary() {
+    const activeCount =
+      Number(Boolean(auditFilters.user)) +
+      Number(Boolean(auditFilters.action)) +
+      Number(Boolean(auditFilters.from)) +
+      Number(Boolean(auditFilters.to));
+    const summary = $('#audit-filter-summary');
+    if (summary) summary.textContent = activeCount ? activeCount + ' active' : 'None active';
+  }
+
   function clearAuditFilters() {
     Object.assign(auditFilters, { query: '', user: '', action: '', from: '', to: '' });
     ['aud-q', 'aud-user', 'aud-action', 'aud-from', 'aud-to'].forEach((id) => {
       const field = $('#' + id);
       if (field) field.value = '';
     });
+    updateAuditFilterSummary();
     renderAuditRows();
   }
 
@@ -1234,6 +1350,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     const key = values[field.id];
     if (!key) return;
     auditFilters[key] = field.value;
+    updateAuditFilterSummary();
     renderAuditRows();
   }
 
@@ -2074,9 +2191,13 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     });
 
     $('#view').addEventListener('submit', handleSubmit);
-    $('#view').addEventListener('input', handleAuditFilters);
+    $('#view').addEventListener('input', (event) => {
+      handleUserFilters(event);
+      handleAuditFilters(event);
+    });
     $('#view').addEventListener('change', (event) => {
       handleAccountPreferenceChange(event);
+      handleUserFilters(event);
       handleAuditFilters(event);
     });
   }
@@ -2085,6 +2206,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     bind,
     vendors,
     users: usersView,
+    clearUserFilters,
     settings,
     audit: auditView,
     clearAuditFilters,

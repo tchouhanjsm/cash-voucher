@@ -1,16 +1,19 @@
-## Current delivery focus — Laravel vendor write transport (8 November 2026)
+## Current delivery focus — PR #280 novice-first workspace consolidation (9 November 2026)
 
-- **Branch:** `feat/laravel-vendor-transport-clean-20261108`, based on the merged PR #273 integration head.
-- **Scope:** the opt-in same-origin Laravel cookie transport now maps the Vendor UI's create, update and desired active-state actions to the existing Laravel vendor API routes.
-- **Security:** every vendor mutation uses the in-memory CSRF token, same-origin cookies and a cryptographically random `Idempotency-Key`. The HttpOnly session cookie is never exposed to JavaScript. Unsupported actions still fail closed and never fall back to Apps Script.
-- **UI contract:** the Vendor screen submits the explicit target active state, retains existing role visibility and refreshes server state after successful writes.
-- **Tests:** transport contract coverage checks create/update/active-state method, path, body, CSRF and idempotency headers, invalid state rejection and unsupported-action fail-closed behavior. Exact-head CI and Browser E2E are pending.
-- **Release boundary:** local opt-in shadow transport only. Customer builds remain Apps Script-only; no endpoint switch, queue drain, dual write, production data access or deployment.
-- **Next slice:** complete register filter/facet/totals parity and dashboard daily-operations reads. Voucher lifecycle writes, receipts and offline replay remain separate gates.
+- **PR / branch:** [PR #280](https://github.com/tchouhanjsm/cash-voucher/pull/280), `feat/dashboard-admin-minimal-workspaces-20261108` → `client-main`, based on the merged Register search-first milestone.
+- **Completed sequence:** PR #278 — novice-first New Entry; PR #279 — search-first Register; PR #280 — Today-first Dashboard, compact Users and Audit Log, plus stale Audit Log response protection.
+- **Dashboard:** distinct Payment and Cash received actions, daily cash position and close readiness before historical analysis, two primary movement figures, secondary analytics behind “More financial analysis”, and recent transactions with existing permission-checked drilldowns. Unavailable or invalid responses do not become fabricated totals.
+- **Administration:** Users search is primary, role/status refinements and Add user are secondary; Audit Log search and CSV export stay primary, with filters/health secondary. Mobile rows retain semantic headers and labels.
+- **Reliability:** Audit Log first-page and older-page reads capture the current view request identity. Delayed responses from an earlier visit are ignored after navigation, preventing stale rows from replacing a newer visit. Browser E2E includes a synthetic delayed-response race.
+- **Exact-head verification:** head `f741cdf3eab5ffa796abb3ed1785ff845dcf76e5`; CI [42569063481](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42569063481) passed, including JavaScript regressions, security/source gates, PHP lint and isolated Laravel/MySQL integration (**94 tests, 754 assertions**); Browser E2E [42569063533](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42569063533) passed (**1,667 checks, 0 failures**); Autonomous Development Monitor [42569063512](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42569063512) passed.
+- **Visual review:** browser matrix artifact `13652084539` contains desktop/mobile captures for Dashboard, New Entry, Register, Users and Audit Log, in light/dark themes. Captures are synthetic, not a production-data preview or observed staff study.
+- **Financial and access safeguards:** no route, API contract, schema, amount/cash calculation, voucher mutation, approval rule, idempotency, offline outbox, audit event, retention rule or authorization check was changed. Apps Script remains the sole production financial writer.
+- **Not yet verified:** owner-local Laravel-shadow Network/Console and Laravel logs; real staff completion time, hesitation and input-error rates. No usability score is claimed from synthetic tests.
+- **Next:** run the local shadow walkthrough with synthetic records, verify Dashboard, Users and Audit Log network responses and the delayed-navigation case, then observe ordinary staff completing Payment, Cash received and Register search. Record actual task time, hesitation and recoverable errors before scoring usability.
 
 ---
 
-## Current delivery focus — PR #273 property settings / sequence readiness (8 November 2026)
+## Current delivery focus — PR #273/ property settings / sequence readiness (8 November 2026)
 
 - **PR / branch:** [PR #273](https://github.com/tchouhanjsm/cash-voucher/pull/273), `fix/laravel-settings-uninitialized-sequences-20261108` → `client-main`.
 - **Problem:** fresh Laravel bootstrap and Property Settings failed when either or both `PAYMENT` / `RECEIPT` rows were absent. Migration 0004 creates the sequence table but does not seed a reconciled counter.

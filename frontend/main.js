@@ -259,6 +259,7 @@ registerActions({
   upassword: ({ id }) => administration.resetPassword(id),
 
   usersRetry: () => administration.users(),
+  usersclear: () => administration.clearUserFilters(),
 
   audretry: () => administration.audit(),
 
