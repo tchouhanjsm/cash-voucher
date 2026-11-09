@@ -3022,7 +3022,7 @@ with sync_playwright() as p:
         }""",
         timeout=10000,
     )
-    manager_stats = manager_page.locator('.dashboard-analysis .dashboard-stats--manager > .stat').count()
+    manager_stats = manager_page.locator('.dashboard-analysis .dashboard-stats > .stat').count()
     manager_empty_period = manager_page.locator('.dashboard-empty-state').count()
     check(
         manager_page.locator('.dashboard-primary-actions .dashboard-primary-action').count() == 2
@@ -9419,6 +9419,7 @@ with sync_playwright() as p:
     audit_page.wait_for_selector('[data-v=audit]')
     go_view(audit_page, 'audit')
     audit_page.wait_for_selector('#aud [data-act=audretry]', timeout=10000)
+    open_disclosure(audit_page, '#auditFilters')
     audit_layout = audit_page.locator('.audit-filters').evaluate(
         "el => ({display:getComputedStyle(el).display,columns:getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0})"
     )
