@@ -401,7 +401,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       );
     }
     const declaredLength = response.headers?.get?.('Content-Length');
-    if (declaredLength && (!/^\\d+$/.test(declaredLength) || Number(declaredLength) > 1600000)) {
+    if (declaredLength && (!/^\d+$/.test(declaredLength) || Number(declaredLength) > 1600000)) {
       throw failure('The receipt image is larger than the allowed limit.', 'RECEIPT_SIZE_INVALID');
     }
     let bytes;
