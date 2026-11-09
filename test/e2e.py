@@ -1167,14 +1167,24 @@ with sync_playwright() as p:
             and page.locator('#view .page-header h1').inner_text().strip() != '',
             f'{route_name}: one non-empty shared page heading is rendered',
         )
-        page.wait_for_function(
-            "document.activeElement === document.querySelector('#view .page-header h1')",
-            timeout=10000,
-        )
-        check(
-            page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
-            f'{route_name}: route navigation places focus on the destination heading',
-        )
+        if route_id == 'new':
+            page.wait_for_function(
+                "document.activeElement === document.querySelector('#rows .erow .rv')",
+                timeout=5000,
+            )
+            check(
+                page.evaluate("document.activeElement === document.querySelector('#rows .erow .rv')"),
+                'New Entry opens with focus on the first vendor/payee field',
+            )
+        else:
+            page.wait_for_function(
+                "document.activeElement === document.querySelector('#view .page-header h1')",
+                timeout=10000,
+            )
+            check(
+                page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
+                f'{route_name}: route navigation places focus on the destination heading',
+            )
 
         if route_id == 'new':
             # Synthetic fixture is applied after the destination focus assertion.
