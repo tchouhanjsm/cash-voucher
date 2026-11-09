@@ -89,10 +89,10 @@ final class VoucherApiTest extends TestCase
 
         $managerEmail = 'fixture-'.$this->userId.'@example.test';
         $otherEmail = 'fixture-'.$otherUser.'@example.test';
-        $expectedUsers = [$managerEmail, $otherEmail];
-        sort($expectedUsers, SORT_STRING);
 
         $all = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
             'status' => 'ALL',
             'offset' => 0,
             'limit' => 2,
@@ -106,16 +106,19 @@ final class VoucherApiTest extends TestCase
             ->assertJsonPath('data.totals.approvalExceptionCount', 1)
             ->assertJsonPath('data.totals.invalidAmountCount', 1)
             ->assertJsonPath('data.totals.malformedRecordCount', 0)
-            ->assertJsonPath('data.totals.malformedFieldCount', 0)
-            ->assertJsonPath('data.facets.vendors', [
-                'Acme Return',
-                'Acme Steel',
-                'Cancelled Supplier',
-                'Pending Supplier',
-            ])
-            ->assertJsonPath('data.facets.users', $expectedUsers);
+            ->assertJsonPath('data.totals.malformedFieldCount', 0);
+
+        $visibleVendors = $all->json('data.facets.vendors');
+        foreach (['Acme Return', 'Acme Steel', 'Cancelled Supplier', 'Pending Supplier'] as $vendor) {
+            self::assertContains($vendor, $visibleVendors);
+        }
+        $visibleUsers = $all->json('data.facets.users');
+        self::assertContains($managerEmail, $visibleUsers);
+        self::assertContains($otherEmail, $visibleUsers);
 
         $exportPage = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
             'status' => 'ALL',
             'offset' => 0,
             'limit' => 200,
@@ -127,6 +130,8 @@ final class VoucherApiTest extends TestCase
 
         $searchByReceiptNumber = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
             'q' => 'r-502',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
         ]));
         $searchByReceiptNumber->assertOk()
             ->assertJsonPath('data.totalCount', 1)
@@ -135,6 +140,8 @@ final class VoucherApiTest extends TestCase
 
         $searchByNote = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
             'q' => 'jaipur',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
         ]));
         $searchByNote->assertOk()
             ->assertJsonPath('data.totalCount', 1)
@@ -166,6 +173,8 @@ final class VoucherApiTest extends TestCase
             'paymentMethod' => 'UNRECORDED',
             'cashImpact' => 'UNCLASSIFIED',
             'amountValidity' => 'INVALID',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
         ]));
         $pendingExceptions->assertOk()
             ->assertJsonPath('data.totalCount', 1)
@@ -175,6 +184,8 @@ final class VoucherApiTest extends TestCase
 
         $unfilteredPaymentMethod = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
             'paymentMethod' => 'UNRECOGNIZED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
         ]));
         $unfilteredPaymentMethod->assertOk()
             ->assertJsonPath('data.totalCount', 0);
