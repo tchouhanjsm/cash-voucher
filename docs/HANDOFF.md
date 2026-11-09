@@ -1,12 +1,12 @@
-## Current delivery focus — Laravel vendor write transport (8 November 2026)
+## Current delivery focus — Dashboard daily-operations workspace (9 November 2026)
 
-- **Branch:** `feat/laravel-vendor-transport-clean-20261108`, based on the merged PR #273 integration head.
-- **Scope:** the opt-in same-origin Laravel cookie transport now maps the Vendor UI's create, update and desired active-state actions to the existing Laravel vendor API routes.
-- **Security:** every vendor mutation uses the in-memory CSRF token, same-origin cookies and a cryptographically random `Idempotency-Key`. The HttpOnly session cookie is never exposed to JavaScript. Unsupported actions still fail closed and never fall back to Apps Script.
-- **UI contract:** the Vendor screen submits the explicit target active state, retains existing role visibility and refreshes server state after successful writes.
-- **Tests:** transport contract coverage checks create/update/active-state method, path, body, CSRF and idempotency headers, invalid state rejection and unsupported-action fail-closed behavior. Exact-head CI and Browser E2E are pending.
-- **Release boundary:** local opt-in shadow transport only. Customer builds remain Apps Script-only; no endpoint switch, queue drain, dual write, production data access or deployment.
-- **Next slice:** complete register filter/facet/totals parity and dashboard daily-operations reads. Voucher lifecycle writes, receipts and offline replay remain separate gates.
+- **Branch:** `feat/dashboard-daily-operations-workspace-20261109`, based on the current `client-main` integration head after PR #278.
+- **Scope:** Dashboard opens on Today, presents distinct Payment and Cash received actions, then needs-attention items, the server-derived daily cash position/close, and recent transactions. Two primary movement figures remain visible; secondary KPIs and charts are retained behind the native “More financial analysis” disclosure.
+- **Financial integrity:** no calculation, server read contract, voucher payload, approval rule, cash-impact classification, idempotency, offline queue or authorization logic is changed. Missing/invalid Dashboard data continues to fail closed; current drawer values remain sourced from the daily-operations API.
+- **Accessibility and responsive layout:** action controls and disclosure retain visible labels, keyboard focus and 44px+ touch targets. The browser matrix captures the default collapsed analysis state on mobile and desktop, then separately validates expanded analytics.
+- **Verification:** source-contract and browser E2E assertions are being updated for Today default, primary actions, collapsed secondary analysis, four owner analysis measures and responsive geometry. Exact-head CI, Browser E2E and monitor results are pending for this PR.
+- **Release boundary:** customer builds and financial writes remain unchanged. Apps Script remains the sole production financial writer. No schema change, migration, deploy, Clasp push, dual write, import or cutover.
+- **Next:** once this slice is green, review the Register screenshots and test the existing search-first, collapsed-filter interaction before deciding whether any further Register changes are needed. Do not duplicate its existing pagination, facets or totals.
 
 ---
 
