@@ -1382,6 +1382,8 @@ with sync_playwright() as p:
                     f'{route_name}: visible form controls remain at least 40px high at {width}px in {theme_name} theme; found {layout["tooShortControls"]}',
                 )
                 if width in (390, 1280):
+                    if route_id == 'dash':
+                        page.locator('.dashboard-analysis > summary').click()
                     screenshot_name = f'{route_name}-{theme_name}-{width}.png'
                     # A previous transient toast should not obscure the review artifact.
                     page.locator('#toast').evaluate("element => element.classList.add('hidden')")
@@ -1390,6 +1392,8 @@ with sync_playwright() as p:
                         full_page=width == 1280,
                         animations='disabled',
                     )
+                    if route_id == 'dash':
+                        page.locator('.dashboard-analysis > summary').click()
 
     page.unroute('**/api?*', inject_visual_dashboard_summary)
 
@@ -6485,8 +6489,12 @@ with sync_playwright() as p:
     )
 
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('svg.chart')
     page.click('[data-k=mtd]')
+    page.wait_for_selector('.dashboard-analysis')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.stats')
     check(
         'book balance' in page.inner_text('.stats').lower()
@@ -6797,6 +6805,8 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-primary-metrics')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.stats')
     page.wait_for_selector('svg.chart')
     recovered_dashboard_text = page.locator('#view').inner_text()
@@ -6867,7 +6877,7 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
-    page.wait_for_selector('.stats')
+    page.wait_for_selector('.dashboard-primary-metrics')
 
     # A malformed dashboard summary must never degrade into zero-like financial KPIs.
     dashboard_summary_fault = {'field': 'paid'}
@@ -6939,6 +6949,7 @@ with sync_playwright() as p:
         "document.querySelector('.dashboard-recent-transactions .dashboard-recent-empty')?.innerText.includes('Recent activity could not be loaded')",
         timeout=10000,
     )
+    page.locator('.dashboard-analysis > summary').click()
     check(
         len(recent_activity_failures) == 1
         and page.locator('#view .stats').count() == 1
@@ -6950,6 +6961,8 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-primary-metrics')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.stats')
     page.wait_for_selector('svg.chart')
     check(
