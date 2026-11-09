@@ -496,11 +496,7 @@ assert.match(
 );
 assert.match(dashboard, /\['today', 'Today'\]/, 'Today is available as a dashboard period preset');
 
-assert.match(
-  dashboard,
-  /const D = \{ r: 'today'/,
-  'Dashboard opens on the current business day',
-);
+assert.match(dashboard, /const D = \{ r: 'today'/, 'Dashboard opens on the current business day');
 assert.match(
   dashboard,
   /function dashboardPrimaryActions\(\)/,
@@ -540,7 +536,11 @@ assert.match(
 assert.match(dashboard, /summary\.trend/, 'trend data remains API-derived');
 assert.match(dashboard, /summary\.topVendors/, 'vendor breakdown remains API-derived');
 
-assert.match(styles, /\.dashboard-primary-actions/, 'Dashboard has one shared primary-action group');
+assert.match(
+  styles,
+  /\.dashboard-primary-actions/,
+  'Dashboard has one shared primary-action group',
+);
 assert.match(
   styles,
   /\.dashboard-primary-action\s*\{[^}]*min-height:\s*48px/s,
