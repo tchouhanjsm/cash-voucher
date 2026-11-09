@@ -11,7 +11,6 @@
 - **Not yet verified:** owner-local Laravel-shadow Network/Console and Laravel logs; real staff completion time, hesitation and input-error rates. No usability score is claimed from synthetic tests.
 - **Next:** run the local shadow walkthrough with synthetic records, verify Dashboard, Users and Audit Log network responses and the delayed-navigation case, then observe ordinary staff completing Payment, Cash received and Register search. Record actual task time, hesitation and recoverable errors before scoring usability.
 
-
 ---
 
 ## Current delivery focus — PR #273/ property settings / sequence readiness (8 November 2026)
