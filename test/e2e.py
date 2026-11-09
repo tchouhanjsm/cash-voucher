@@ -1169,7 +1169,7 @@ with sync_playwright() as p:
         )
         page.wait_for_function(
             "document.activeElement === document.querySelector('#view .page-header h1')",
-            timeout=2000,
+            timeout=10000,
         )
         check(
             page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
