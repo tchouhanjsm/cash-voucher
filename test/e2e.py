@@ -1768,10 +1768,10 @@ with sync_playwright() as p:
     page.wait_for_selector('#view .daily-close-readiness')
 
     check(
-        page.locator('#view .page-header-actions [data-k="PAYMENT"]').is_visible()
-        and page.locator('#view .page-header-actions [data-k="PAYMENT"]').inner_text() == 'Record a payment'
-        and page.locator('#view .page-header-actions [data-k="RECEIPT"]').is_visible()
-        and page.locator('#view .page-header-actions [data-k="RECEIPT"]').inner_text() == 'Cash received',
+        page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').is_visible()
+        and page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').inner_text() == 'Record payment'
+        and page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').is_visible()
+        and page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').inner_text() == 'Cash received',
         'Dashboard exposes distinct payment and cash-received actions in its page header',
     )
     check(
@@ -3022,7 +3022,7 @@ with sync_playwright() as p:
         }""",
         timeout=10000,
     )
-    manager_stats = manager_page.locator('.dashboard-analysis .dashboard-stats--owner > .stat').count()
+    manager_stats = manager_page.locator('.dashboard-analysis .dashboard-stats--manager > .stat').count()
     manager_empty_period = manager_page.locator('.dashboard-empty-state').count()
     check(
         manager_page.locator('.dashboard-primary-actions .dashboard-primary-action').count() == 2
