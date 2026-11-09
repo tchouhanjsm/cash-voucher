@@ -1044,12 +1044,31 @@ async function run() {
     'invalid or bulk create payloads must not reach the Laravel server',
   );
 
+  const beforeFilteredRegister = requests.length;
+  const filteredRegisterPage = await api('registerPage', {
+    vendor: 'Test supplier',
+    approval: 'APPROVED',
+    paymentMethod: 'UPI',
+    cashImpact: 'CASH_OUT',
+    amountValidity: 'VALID',
+    offset: 0,
+    limit: 10,
+  });
+  assert.equal(filteredRegisterPage.totalCount, 1);
+  assert.equal(requests.length, beforeFilteredRegister + 1);
+  const filteredRegisterQuery = new URL(requests.at(-1).url).searchParams;
+  assert.equal(filteredRegisterQuery.get('vendor'), 'Test supplier');
+  assert.equal(filteredRegisterQuery.get('approval'), 'APPROVED');
+  assert.equal(filteredRegisterQuery.get('paymentMethod'), 'UPI');
+  assert.equal(filteredRegisterQuery.get('cashImpact'), 'CASH_OUT');
+  assert.equal(filteredRegisterQuery.get('amountValidity'), 'VALID');
+
   const beforeUnsupported = requests.length;
   await assert.rejects(
-    () => api('registerPage', { vendor: 'Test supplier', offset: 0, limit: 10 }),
+    () => api('deleteVoucher', { id: 'voucher-1' }),
     (error) => error.code === 'API_ACTION_UNSUPPORTED',
   );
-  assert.equal(requests.length, beforeUnsupported, 'unsupported actions must not reach any server');
+  assert.equal(requests.length, beforeUnsupported, 'unmapped actions must not reach any server');
 
   const reloadRequests = [];
   const reloadedApi = createLaravelApi({
@@ -1132,7 +1151,7 @@ async function run() {
   assert.match(buildSource, /LARAVEL_API_URL: ""/);
 
   console.log(
-    'Laravel cookie transport OK — same-origin session, duplicate review, vendor and receipt upload/download, receipt IDs, CSRF/idempotency contracts, and fail-closed unsupported writes.',
+    'Laravel cookie transport OK — same-origin session, full Register filter/totals/facet mapping, duplicate review, vendor and receipt upload/download, CSRF/idempotency contracts, and fail-closed unmapped writes.',
   );
 }
 
