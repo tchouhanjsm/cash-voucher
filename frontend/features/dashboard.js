@@ -1403,9 +1403,9 @@ export function createDashboard({ api }) {
         ].join('')
       : [
           dashboardPrimaryActions(),
+          operationsPanels,
           needsAttention,
           dashboardWarnings,
-          operationsPanels,
           periodControls(from, to),
           financialPanels,
         ].join('');
