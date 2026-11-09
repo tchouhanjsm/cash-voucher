@@ -10,10 +10,9 @@
 - **Release boundary:** Apps Script remains the sole production financial writer. No production endpoint switch, schema migration, deploy, Clasp push, dual write, import or cutover.
 - **Next:** complete exact-head verification, then conduct the synthetic-owner local-shadow walkthrough and observe ordinary staff completing Payment, Cash received, Register search and Users/Audit tasks. Record real completion time, hesitation and recoverable errors before claiming usability improvement; no score is assigned from synthetic tests.
 
-
 ---
 
-## Current delivery focus — PR #273 property settings / sequence readiness (8 November 2026)
+## Current delivery focus — PR #273/ property settings / sequence readiness (8 November 2026)
 
 - **PR / branch:** [PR #273](https://github.com/tchouhanjsm/cash-voucher/pull/273), `fix/laravel-settings-uninitialized-sequences-20261108` → `client-main`.
 - **Problem:** fresh Laravel bootstrap and Property Settings failed when either or both `PAYMENT` / `RECEIPT` rows were absent. Migration 0004 creates the sequence table but does not seed a reconciled counter.
