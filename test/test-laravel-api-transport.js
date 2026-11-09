@@ -356,7 +356,7 @@ async function run() {
     id: '22222222-2222-4222-8222-222222222222',
     fileId: '11111111-1111-4111-8111-111111111111',
   });
-  assert.match(receiptRead.dataUrl, /^data:image\\/png;base64,/);
+  assert.match(receiptRead.dataUrl, /^data:image\/png;base64,/);
   const binaryRead = requests.find((request) => request.url.endsWith('/receipts/11111111-1111-4111-8111-111111111111'));
   assert.equal(binaryRead.method, 'GET');
   assert.equal(binaryRead.credentials, 'same-origin');
