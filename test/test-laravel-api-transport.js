@@ -41,14 +41,21 @@ function jsonResponse(data, status = 200) {
   };
 }
 
-const duplicateRequestMapper = paymentsSource.match(
-  /async function requestDuplicateConfirmations[\\s\\S]*?entries\\.map\\(\\(entry, index\\) => \\(\\{([\\s\\S]*?)\\}\\)\\)/,
-)?.[1];
-assert.ok(duplicateRequestMapper, 'New Entry must map duplicate-review rows before transport');
+const duplicateRequestStart = paymentsSource.indexOf(
+  'async function requestDuplicateConfirmations',
+);
+const duplicateRequestEnd = paymentsSource.indexOf(
+  'if (!Array.isArray(response?.results)',
+  duplicateRequestStart,
+);
+const duplicateRequestMapper = paymentsSource.slice(duplicateRequestStart, duplicateRequestEnd);
+assert.ok(
+  duplicateRequestStart >= 0 && duplicateRequestEnd > duplicateRequestStart,
+  'New Entry must map duplicate-review rows before transport',
+);
 for (const field of ['category', 'notes', 'cashImpact', 'paymentMethod']) {
-  assert.match(
-    duplicateRequestMapper,
-    new RegExp(field + ': entry\\.' + field),
+  assert.ok(
+    duplicateRequestMapper.includes(field + ': entry.' + field),
     'duplicate review must send ' + field + ' so Laravel can validate and bind the review token',
   );
 }
