@@ -1424,6 +1424,15 @@ with sync_playwright() as p:
                     screenshot_name = f'{route_name}-{theme_name}-{width}.png'
                     # A previous transient toast should not obscure the review artifact.
                     page.locator('#toast').evaluate("element => element.classList.add('hidden')")
+                    page.evaluate("""() => {
+                        window.scrollTo({top: 0, left: 0, behavior: 'instant'});
+                        document.documentElement.scrollTop = 0;
+                        document.body.scrollTop = 0;
+                    }""")
+                    check(
+                        page.evaluate('window.scrollY === 0'),
+                        f'{route_name}: visual capture starts at the top of the workspace',
+                    )
                     page.screenshot(
                         path=os.path.join(visual_matrix_dir, screenshot_name),
                         full_page=width == 1280,
