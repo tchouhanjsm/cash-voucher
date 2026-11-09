@@ -325,9 +325,21 @@ function normalizeUpdateFields(value) {
   return fields;
 }
 
+function createMutationIdempotencyKey(namespace) {
+  const cryptoApi = globalThis.crypto;
+  if (!cryptoApi || typeof cryptoApi.getRandomValues !== 'function') {
+    throw failure(
+      'Secure voucher retry identifiers are unavailable in this browser.',
+      'CRYPTO_UNAVAILABLE',
+    );
+  }
+  const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
+  return namespace + '-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 function resolveMutationIdempotencyKey(payload, action) {
   if (payload.idempotencyKey === undefined) {
-    return createIdempotencyKey('voucher-' + action);
+    return createMutationIdempotencyKey('voucher-' + action);
   }
   if (
     typeof payload.idempotencyKey !== 'string' ||
