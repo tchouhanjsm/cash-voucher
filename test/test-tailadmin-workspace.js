@@ -166,7 +166,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v59'/,
+  /const C = 'cv2-v60'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -495,6 +495,39 @@ assert.match(
   'recent activity uses the server-paginated register read model',
 );
 assert.match(dashboard, /\['today', 'Today'\]/, 'Today is available as a dashboard period preset');
+
+assert.match(dashboard, /const D = \{ r: 'today'/, 'Dashboard opens on the current business day');
+assert.match(
+  dashboard,
+  /function dashboardPrimaryActions\(\)/,
+  'management Dashboard exposes one shared pair of entry actions',
+);
+assert.match(
+  dashboard,
+  /dashboard-primary-action[\s\S]*?data-k="PAYMENT"[\s\S]*?data-k="RECEIPT"/,
+  'primary actions distinguish Payment from Cash received',
+);
+assert.match(
+  dashboard,
+  /dashboard-primary-metrics/,
+  'Dashboard presents approved payments and receipts as primary movement measures',
+);
+assert.match(
+  dashboard,
+  /<details class="dashboard-analysis"/,
+  'secondary financial analysis is progressively disclosed with native details',
+);
+assert.match(
+  dashboard,
+  /More financial analysis/,
+  'secondary analytics disclosure has a clear label',
+);
+assert.match(
+  dashboard,
+  /dashboardCashPositionTitle/,
+  'physical drawer cash remains a separate server-calculated measure',
+);
+
 assert.match(
   dashboard,
   /percentage omitted for a small baseline/,
@@ -502,6 +535,37 @@ assert.match(
 );
 assert.match(dashboard, /summary\.trend/, 'trend data remains API-derived');
 assert.match(dashboard, /summary\.topVendors/, 'vendor breakdown remains API-derived');
+
+assert.match(
+  styles,
+  /\.dashboard-primary-actions/,
+  'Dashboard has one shared primary-action group',
+);
+assert.match(
+  styles,
+  /\.dashboard-primary-action\s*\{[^}]*min-height:\s*48px/s,
+  'Dashboard entry actions retain a comfortable touch target',
+);
+assert.match(
+  styles,
+  /\.dashboard-primary-metrics\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s,
+  'primary financial movement uses a calm two-column desktop layout',
+);
+assert.match(
+  styles,
+  /\.dashboard-analysis > summary\s*\{[^}]*min-height:\s*48px/s,
+  'secondary dashboard analysis has an accessible disclosure target',
+);
+assert.match(
+  styles,
+  /\.dashboard-analysis > summary:focus-visible/,
+  'secondary analysis disclosure has a visible keyboard focus state',
+);
+assert.match(
+  styles,
+  /@media screen and \(max-width: 560px\)[\s\S]*?\.dashboard-primary-metrics\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s,
+  'primary financial movement stacks cleanly on narrow screens',
+);
 assert.match(
   dashboard,
   /dashboard-trend__gridline/,
@@ -539,27 +603,6 @@ assert.match(
   'flat period comparisons are not presented as downward movement',
 );
 
-// Dashboard and administration place everyday work ahead of secondary analysis.
-assert.match(
-  dashboard,
-  /data-k="PAYMENT">Record a payment[\s\S]*?data-k="RECEIPT">Cash received/,
-  'Dashboard exposes distinct payment and cash-received entry actions',
-);
-assert.match(
-  dashboard,
-  /dailyPositionPanel,[\s\S]*?needsAttention/,
-  'current-day drawer position is shown before the attention queue',
-);
-assert.match(
-  dashboard,
-  /dailyPositionPanel,[\s\S]*?needsAttention,[\s\S]*?periodControls\(from, to\)/,
-  'period controls follow the current-day drawer and attention queue',
-);
-assert.match(
-  dashboard,
-  /<details class="dashboard-analysis-disclosure">/,
-  'period analytics are available but collapsed by default',
-);
 assert.match(
   administration,
   /users-list-toolbar[\s\S]*?users-search[\s\S]*?users-filter-details/,
@@ -611,7 +654,6 @@ assert.match(
   'Audit Log retains its pagination/export scope disclosure',
 );
 for (const selector of [
-  '.dashboard-analysis-disclosure',
   '.users-list-toolbar',
   '.users-filter-details',
   '.users-filter-actions',
@@ -623,6 +665,7 @@ for (const selector of [
 ]) {
   assert.ok(styles.includes(selector), 'minimal workspace styling covers ' + selector);
 }
+
 
 console.log(
   'TailAdmin-inspired workspace OK — local design layer, responsive states, data integrity and PWA integration.',

@@ -640,16 +640,16 @@ with sync_playwright() as p:
             'empty approved-activity period does not present zero KPIs and empty analytics as useful metrics',
         )
         check(
-            page.locator('.dashboard-empty-state [data-act=ntype][data-k="PAYMENT"]').count() == 1
-            and page.locator('.dashboard-empty-state [data-act=ntype][data-k="RECEIPT"]').count() == 1,
+            page.locator('.dashboard-primary-actions [data-act=ntype][data-k="PAYMENT"]').count() == 1
+            and page.locator('.dashboard-primary-actions [data-act=ntype][data-k="RECEIPT"]').count() == 1,
             'create-permitted owner receives direct payment and receipt actions',
         )
-        page.click('.dashboard-empty-state [data-act=ntype][data-k="RECEIPT"]')
+        page.click('.dashboard-primary-actions [data-act=ntype][data-k="RECEIPT"]')
         page.wait_for_selector('#nf.entry-form')
         check(
             page.locator('#view .page-header h1').inner_text() == 'Cash Received'
             and page.locator('.entry-type-switch button[data-k="RECEIPT"].on').count() == 1,
-            'empty-state receipt action opens the correctly selected Cash Received workflow',
+            'primary Cash received action opens the correctly selected Cash Received workflow',
         )
     finally:
         page.unroute('**/api?*', inject_empty_dashboard_summary)
@@ -657,11 +657,11 @@ with sync_playwright() as p:
     go_view(page, 'dash')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included') || "
-        "document.querySelector('#view')?.innerText.includes('Spending trend')"
+        "document.querySelector('#view')?.querySelector('.dashboard-primary-metrics') !== null"
     )
     check(
         page.locator('#view .page-header h1').inner_text() == 'Dashboard'
-        and page.locator('#view .dashboard-empty-state, #view .dashboard-trend').count() == 1,
+        and page.locator('#view .dashboard-empty-state, #view .dashboard-primary-metrics').count() == 1,
         'dashboard recovers after the controlled empty-summary response is removed',
     )
 
@@ -714,6 +714,7 @@ with sync_playwright() as p:
     ]:
         comparison_case = case
         page.click('[data-act=range][data-k="7d"]')
+    page.locator('.dashboard-analysis > summary').click()
         page.wait_for_function(
             "direction => document.querySelector('.dashboard-period-comparison')?.dataset.direction === direction",
             arg=case['direction'],
@@ -798,10 +799,10 @@ with sync_playwright() as p:
     comparison_case = {'paid': 1250, 'previousPaid': 1000}
     page.click('[data-act=range][data-k="7d"]')
     check(
-        not page.locator('.dashboard-analysis-disclosure').evaluate('(element) => element.open'),
+        not page.locator('.dashboard-analysis').evaluate('(element) => element.open'),
         'Dashboard period analysis stays collapsed until requested',
     )
-    open_disclosure(page, '.dashboard-analysis-disclosure')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.dashboard-trend-chart', state='visible')
     page.unroute('**/api?*', inject_dashboard_comparison)
 
@@ -1153,18 +1154,28 @@ with sync_playwright() as p:
             and page.locator('#view .page-header h1').inner_text().strip() != '',
             f'{route_name}: one non-empty shared page heading is rendered',
         )
-        page.wait_for_function(
-            "document.activeElement === document.querySelector('#view .page-header h1')",
-            timeout=2000,
-        )
-        check(
-            page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
-            f'{route_name}: route navigation places focus on the destination heading',
-        )
+        if route_id == 'new':
+            page.wait_for_function(
+                "document.activeElement === document.querySelector('#rows .erow .rv')",
+                timeout=5000,
+            )
+            check(
+                page.evaluate("document.activeElement === document.querySelector('#rows .erow .rv')"),
+                'New Entry opens with focus on the first vendor/payee field',
+            )
+        else:
+            page.wait_for_function(
+                "document.activeElement === document.querySelector('#view .page-header h1')",
+                timeout=10000,
+            )
+            check(
+                page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
+                f'{route_name}: route navigation places focus on the destination heading',
+            )
         if route_id == 'dash':
-            analysis_disclosure = page.locator('.dashboard-analysis-disclosure')
+            analysis_disclosure = page.locator('.dashboard-analysis')
             if analysis_disclosure.count() == 1:
-                open_disclosure(page, '.dashboard-analysis-disclosure')
+                open_disclosure(page, '.dashboard-analysis')
                 page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
                 chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
                     role: svg.getAttribute('role'),
@@ -1381,7 +1392,7 @@ with sync_playwright() as p:
                 )
                 if route_id == 'dash':
                     dashboard_metrics = layout['dashboardStatMetrics']
-                    expected_columns = 3 if width >= 801 else 2
+                    expected_columns = 1 if width <= 560 else 2 if width <= 800 else 4
                     check(
                         dashboard_metrics is not None
                         and dashboard_metrics['role'] == 'owner'
@@ -1403,6 +1414,8 @@ with sync_playwright() as p:
                     f'{route_name}: visible form controls remain at least 40px high at {width}px in {theme_name} theme; found {layout["tooShortControls"]}',
                 )
                 if width in (390, 1280):
+                    if route_id == 'dash':
+                        page.locator('.dashboard-analysis > summary').click()
                     screenshot_name = f'{route_name}-{theme_name}-{width}.png'
                     # A previous transient toast should not obscure the review artifact.
                     page.locator('#toast').evaluate("element => element.classList.add('hidden')")
@@ -1411,6 +1424,8 @@ with sync_playwright() as p:
                         full_page=width == 1280,
                         animations='disabled',
                     )
+                    if route_id == 'dash':
+                        page.locator('.dashboard-analysis > summary').click()
 
     page.unroute('**/api?*', inject_visual_dashboard_summary)
 
@@ -2754,16 +2769,16 @@ with sync_playwright() as p:
     page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
     page.wait_for_function(
-        "document.querySelector('.dashboard-analysis-disclosure') || "
+        "document.querySelector('.dashboard-analysis') || "
         "document.querySelector('#view [role=alert]')",
         timeout=15000,
     )
     check(
         len(dashboard_summary_interceptions) > 0
-        and page.locator('.dashboard-analysis-disclosure').count() == 1,
+        and page.locator('.dashboard-analysis').count() == 1,
         'authorized Dashboard analysis renders after the period summary request completes',
     )
-    open_disclosure(page, '.dashboard-analysis-disclosure')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('Spending trend') || "
         "document.querySelector('#view')?.innerText.includes('Dashboard totals unavailable')"
@@ -2993,31 +3008,43 @@ with sync_playwright() as p:
         }""",
         timeout=10000,
     )
-    manager_stats = manager_page.locator('.dashboard-stats--owner > .stat').count()
+    manager_stats = manager_page.locator('.dashboard-analysis .dashboard-stats--owner > .stat').count()
     manager_empty_period = manager_page.locator('.dashboard-empty-state').count()
+    check(
+        manager_page.locator('.dashboard-primary-actions .dashboard-primary-action').count() == 2
+        and manager_page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').is_visible()
+        and manager_page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').is_visible()
+        and 'on' in manager_page.locator('[data-act="range"][data-k="today"]').get_attribute('class').split()
+        and manager_page.locator('.dashboard-primary-metrics, .dashboard-empty-state').count() == 1
+        and (
+            manager_page.locator('.dashboard-analysis').count() == 0
+            or not manager_page.locator('.dashboard-analysis').evaluate('(element) => element.open')
+        ),
+        'manager Dashboard starts with distinct entry actions, Today and collapsed secondary analysis',
+    )
     check(
         manager_page.locator('#view .page-header h1').inner_text() == 'Dashboard'
         and manager_page.locator('.dashboard-staff-home').count() == 0
-        and manager_page.locator('.page-header-actions [data-k="PAYMENT"]').inner_text() == 'Record a payment'
-        and manager_page.locator('.page-header-actions [data-k="RECEIPT"]').inner_text() == 'Cash received'
+        and manager_page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').inner_text() == 'Record payment'
+        and manager_page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').inner_text() == 'Cash received'
         and manager_page.locator('.dashboard-cash-position').count() == 1
         and manager_page.locator('.daily-close-readiness').count() == 1
         and manager_page.locator('.dashboard-cash-position').evaluate("(element) => element.compareDocumentPosition(document.querySelector('.needs')) & Node.DOCUMENT_POSITION_FOLLOWING") != 0
         and manager_page.locator('.needs').evaluate("(element) => element.compareDocumentPosition(document.querySelector('.dashboard-period')) & Node.DOCUMENT_POSITION_FOLLOWING") != 0
         and (
             (
-                manager_stats == 6
-                and manager_page.locator('.dashboard-analysis-disclosure').count() == 1
-                and not manager_page.locator('.dashboard-analysis-disclosure').evaluate('(element) => element.open')
+                manager_stats == 4
+                and manager_page.locator('.dashboard-analysis').count() == 1
+                and not manager_page.locator('.dashboard-analysis').evaluate('(element) => element.open')
             )
             or (
                 manager_stats == 0
                 and manager_empty_period == 1
-                and manager_page.locator('.dashboard-analysis-disclosure').count() == 0
+                and manager_page.locator('.dashboard-analysis').count() == 0
             )
         )
         and (
-            manager_stats == 6
+            manager_stats == 4
             or (
                 manager_stats == 0
                 and manager_empty_period == 1
@@ -6325,6 +6352,8 @@ with sync_playwright() as p:
 
     page.route('**/api?*', inject_manager_dashboard_drilldowns)
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.dashboard-stats--owner .dashboard-kpi-drilldown')
     page.wait_for_selector('.needs-item [data-drill-key="cash-readiness-unavailable"]')
     manager_attention = page.locator('.needs-item [data-act="dashboardDrilldown"]')
@@ -6435,6 +6464,8 @@ with sync_playwright() as p:
                 'manager ' + drill_key + ' opens Register with its intended period/type/vendor context',
             )
         go_view(page, 'dash')
+        page.wait_for_selector('.dashboard-analysis')
+        page.locator('.dashboard-analysis > summary').click()
         page.wait_for_selector('[data-drill-key="' + drill_key + '"]')
     go_view(page, 'dash')
     page.wait_for_selector('.dashboard-recent-item__open')
@@ -6635,7 +6666,7 @@ with sync_playwright() as p:
                 view?.querySelector('.dashboard-cash-position')
                 && view.querySelector('.daily-close-readiness')
                 && (
-                    view.querySelector('.dashboard-analysis-disclosure')
+                    view.querySelector('.dashboard-analysis')
                     || view.querySelector('.dashboard-empty-state')
                     || view.querySelector('[role=alert]')
                 )
@@ -6643,13 +6674,13 @@ with sync_playwright() as p:
         }""",
         timeout=10000,
     )
-    initial_analysis = page.locator('.dashboard-analysis-disclosure')
+    initial_analysis = page.locator('.dashboard-analysis')
     if initial_analysis.count() == 1:
         check(
             not initial_analysis.evaluate('(element) => element.open'),
             'owner Dashboard keeps secondary period analysis collapsed on arrival',
         )
-        open_disclosure(page, '.dashboard-analysis-disclosure')
+        open_disclosure(page, '.dashboard-analysis')
         page.wait_for_selector('svg.chart', state='visible')
     else:
         check(
@@ -6660,13 +6691,13 @@ with sync_playwright() as p:
 
     page.click('[data-k=mtd]')
     page.wait_for_function(
-        "document.querySelector('.dashboard-analysis-disclosure') || document.querySelector('.dashboard-empty-state')",
+        "document.querySelector('.dashboard-analysis') || document.querySelector('.dashboard-empty-state')",
         timeout=10000,
     )
-    analysis = page.locator('.dashboard-analysis-disclosure')
+    analysis = page.locator('.dashboard-analysis')
     if analysis.count() == 1:
         if not analysis.evaluate('(element) => element.open'):
-            open_disclosure(page, '.dashboard-analysis-disclosure')
+            open_disclosure(page, '.dashboard-analysis')
         page.wait_for_selector('svg.chart', state='visible')
         check(
             'book balance' in page.inner_text('.stats').lower()
@@ -6829,8 +6860,8 @@ with sync_playwright() as p:
         page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
-    page.wait_for_selector('.dashboard-analysis-disclosure', state='attached')
-    open_disclosure(page, '.dashboard-analysis-disclosure')
+    page.wait_for_selector('.dashboard-analysis', state='attached')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.hb-l', state='visible')
     vendor_labels = page.locator('.two .card').nth(0).locator('.hb-l').all_inner_texts()
     category_labels = page.locator('.two .card').nth(1).locator('.hb-l').all_inner_texts()
@@ -6985,6 +7016,8 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-primary-metrics')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.stats')
     page.wait_for_selector('svg.chart')
     recovered_dashboard_text = page.locator('#view').inner_text()
@@ -7055,7 +7088,7 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
-    page.wait_for_selector('.stats')
+    page.wait_for_selector('.dashboard-primary-metrics')
 
     # A malformed dashboard summary must never degrade into zero-like financial KPIs.
     dashboard_summary_fault = {'field': 'paid'}
@@ -7127,6 +7160,7 @@ with sync_playwright() as p:
         "document.querySelector('.dashboard-recent-transactions .dashboard-recent-empty')?.innerText.includes('Recent activity could not be loaded')",
         timeout=10000,
     )
+    page.locator('.dashboard-analysis > summary').click()
     check(
         len(recent_activity_failures) == 1
         and page.locator('#view .stats').count() == 1
@@ -7138,6 +7172,8 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-primary-metrics')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.stats')
     page.wait_for_selector('svg.chart')
     check(
@@ -7292,6 +7328,8 @@ with sync_playwright() as p:
         page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.hb-l')
     dashboard_amount_text = page.locator('.stats').inner_text()
     check(
@@ -7395,6 +7433,8 @@ with sync_playwright() as p:
             f'{suffix} is handled safely by voucher amount-in-words printing',
         )
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.hb-l')
     page.unroute('**/api?*', tamper_dashboard_numeric_values)
     page.reload(wait_until='domcontentloaded')
@@ -8874,6 +8914,8 @@ with sync_playwright() as p:
 
     page.set_viewport_size({'width': 1280, 'height': 800})
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.two')
     page.screenshot(path='/tmp/desktop.png')
 
@@ -9099,6 +9141,8 @@ with sync_playwright() as p:
 
     page.set_viewport_size({'width': 1280, 'height': 800})
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    open_disclosure(page, '.dashboard-analysis')
     page.wait_for_selector('.two')
     amount_style = page.locator('.stats b').first.evaluate(
         '(element) => getComputedStyle(element).fontVariantNumeric'

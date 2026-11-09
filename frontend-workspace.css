@@ -3685,6 +3685,205 @@
   }
 }
 
+/* Dashboard daily workspace — prioritize today's work and disclose secondary analysis. */
+@media screen {
+  .dashboard-primary-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 0 2px;
+  }
+
+  .dashboard-primary-action {
+    display: flex;
+    min-width: 0;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 11px 14px;
+    font-size: 13px;
+    font-weight: 760;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .dashboard-primary-action .i {
+    flex: 0 0 auto;
+  }
+
+  .dashboard-primary-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+  }
+
+  .dashboard-primary-metric {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 17px 18px;
+    border: 1px solid var(--workspace-border);
+    border-radius: var(--workspace-radius);
+    background: var(--workspace-surface);
+    box-shadow: none;
+  }
+
+  .dashboard-primary-metric__copy {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .dashboard-primary-metric__copy > span {
+    color: var(--workspace-muted);
+    font-size: 10px;
+    font-weight: 820;
+    letter-spacing: 0.075em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .dashboard-primary-metric__copy > strong {
+    color: var(--workspace-ink);
+    font-size: clamp(22px, 2vw, 30px);
+    font-weight: 810;
+    letter-spacing: -0.05em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-primary-metric__copy > small {
+    color: var(--workspace-muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .dashboard-primary-metric__open {
+    min-height: 44px;
+    align-self: center;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+
+  .dashboard-analysis {
+    min-width: 0;
+    border: 1px solid var(--workspace-border);
+    border-radius: var(--workspace-radius);
+    background: var(--workspace-surface);
+  }
+
+  .dashboard-analysis > summary {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 16px;
+    color: var(--workspace-ink);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 760;
+    list-style-position: inside;
+  }
+
+  .dashboard-analysis > summary:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: var(--workspace-radius);
+  }
+
+  .dashboard-analysis[open] > summary {
+    border-bottom: 1px solid var(--workspace-border);
+  }
+
+  .dashboard-analysis__hint {
+    color: var(--workspace-muted);
+    font-size: 11px;
+    font-weight: 500;
+    text-align: right;
+  }
+
+  .dashboard-analysis__content {
+    display: grid;
+    min-width: 0;
+    gap: 14px;
+    padding: 15px;
+  }
+
+  .dashboard-analysis__content > * {
+    min-width: 0;
+  }
+
+  .dashboard-analysis .dashboard-stats--owner {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dashboard-analysis .dashboard-stats--manager {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-analysis .dashboard-stats > .stat {
+    min-width: 0;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .dashboard-analysis .dashboard-stats--owner,
+  .dashboard-analysis .dashboard-stats--manager {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-analysis .dashboard-analysis-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media screen and (max-width: 560px) {
+  .dashboard-primary-actions {
+    gap: 8px;
+  }
+
+  .dashboard-primary-action {
+    min-height: 48px;
+    gap: 7px;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .dashboard-primary-metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .dashboard-primary-metric {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 14px;
+  }
+
+  .dashboard-primary-metric__open {
+    font-size: 11px;
+  }
+
+  .dashboard-analysis > summary {
+    min-height: 48px;
+    padding: 11px 12px;
+  }
+
+  .dashboard-analysis__content {
+    padding: 11px;
+  }
+
+  .dashboard-analysis .dashboard-stats--owner,
+  .dashboard-analysis .dashboard-stats--manager {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Novice-first Dashboard and administration workspaces. */
 @media screen {
   .app #view .dashboard-view > .page-header .page-header-actions {
