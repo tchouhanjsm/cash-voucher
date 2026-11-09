@@ -9518,6 +9518,65 @@ with sync_playwright() as p:
         'audit view recovers when a valid response returns',
     )
 
+    # A delayed older Audit Log request must not replace the newer page after navigation.
+    audit_page.evaluate("""() => {
+        const nativeFetch = window.fetch.bind(window);
+        const gate = {calls: 0, pending: false, finished: false, release: null};
+        window.__auditRouteGate = gate;
+        window.fetch = async (input, init = {}) => {
+            let action = '';
+            try { action = JSON.parse(init.body || '{}').action || ''; } catch {}
+            if (action !== 'auditLog') return nativeFetch(input, init);
+            const call = ++gate.calls;
+            if (call === 1) {
+                gate.pending = true;
+                await new Promise((resolve) => { gate.release = resolve; });
+                gate.pending = false;
+            }
+            const response = await nativeFetch(input, init);
+            const payload = await response.json();
+            if (payload?.ok && payload.data && Array.isArray(payload.data.rows)) {
+                payload.data = {
+                    ...payload.data,
+                    rows: [{
+                        time: '2026-10-12T10:00:00',
+                        user: 'owner@test.com',
+                        action: call === 1 ? 'STALE_AUDIT_RACE' : 'CURRENT_AUDIT_RACE',
+                        target: '#audit-race',
+                        details: 'synthetic navigation race',
+                    }],
+                    nextBeforeRow: null,
+                    totalCount: 1,
+                    auditHealth: null,
+                };
+            }
+            if (call === 1) gate.finished = true;
+            return new Response(JSON.stringify(payload), {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+            });
+        };
+    }""")
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
+    audit_page.wait_for_function(
+        "window.__auditRouteGate?.pending === true && typeof window.__auditRouteGate.release === 'function'"
+    )
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud')?.innerText.includes('CURRENT_AUDIT_RACE')",
+        timeout=10000,
+    )
+    audit_page.evaluate("window.__auditRouteGate.release()")
+    audit_page.wait_for_function("window.__auditRouteGate?.finished === true")
+    check(
+        'CURRENT_AUDIT_RACE' in audit_page.locator('#aud').inner_text()
+        and 'STALE_AUDIT_RACE' not in audit_page.locator('#aud').inner_text(),
+        'a delayed earlier Audit Log response cannot replace the latest page after leaving and returning',
+    )
+
     backup_status_failure_once = True
     go_view(audit_page, 'set')
     audit_page.wait_for_selector('[data-act=dqscan]')
