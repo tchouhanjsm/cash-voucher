@@ -24,6 +24,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
   let malformedUserCount = 0;
   const userFilters = { query: '', role: 'ALL', status: 'ALL' };
   let auditRows = [];
+  let auditRequestId = 0;
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
   let malformedAuditCount = 0;
   let auditResponseInvalid = false;
@@ -756,6 +757,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
   }
 
   function auditView() {
+    const requestId = ++auditRequestId;
     auditFilters.query = '';
     auditFilters.user = '';
     auditFilters.action = '';
@@ -803,6 +805,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
 
     api('auditLog')
       .then((page) => {
+        if (requestId !== auditRequestId || S.view !== 'audit') return;
         if (!setAuditPage(page, false)) {
           auditResponseInvalid = true;
           auditRows = [];
@@ -814,6 +817,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         }
       })
       .catch((error) => {
+        if (requestId !== auditRequestId || S.view !== 'audit') return;
         auditRequestFailed = true;
         renderAuditHealth();
         const body = $('#aud');
@@ -905,6 +909,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
 
   async function loadOlderAuditEvents() {
     if (!auditNextBeforeRow || auditLoadingOlder) return;
+    const requestId = auditRequestId;
     auditLoadingOlder = true;
     const button = $('#aud-more');
     if (button) {
@@ -913,6 +918,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     }
     try {
       const page = await api('auditLog', { beforeRow: auditNextBeforeRow });
+      if (requestId !== auditRequestId || S.view !== 'audit') return;
       if (!setAuditPage(page, true)) {
         toast(
           'Older audit events returned an invalid response. Loaded events were kept; retry later.',
@@ -920,8 +926,10 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         );
       }
     } catch (error) {
+      if (requestId !== auditRequestId || S.view !== 'audit') return;
       fail(error);
     } finally {
+      if (requestId !== auditRequestId || S.view !== 'audit') return;
       auditLoadingOlder = false;
       const currentButton = $('#aud-more');
       if (currentButton) {
