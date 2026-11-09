@@ -29,11 +29,176 @@ final class VoucherApiTest extends TestCase
         $this->insertVoucherFixture($this->userId, 'Own vendor', 10000);
         $this->insertVoucherFixture($otherUser, 'Other vendor', 20000);
 
+        $ownEmail = 'fixture-'.$this->userId.'@example.test';
         $response = $this->withLegacySession()->getJson('/api/v1/vouchers');
 
         $response->assertOk()
             ->assertJsonPath('data.totalCount', 1)
-            ->assertJsonPath('data.items.0.vendor', 'Own vendor');
+            ->assertJsonPath('data.items.0.vendor', 'Own vendor')
+            ->assertJsonPath('data.facets.vendors', ['Own vendor'])
+            ->assertJsonPath('data.facets.users', [$ownEmail]);
+    }
+
+    public function test_register_filters_search_totals_and_facets_match_the_legacy_contract(): void
+    {
+        $this->withRoleSession('manager');
+        $otherUser = $this->createUser('staff');
+
+        $paymentId = $this->insertVoucherFixture($this->userId, 'Acme Steel', 12550);
+        $receiptId = $this->insertVoucherFixture($otherUser, 'Acme Return', 4500);
+        $pendingId = $this->insertVoucherFixture($this->userId, 'Pending Supplier', 0);
+        $cancelledId = $this->insertVoucherFixture($otherUser, 'Cancelled Supplier', 6000);
+
+        DB::table('vouchers')->where('id', $paymentId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '501',
+            'category' => 'Travel',
+            'notes' => 'Trip note Jaipur',
+            'cash_impact' => 'CASH_OUT',
+            'approval_status' => 'APPROVED',
+            'payment_method' => 'UPI',
+        ]);
+        DB::table('vouchers')->where('id', $receiptId)->update([
+            'voucher_type' => 'RECEIPT',
+            'voucher_number' => '502',
+            'category' => 'Guest Advance',
+            'notes' => 'Refund received',
+            'cash_impact' => 'CASH_IN',
+            'approval_status' => 'NOT_REQUIRED',
+            'payment_method' => 'CASH',
+        ]);
+        DB::table('vouchers')->where('id', $pendingId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '503',
+            'category' => 'Travel',
+            'notes' => 'Waiting for approval',
+            'cash_impact' => 'UNCLASSIFIED',
+            'approval_status' => 'PENDING',
+            'payment_method' => '',
+        ]);
+        DB::table('vouchers')->where('id', $cancelledId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '504',
+            'category' => 'Maintenance',
+            'notes' => 'Cancelled supplier payment',
+            'status' => 'CANCELLED',
+            'cash_impact' => 'CASH_OUT',
+            'approval_status' => 'NOT_REQUIRED',
+            'payment_method' => 'BANK_TRANSFER',
+        ]);
+
+        $managerEmail = 'fixture-'.$this->userId.'@example.test';
+        $otherEmail = 'fixture-'.$otherUser.'@example.test';
+
+        $all = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'status' => 'ALL',
+            'offset' => 0,
+            'limit' => 2,
+        ]));
+        $all->assertOk()
+            ->assertJsonPath('data.totalCount', 4)
+            ->assertJsonPath('data.limit', 2)
+            ->assertJsonPath('data.hasMore', true)
+            ->assertJsonPath('data.totals.paid', '125.50')
+            ->assertJsonPath('data.totals.received', '45.00')
+            ->assertJsonPath('data.totals.approvalExceptionCount', 1)
+            ->assertJsonPath('data.totals.invalidAmountCount', 1)
+            ->assertJsonPath('data.totals.malformedRecordCount', 0)
+            ->assertJsonPath('data.totals.malformedFieldCount', 0)
+            ->assertJsonPath('data.facets.vendors', [
+                'Acme Return',
+                'Acme Steel',
+                'Cancelled Supplier',
+                'Pending Supplier',
+            ])
+            ->assertJsonPath('data.facets.users', [$managerEmail, $otherEmail]);
+
+        $exportPage = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'status' => 'ALL',
+            'offset' => 0,
+            'limit' => 200,
+        ]));
+        $exportPage->assertOk()
+            ->assertJsonPath('data.limit', 200)
+            ->assertJsonPath('data.totalCount', 4)
+            ->assertJsonPath('data.hasMore', false);
+
+        $searchByReceiptNumber = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'q' => 'r-502',
+        ]));
+        $searchByReceiptNumber->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.type', 'RECEIPT')
+            ->assertJsonPath('data.items.0.voucherNo', '502');
+
+        $searchByNote = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'q' => 'jaipur',
+        ]));
+        $searchByNote->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.vendor', 'Acme Steel');
+
+        $combinedFilters = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'q' => 'trip note',
+            'vendor' => 'Acme Steel',
+            'cat' => 'Travel',
+            'user' => $managerEmail,
+            'type' => 'PAYMENT',
+            'status' => 'ACTIVE',
+            'approval' => 'APPROVED',
+            'paymentMethod' => 'UPI',
+            'cashImpact' => 'CASH_OUT',
+            'amountValidity' => 'VALID',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+            'limit' => 100,
+        ]));
+        $combinedFilters->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $paymentId)
+            ->assertJsonPath('data.totals.paid', '125.50')
+            ->assertJsonPath('data.totals.received', '0.00');
+
+        $pendingExceptions = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'approval' => 'PENDING',
+            'paymentMethod' => 'UNRECORDED',
+            'cashImpact' => 'UNCLASSIFIED',
+            'amountValidity' => 'INVALID',
+        ]));
+        $pendingExceptions->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $pendingId)
+            ->assertJsonPath('data.totals.invalidAmountCount', 1)
+            ->assertJsonPath('data.totals.approvalExceptionCount', 1);
+
+        $unfilteredPaymentMethod = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'paymentMethod' => 'UNRECOGNIZED',
+        ]));
+        $unfilteredPaymentMethod->assertOk()
+            ->assertJsonPath('data.totalCount', 0);
+
+        $invalidFilter = $this->withLegacySession()->getJson('/api/v1/vouchers?approval=WAITING');
+        $invalidFilter->assertUnprocessable()
+            ->assertJsonPath('error.code', 'FILTER_INVALID');
+    }
+
+    public function test_staff_cannot_filter_other_users_and_facets_remain_creator_scoped(): void
+    {
+        $otherUser = $this->createUser('staff');
+        $this->insertVoucherFixture($this->userId, 'Own visible supplier', 10000);
+        $this->insertVoucherFixture($otherUser, 'Hidden supplier', 20000);
+
+        $forbidden = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'user' => 'fixture-'.$otherUser.'@example.test',
+        ]));
+        $forbidden->assertForbidden()->assertJsonPath('error.code', 'FORBIDDEN');
+
+        $ownEmail = 'fixture-'.$this->userId.'@example.test';
+        $visible = $this->withLegacySession()->getJson('/api/v1/vouchers');
+        $visible->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.facets.vendors', ['Own visible supplier'])
+            ->assertJsonPath('data.facets.users', [$ownEmail]);
     }
 
     public function test_accountant_cannot_open_the_voucher_register(): void
