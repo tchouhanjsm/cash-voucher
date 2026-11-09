@@ -1226,7 +1226,6 @@ export function createDashboard({ api }) {
             <h2 id="dashboardEmptyTitle">No approved payments or recorded receipts for these dates</h2>
             <p class="dashboard-empty-state__copy">No approved payments or recorded receipts are included in the selected period’s totals.</p>
             <p class="dashboard-empty-state__scope">This is a date-filtered summary, not a statement that your full voucher book is empty. Pending or rejected payments remain separate from approved totals.</p>
-            ${emptyPeriodActions}
           </div>
           <aside class="dashboard-empty-state__next" aria-label="What to do next">
             <p class="dashboard-empty-state__next-title">WHAT TO DO NEXT</p>
@@ -1305,15 +1304,14 @@ export function createDashboard({ api }) {
           staffDashboardWarnings,
           recentTransactionsCard(recentTransactions, recentTransactionsError, from, to, true),
         ].join('')
-      : periodIsEmpty
-        ? [
-            needsAttention,
-            periodControls(from, to),
-            emptyPeriodPanel,
-            dashboardWarnings,
-            operationsPanels,
-          ].join('')
-        : [needsAttention, periodControls(from, to), financialPanels].join('');
+      : [
+          dashboardPrimaryActions(),
+          needsAttention,
+          dashboardWarnings,
+          operationsPanels,
+          periodControls(from, to),
+          financialPanels,
+        ].join('');
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +
