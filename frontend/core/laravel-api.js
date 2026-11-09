@@ -585,7 +585,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
               createdAt: '',
               updatedBy: '',
               updatedAt: '',
-              receipts: [],
+              receipts: Array.isArray(item.receipts) ? item.receipts : [],
               cancelReason: '',
               approvedBy: '',
               approvedAt: '',
