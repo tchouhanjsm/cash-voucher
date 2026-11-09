@@ -411,7 +411,10 @@ function mapRegisterPage(page) {
     !Array.isArray(page.facets.vendors) ||
     !Array.isArray(page.facets.users)
   ) {
-    throw failure('The Laravel Register response is incomplete or invalid.', 'API_RESPONSE_INVALID');
+    throw failure(
+      'The Laravel Register response is incomplete or invalid.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   const counters = [
@@ -426,18 +429,32 @@ function mapRegisterPage(page) {
   };
   for (const field of counters) {
     if (!Number.isSafeInteger(page.totals[field]) || page.totals[field] < 0) {
-      throw failure('The Laravel Register totals are incomplete or invalid.', 'API_RESPONSE_INVALID');
+      throw failure(
+        'The Laravel Register totals are incomplete or invalid.',
+        'API_RESPONSE_INVALID',
+      );
     }
     totals[field] = page.totals[field];
   }
 
   const items = page.items.map((item) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
-      throw failure('The Laravel Register contains an invalid voucher row.', 'API_RESPONSE_INVALID');
+      throw failure(
+        'The Laravel Register contains an invalid voucher row.',
+        'API_RESPONSE_INVALID',
+      );
     }
     const voucherNo = Number(item.voucherNo);
-    if (!Number.isSafeInteger(voucherNo) || voucherNo < 1 || typeof item.id !== 'string' || !item.id) {
-      throw failure('The Laravel Register contains an invalid voucher reference.', 'API_RESPONSE_INVALID');
+    if (
+      !Number.isSafeInteger(voucherNo) ||
+      voucherNo < 1 ||
+      typeof item.id !== 'string' ||
+      !item.id
+    ) {
+      throw failure(
+        'The Laravel Register contains an invalid voucher reference.',
+        'API_RESPONSE_INVALID',
+      );
     }
 
     return {
