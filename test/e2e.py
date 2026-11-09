@@ -787,6 +787,7 @@ with sync_playwright() as p:
     )
     comparison_case = {'paid': 1250, 'previousPaid': 1000}
     page.click('[data-act=range][data-k="7d"]')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.dashboard-trend-chart', state='visible')
     page.unroute('**/api?*', inject_dashboard_comparison)
 
@@ -1360,7 +1361,7 @@ with sync_playwright() as p:
                 )
                 if route_id == 'dash':
                     dashboard_metrics = layout['dashboardStatMetrics']
-                    expected_columns = 3 if width >= 801 else 2
+                    expected_columns = 4 if width >= 801 else 2
                     check(
                         dashboard_metrics is not None
                         and dashboard_metrics['role'] == 'owner'
@@ -2892,7 +2893,7 @@ with sync_playwright() as p:
         manager_page.locator('.dashboard-primary-actions .dashboard-primary-action').count() == 2
         and manager_page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').is_visible()
         and manager_page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').is_visible()
-        and manager_page.locator('[data-act="range"][data-k="today"]').get_attribute('aria-pressed') == 'true'
+        and  'on' in manager_page.locator('[data-act="range"][data-k="today"]').get_attribute('class').split()
         and manager_page.locator('.dashboard-primary-metrics, .dashboard-empty-state').count() == 1
         and (
             manager_page.locator('.dashboard-analysis').count() == 0
