@@ -574,6 +574,33 @@ assert.match(
 );
 assert.match(dashboard, /summary\.trend/, 'trend data remains API-derived');
 assert.match(dashboard, /summary\.topVendors/, 'vendor breakdown remains API-derived');
+
+assert.match(styles, /\.dashboard-primary-actions/, 'Dashboard has one shared primary-action group');
+assert.match(
+  styles,
+  /\.dashboard-primary-action\s*\{[^}]*min-height:\s*48px/s,
+  'Dashboard entry actions retain a comfortable touch target',
+);
+assert.match(
+  styles,
+  /\.dashboard-primary-metrics\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s,
+  'primary financial movement uses a calm two-column desktop layout',
+);
+assert.match(
+  styles,
+  /\.dashboard-analysis > summary\s*\{[^}]*min-height:\s*48px/s,
+  'secondary dashboard analysis has an accessible disclosure target',
+);
+assert.match(
+  styles,
+  /\.dashboard-analysis > summary:focus-visible/,
+  'secondary analysis disclosure has a visible keyboard focus state',
+);
+assert.match(
+  styles,
+  /@media screen and \(max-width: 560px\)[\s\S]*?\.dashboard-primary-metrics\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s,
+  'primary financial movement stacks cleanly on narrow screens',
+);
 assert.match(
   dashboard,
   /dashboard-trend__gridline/,
