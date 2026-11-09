@@ -8012,6 +8012,7 @@ with sync_playwright() as p:
         and not audit_page.evaluate('window.__xssFired === true'),
         'legacy free-text update details remain compatible and render as inert text',
     )
+    open_disclosure(audit_page, '#auditFilters')
     healthy_audit_text = audit_page.locator('#aud-health').inner_text()
     check(
         'an outage affecting every marker store may still be undetectable'
@@ -8022,6 +8023,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'DEGRADED'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-health [role=alert]')?.innerText.includes('3 write failure(s) recorded')",
         timeout=10000,
@@ -8057,6 +8059,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'MONITORING_UNAVAILABLE_WITH_MARKER'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-health [role=alert]')?.innerText.includes('2 write failure(s) recorded')",
         timeout=10000,
@@ -8085,6 +8088,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'INVALID_RESPONSE'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-health [role=alert]')?.innerText.includes('server response was invalid')",
         timeout=10000,
@@ -8110,6 +8114,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'UNAVAILABLE'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-health [role=alert]')?.innerText.includes('audit request failed')",
         timeout=10000,
@@ -8135,6 +8140,7 @@ with sync_playwright() as p:
     audit_health_mode['status'] = 'NO_KNOWN_FAILURE'
     go_view(audit_page, 'dash')
     go_view(audit_page, 'audit')
+    open_disclosure(audit_page, '#auditFilters')
     audit_page.wait_for_function(
         "document.querySelector('#aud-more') && !document.querySelector('#aud-more').classList.contains('hidden')",
         timeout=10000,
