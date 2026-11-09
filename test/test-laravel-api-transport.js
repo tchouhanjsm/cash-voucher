@@ -410,7 +410,9 @@ async function run() {
   assert.equal(entrySuggestions.scope, 'OWN');
   assert.equal(entrySuggestions.suggestions.category.value, 'Maintenance');
   assert.equal(entrySuggestions.suggestions.paymentMethod.value, 'UPI');
-  const suggestionsRequest = requests.find((request) => request.url.includes('/entry-suggestions?'));
+  const suggestionsRequest = requests.find((request) =>
+    request.url.includes('/entry-suggestions?'),
+  );
   assert.equal(new URL(suggestionsRequest.url).searchParams.get('vendor'), 'Test supplier');
   assert.equal(new URL(suggestionsRequest.url).searchParams.get('type'), 'PAYMENT');
   assert.equal(suggestionsRequest.method, 'GET');

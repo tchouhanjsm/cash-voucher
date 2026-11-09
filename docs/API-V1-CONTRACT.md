@@ -83,7 +83,7 @@ The first supported browser actions are login, session restore, logout, password
 | POST   | /api/v1/vouchers/{voucherId}/rejection    | Manager/Owner pending-payment rejection; reason required                         |
 | POST   | /api/v1/vouchers/{voucherId}/receipts     | Staff-own or Manager/Owner private image attachment                              |
 | GET    | /api/v1/receipts/{receiptId}              | Staff-own or Manager/Owner private download with integrity verification          |
-| GET    | /api/v1/entry-suggestions                  | Create-capable role; read-only explicit vendor defaults or role-scoped historical hints; tie returns no result |
+| GET    | /api/v1/entry-suggestions                  | Create-capable role; read-only defaults/history; tied history omitted |
 | GET    | /api/v1/vendors                           | Manager/Owner only; active by default; paginated                                 |
 | POST   | /api/v1/vendors                           | Manager/Owner create; CSRF, idempotency and append-only audit                    |
 | PATCH  | /api/v1/vendors/{vendorId}                | Manager/Owner catalog update; issued voucher snapshots unchanged                 |

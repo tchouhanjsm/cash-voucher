@@ -661,29 +661,42 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const voucherId = typeof payload.id === 'string' ? payload.id.trim() : '';
         const receipt = payload.receipt;
         if (
-          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(voucherId) ||
-          !receipt || typeof receipt !== 'object' ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            voucherId,
+          ) ||
+          !receipt ||
+          typeof receipt !== 'object' ||
           !['image/jpeg', 'image/png', 'image/webp'].includes(receipt.mime) ||
-          typeof receipt.data !== 'string' || !receipt.data.length || receipt.data.length > 2200000
+          typeof receipt.data !== 'string' ||
+          !receipt.data.length ||
+          receipt.data.length > 2200000
         ) {
           throw failure('Choose a valid JPG, PNG or WebP receipt image.', 'PAYLOAD_INVALID');
         }
 
-        const idempotencyKey = typeof payload.idempotencyKey === 'string' &&
+        const idempotencyKey =
+          typeof payload.idempotencyKey === 'string' &&
           /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(payload.idempotencyKey)
-          ? payload.idempotencyKey : createIdempotencyKey();
+            ? payload.idempotencyKey
+            : createIdempotencyKey();
         const result = await mutate(
           '/vouchers/' + encodeURIComponent(voucherId) + '/receipts',
           { receipt: { mime: receipt.mime, data: receipt.data } },
-          { idempotencyKey },
+          { idempotency: true, idempotencyKey },
         );
         if (
-          !result?.receipt || typeof result.receipt.id !== 'string' ||
-          result.receipt.voucherId !== voucherId || result.receipt.contentType !== receipt.mime ||
-          !Number.isSafeInteger(result.receipt.byteSize) || result.receipt.byteSize < 1 ||
-          result.receipt.byteSize > 1600000 || typeof result.receipt.sha256 !== 'string' ||
+          !result?.receipt ||
+          typeof result.receipt.id !== 'string' ||
+          result.receipt.voucherId !== voucherId ||
+          result.receipt.contentType !== receipt.mime ||
+          !Number.isSafeInteger(result.receipt.byteSize) ||
+          result.receipt.byteSize < 1 ||
+          result.receipt.byteSize > 1600000 ||
+          typeof result.receipt.sha256 !== 'string' ||
           !/^[a-f0-9]{64}$/.test(result.receipt.sha256) ||
-          !Number.isSafeInteger(result.receiptCount) || result.receiptCount < 1 || result.receiptCount > 3
+          !Number.isSafeInteger(result.receiptCount) ||
+          result.receiptCount < 1 ||
+          result.receiptCount > 3
         ) {
           throw failure(
             'The receipt upload response was incomplete. Refresh the Register before retrying.',
@@ -694,15 +707,26 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           ? payload.existingReceiptIds.filter((id) => typeof id === 'string' && id.trim())
           : [];
         return {
-          receipts: [...existing, result.receipt.id].filter((id, index, list) => list.indexOf(id) === index).slice(0, 3),
+          receipts: [...existing, result.receipt.id]
+            .filter((id, index, list) => list.indexOf(id) === index)
+            .slice(0, 3),
           receiptCount: result.receiptCount,
-          receiptUpload: { id: result.receipt.id, sha256: result.receipt.sha256, byteSize: result.receipt.byteSize, replayed: result.replayed === true },
+          receiptUpload: {
+            id: result.receipt.id,
+            sha256: result.receipt.sha256,
+            byteSize: result.receipt.byteSize,
+            replayed: result.replayed === true,
+          },
         };
       }
 
       case 'getReceipt': {
         const receiptId = typeof payload.fileId === 'string' ? payload.fileId.trim() : '';
-        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receiptId)) {
+        if (
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            receiptId,
+          )
+        ) {
           throw failure(
             'The receipt reference is invalid. Refresh the Register and retry.',
             'PAYLOAD_INVALID',

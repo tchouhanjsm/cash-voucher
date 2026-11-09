@@ -228,9 +228,7 @@ export function createPayments({ api, refresh, isLaravelShadow = false }) {
       button.className = 'btn sm entry-suggestion-action';
       button.textContent = 'Use ' + label.toLowerCase() + ': ' + item.value;
       button.title =
-        'Suggestion from ' +
-        sourceLabel +
-        '. Your entry changes only when you select this button.';
+        'Suggestion from ' + sourceLabel + '. Your entry changes only when you select this button.';
       button.addEventListener('click', () => {
         if (![...select.options].some((option) => option.value === item.value)) return;
         select.value = item.value;
