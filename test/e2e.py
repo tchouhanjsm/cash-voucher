@@ -630,16 +630,16 @@ with sync_playwright() as p:
             'empty approved-activity period does not present zero KPIs and empty analytics as useful metrics',
         )
         check(
-            page.locator('.dashboard-empty-state [data-act=ntype][data-k="PAYMENT"]').count() == 1
-            and page.locator('.dashboard-empty-state [data-act=ntype][data-k="RECEIPT"]').count() == 1,
+            page.locator('.dashboard-primary-actions [data-act=ntype][data-k="PAYMENT"]').count() == 1
+            and page.locator('.dashboard-primary-actions [data-act=ntype][data-k="RECEIPT"]').count() == 1,
             'create-permitted owner receives direct payment and receipt actions',
         )
-        page.click('.dashboard-empty-state [data-act=ntype][data-k="RECEIPT"]')
+        page.click('.dashboard-primary-actions [data-act=ntype][data-k="RECEIPT"]')
         page.wait_for_selector('#nf.entry-form')
         check(
             page.locator('#view .page-header h1').inner_text() == 'Cash Received'
             and page.locator('.entry-type-switch button[data-k="RECEIPT"].on').count() == 1,
-            'empty-state receipt action opens the correctly selected Cash Received workflow',
+            'primary Cash received action opens the correctly selected Cash Received workflow',
         )
     finally:
         page.unroute('**/api?*', inject_empty_dashboard_summary)
