@@ -504,6 +504,42 @@ assert.match(
 assert.match(
   dashboard,
   /function dashboardPrimaryActions\(\)/,
+  'management Dashboard exposes one shared pair of entry actions',
+);
+assert.match(
+  dashboard,
+  /dashboard-primary-action[\s\S]*?data-k=\"PAYMENT\"[\s\S]*?data-k=\"RECEIPT\"/,
+  'primary actions distinguish Payment from Cash received',
+);
+assert.match(
+  dashboard,
+  /dashboard-primary-metrics/,
+  'Dashboard presents approved payments and receipts as primary movement measures',
+);
+assert.match(
+  dashboard,
+  /<details class=\"dashboard-analysis\"/,
+  'secondary financial analysis is progressively disclosed with native details',
+);
+assert.match(
+  dashboard,
+  /More financial analysis/,
+  'secondary analytics disclosure has a clear label',
+);
+assert.match(
+  dashboard,
+  /dashboardCashPositionTitle/,
+  'physical drawer cash remains a separate server-calculated measure',
+);
+
+assert.match(
+  dashboard,
+  /const D = \{ r: 'today'/,
+  'Dashboard opens on the current business day',
+);
+assert.match(
+  dashboard,
+  /function dashboardPrimaryActions\(\)/,
   'management Dashboard offers explicit Payment and Cash received actions',
 );
 assert.match(
