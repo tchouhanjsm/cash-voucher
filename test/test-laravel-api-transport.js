@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'frontend/core/laravel-api.js'), 'utf8');
+const paymentsSource = fs.readFileSync(path.join(root, 'frontend/features/payments.js'), 'utf8');
 const mainSource = fs.readFileSync(path.join(root, 'frontend/main.js'), 'utf8');
 const configSource = fs.readFileSync(path.join(root, 'config.js'), 'utf8');
 const buildSource = fs.readFileSync(path.join(root, 'scripts/build-web.js'), 'utf8');
@@ -38,6 +39,18 @@ function jsonResponse(data, status = 200) {
       return data;
     },
   };
+}
+
+const duplicateRequestMapper = paymentsSource.match(
+  /async function requestDuplicateConfirmations[\\s\\S]*?entries\\.map\\(\\(entry, index\\) => \\(\\{([\\s\\S]*?)\\}\\)\\)/,
+)?.[1];
+assert.ok(duplicateRequestMapper, 'New Entry must map duplicate-review rows before transport');
+for (const field of ['category', 'notes', 'cashImpact', 'paymentMethod']) {
+  assert.match(
+    duplicateRequestMapper,
+    new RegExp(field + ': entry\\.' + field),
+    'duplicate review must send ' + field + ' so Laravel can validate and bind the review token',
+  );
 }
 
 async function run() {

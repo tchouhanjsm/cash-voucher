@@ -896,6 +896,10 @@ export function createPayments({ api, refresh, isLaravelShadow = false }) {
         vendorId: entry.vendorId,
         vendorType: entry.vendorType,
         amount: entry.amount,
+        category: entry.category,
+        notes: entry.notes,
+        cashImpact: entry.cashImpact,
+        paymentMethod: entry.paymentMethod,
         confirmationToken: entryRows[index].dataset.duplicateConfirmationToken || '',
       })),
     });
