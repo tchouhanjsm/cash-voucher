@@ -1412,26 +1412,70 @@ export function createRegister({ api, go }) {
     const add = $('#radd', form);
 
     if (add) {
-      add.onchange = async () => {
-        if (!add.files?.length) return;
+      let pendingUpload = null;
+      const uploadStatus = document.createElement('p');
+      uploadStatus.className = 'muted receipt-upload-status';
+      uploadStatus.setAttribute('role', 'status');
+      uploadStatus.setAttribute('aria-live', 'polite');
+      add.closest('label')?.after(uploadStatus);
 
+      const uploadReceipt = async () => {
+        if (!pendingUpload || add.disabled) return;
         add.disabled = true;
+        uploadStatus.className = 'muted receipt-upload-status';
+        uploadStatus.textContent = 'Uploading privately… Keep this window open until the result is confirmed.';
         try {
-          const receipt = await compress(add.files[0]);
-          Object.assign(
-            voucher,
-            await api('addReceipt', {
-              id,
-              receipt: { mime: receipt.mime, data: receipt.data },
-            }),
-          );
-          toast('Receipt added.', 'ok');
+          Object.assign(voucher, await api('addReceipt', {
+            id,
+            receipt: { mime: pendingUpload.receipt.mime, data: pendingUpload.receipt.data },
+            idempotencyKey: pendingUpload.idempotencyKey,
+            existingReceiptIds: receiptState.ids,
+          }));
+          uploadStatus.textContent = 'Receipt attached and verified.';
+          toast('Receipt added securely.', 'ok');
+          pendingUpload = null;
           closeModal();
           receipts(id);
         } catch (error) {
+          uploadStatus.className = 'error receipt-upload-status';
+          uploadStatus.textContent = 'The server has not confirmed this upload. Do not upload a different copy. Retry the same receipt to safely confirm the result.';
+          if (pendingUpload) {
+            pendingUpload.retryButton.hidden = false;
+            pendingUpload.retryButton.disabled = false;
+          }
           fail(error);
         } finally {
           if (add.isConnected) add.disabled = false;
+        }
+      };
+
+      add.onchange = async () => {
+        if (!add.files?.length) return;
+        if (pendingUpload) {
+          uploadStatus.textContent = 'A receipt upload is awaiting confirmation. Retry that upload before selecting another image.';
+          return;
+        }
+        try {
+          const receipt = await compress(add.files[0]);
+          const retryButton = document.createElement('button');
+          retryButton.type = 'button';
+          retryButton.className = 'btn sm';
+          retryButton.textContent = 'Retry same receipt';
+          retryButton.hidden = true;
+          retryButton.addEventListener('click', uploadReceipt);
+          uploadStatus.after(retryButton);
+          if (!globalThis.crypto?.getRandomValues) throw new Error('Secure retry identifiers are unavailable in this browser.');
+          const keyBytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+          pendingUpload = {
+            receipt,
+            retryButton,
+            idempotencyKey: 'receipt-' + Array.from(keyBytes, (byte) => byte.toString(16).padStart(2, '0')).join(''),
+          };
+          await uploadReceipt();
+        } catch (error) {
+          uploadStatus.className = 'error receipt-upload-status';
+          uploadStatus.textContent = error.message || 'The receipt could not be prepared.';
+          fail(error);
         }
       };
     }

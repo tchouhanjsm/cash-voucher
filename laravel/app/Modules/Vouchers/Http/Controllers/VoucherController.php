@@ -86,6 +86,13 @@ final class VoucherController
 
         $items = $rows->map(static function (object $row): array {
             $paise = (int) $row->amount_paise;
+            $receiptIds = DB::table('voucher_receipts')
+                ->where('voucher_id', (string) $row->id)
+                ->orderBy('created_at_utc')
+                ->orderBy('id')
+                ->pluck('id')
+                ->map(static fn ($id): string => (string) $id)
+                ->all();
 
             return [
                 'id' => (string) $row->id,
@@ -104,6 +111,7 @@ final class VoucherController
                 'approvalStatus' => (string) $row->approval_status,
                 'paymentMethod' => (string) $row->payment_method,
                 'createdBy' => (string) $row->created_by_email_snapshot,
+                'receipts' => $receiptIds,
             ];
         })->all();
 

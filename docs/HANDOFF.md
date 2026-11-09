@@ -1,3 +1,14 @@
+## Current delivery focus — Laravel receipt transport (9 November 2026)
+
+- **Branch:** `feat/laravel-receipt-transport-20261109`, based on `client-main` merge commit `1f5de116fb22e16cfbc1da07eff6cb5b98d97007` (PR #280).
+- **Root cause:** Laravel already had authenticated private receipt attach/read routes, MIME/signature/size validation, max-three enforcement, per-voucher ownership/role checks, SHA-256 integrity verification, audit and DB idempotency. The opt-in browser adapter did not map legacy `addReceipt`/`getReceipt`, expected JSON for binary downloads, and Register discarded receipt identifiers.
+- **Implementation:** map receipt upload to `POST /vouchers/{voucherId}/receipts` with caller-stable idempotency key; map authorized binary image retrieval to `GET /receipts/{receiptId}` with MIME/size checks; return receipt IDs from the Laravel Register; add explicit same-receipt retry state. No storage keys or public URLs are exposed.
+- **Financial/release boundary:** no voucher-create mapping, offline outbox drain, Apps Script action/production transport change, schema migration, deployment, dual-write or cutover. Apps Script remains the sole production financial writer.
+- **Verification:** transport regression tests added for register receipt IDs, attach JSON/CSRF/idempotency and image download. Exact-head CI, MySQL integration and browser workflow remain required before merge. Owner-local Network/Console and Laravel log walkthrough is not accessible in this GitHub-only session.
+- **Next:** exact-head CI and Browser E2E; owner-local Laravel-shadow walkthrough for Dashboard, Users, Audit Log, Register and New Entry; then a separately tested deterministic Smart Operations service slice.
+
+---
+
 ## Current delivery focus — PR #280 novice-first workspace consolidation (9 November 2026)
 
 - **PR / branch:** [PR #280](https://github.com/tchouhanjsm/cash-voucher/pull/280), `feat/dashboard-admin-minimal-workspaces-20261108` → `client-main`, based on the merged Register search-first milestone.

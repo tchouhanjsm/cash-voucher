@@ -10,6 +10,18 @@ const mainSource = fs.readFileSync(path.join(root, 'frontend/main.js'), 'utf8');
 const configSource = fs.readFileSync(path.join(root, 'config.js'), 'utf8');
 const buildSource = fs.readFileSync(path.join(root, 'scripts/build-web.js'), 'utf8');
 
+function imageResponse(bytes, mime = 'image/png', status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get(name) {
+      const key = name.toLowerCase();
+      return key === 'content-type' ? mime : key === 'content-length' ? String(bytes.length) : null;
+    } },
+    async arrayBuffer() { return Uint8Array.from(bytes).buffer; },
+  };
+}
+
 function jsonResponse(data, status = 200) {
   return {
     ok: status >= 200 && status < 300,
@@ -99,7 +111,7 @@ async function run() {
               amount: '12.50',
               type: 'PAYMENT',
               status: 'ACTIVE',
-              createdBy: 'staff@example.test',
+              createdBy: 'staff@example.test',\n              receipts: ['11111111-1111-4111-8111-111111111111'],
             },
           ],
           offset: 0,
@@ -194,6 +206,15 @@ async function run() {
     if (String(url).endsWith('/sessions/current')) {
       return jsonResponse({ ok: true, data: { user: { id: 'user-1' }, csrfToken: csrf } });
     }
+    if (String(url).endsWith('/receipts/11111111-1111-4111-8111-111111111111')) {
+      return imageResponse([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4]);
+    }
+    if (String(url).includes('/vouchers/22222222-2222-4222-8222-222222222222/receipts')) {
+      return jsonResponse({ ok: true, data: {
+        receipt: { id: '33333333-3333-4333-8333-333333333333', voucherId: '22222222-2222-4222-8222-222222222222', contentType: 'image/png', byteSize: 12, sha256: 'b'.repeat(64) },
+        receiptCount: 1, replayed: false,
+      } }, 201);
+    }
     if (String(url).endsWith('/sessions/current/logout')) {
       return jsonResponse({ ok: true, data: { signedOut: true } });
     }
@@ -249,7 +270,7 @@ async function run() {
     limit: 10,
   });
   assert.equal(page.items[0].no, 204);
-  assert.equal(page.items[0].amount, 12.5);
+  assert.equal(page.items[0].amount, 12.5);\n  assert.deepEqual(page.items[0].receipts, ['11111111-1111-4111-8111-111111111111']);
   assert.deepEqual(page.facets, { vendors: [], users: [] });
 
   const createdVendor = await api('saveVendor', {
@@ -317,6 +338,28 @@ async function run() {
 
   await api('auditLog', { beforeRow: 'opaque-cursor' });
   assert.match(requests[10].url, /cursor=opaque-cursor/);
+
+  const receiptUpload = await api('addReceipt', {
+    id: '22222222-2222-4222-8222-222222222222',
+    receipt: { mime: 'image/png', data: 'aGVsbG8=' },
+    idempotencyKey: 'receipt-test-key-001',
+    existingReceiptIds: [],
+  });
+  assert.deepEqual(receiptUpload.receipts, ['33333333-3333-4333-8333-333333333333']);
+  const receiptWrite = requests.find((request) => request.url.includes('/vouchers/22222222-2222-4222-8222-222222222222/receipts'));
+  assert.equal(receiptWrite.method, 'POST');
+  assert.equal(receiptWrite.headers['X-CSRF-Token'], csrf);
+  assert.equal(receiptWrite.headers['Idempotency-Key'], 'receipt-test-key-001');
+  assert.deepEqual(JSON.parse(receiptWrite.body), { receipt: { mime: 'image/png', data: 'aGVsbG8=' } });
+
+  const receiptRead = await api('getReceipt', {
+    id: '22222222-2222-4222-8222-222222222222',
+    fileId: '11111111-1111-4111-8111-111111111111',
+  });
+  assert.match(receiptRead.dataUrl, /^data:image\\/png;base64,/);
+  const binaryRead = requests.find((request) => request.url.endsWith('/receipts/11111111-1111-4111-8111-111111111111'));
+  assert.equal(binaryRead.method, 'GET');
+  assert.equal(binaryRead.credentials, 'same-origin');
 
   const beforeUnsupported = requests.length;
   await assert.rejects(
@@ -410,7 +453,7 @@ async function run() {
   assert.match(buildSource, /LARAVEL_API_URL: ""/);
 
   console.log(
-    'Laravel cookie transport OK — same-origin only, HttpOnly session token not exposed, CSRF restored in memory, vendor create/update/state changes use CSRF and idempotency, and unsupported writes fail closed.',
+    'Laravel cookie transport OK — same-origin session, vendor and receipt upload/download, receipt IDs, CSRF and idempotency contracts, and fail-closed unsupported writes.',
   );
 }
 

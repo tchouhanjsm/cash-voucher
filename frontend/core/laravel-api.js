@@ -358,6 +358,60 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     return envelope.data;
   }
 
+  async function requestImage(route) {
+    if (typeof send !== 'function') throw failure('Fetch is unavailable in this browser.', 'NOFETCH');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 70000);
+    let response;
+    try {
+      response = await send(makeUrl(route), {
+        method: 'GET',
+        mode: 'same-origin',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        redirect: 'error',
+        headers: { Accept: 'image/jpeg, image/png, image/webp' },
+        signal: controller.signal,
+      });
+    } catch {
+      throw failure('No connection to the Laravel server. Check the same-origin API URL and try again.', 'NET');
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!response.ok) {
+      let message = 'The receipt could not be loaded. Retry the download.';
+      let code = response.status === 401 ? 'SESSION' : 'RECEIPT_READ_FAILED';
+      try {
+        const envelope = await response.json();
+        if (typeof envelope?.error?.message === 'string') message = envelope.error.message;
+        if (typeof envelope?.error?.code === 'string') code = normalizeCode(envelope.error.code, response.status);
+      } catch {}
+      throw failure(message, code);
+    }
+    const mime = response.headers?.get?.('Content-Type')?.split(';')[0]?.trim().toLowerCase();
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mime)) {
+      throw failure('The server returned an unsupported receipt image type.', 'RECEIPT_MIME_INVALID');
+    }
+    const declaredLength = response.headers?.get?.('Content-Length');
+    if (declaredLength && (!/^\\d+$/.test(declaredLength) || Number(declaredLength) > 1600000)) {
+      throw failure('The receipt image is larger than the allowed limit.', 'RECEIPT_SIZE_INVALID');
+    }
+    let bytes;
+    try {
+      bytes = new Uint8Array(await response.arrayBuffer());
+    } catch {
+      throw failure('The receipt image could not be read. Retry the download.', 'RECEIPT_READ_FAILED');
+    }
+    if (!bytes.length || bytes.length > 1600000 || (declaredLength && bytes.length !== Number(declaredLength))) {
+      throw failure('The receipt image is incomplete or larger than the allowed limit.', 'RECEIPT_SIZE_INVALID');
+    }
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
+    }
+    return 'data:' + mime + ';base64,' + btoa(binary);
+  }
+
   async function refreshCsrf() {
     if (csrfToken) return csrfToken;
     if (csrfRefresh) return csrfRefresh;
@@ -391,7 +445,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       );
     }
     const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
-    return 'vendor-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return 'cv-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
 
   async function mutate(route, body = {}, options = {}) {
@@ -401,7 +455,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       body,
       headers: {
         'X-CSRF-Token': csrf,
-        ...(options.idempotency ? { 'Idempotency-Key': createIdempotencyKey() } : {}),
+        ...(options.idempotency ? { 'Idempotency-Key': options.idempotencyKey || createIdempotencyKey() } : {}),
       },
     });
   }
@@ -579,6 +633,50 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           { idempotency: true },
         );
         return result.vendor;
+      }
+
+      case 'addReceipt': {
+        const voucherId = typeof payload.id === 'string' ? payload.id.trim() : '';
+        const receipt = payload.receipt;
+        if (
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(voucherId) ||
+          !receipt || typeof receipt !== 'object' ||
+          !['image/jpeg', 'image/png', 'image/webp'].includes(receipt.mime) ||
+          typeof receipt.data !== 'string' || !receipt.data.length || receipt.data.length > 2200000
+        ) throw failure('Choose a valid JPG, PNG or WebP receipt image.', 'PAYLOAD_INVALID');
+
+        const idempotencyKey = typeof payload.idempotencyKey === 'string' &&
+          /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(payload.idempotencyKey)
+          ? payload.idempotencyKey : createIdempotencyKey();
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(voucherId) + '/receipts',
+          { receipt: { mime: receipt.mime, data: receipt.data } },
+          { idempotencyKey },
+        );
+        if (
+          !result?.receipt || typeof result.receipt.id !== 'string' ||
+          result.receipt.voucherId !== voucherId || result.receipt.contentType !== receipt.mime ||
+          !Number.isSafeInteger(result.receipt.byteSize) || result.receipt.byteSize < 1 ||
+          result.receipt.byteSize > 1600000 || typeof result.receipt.sha256 !== 'string' ||
+          !/^[a-f0-9]{64}$/.test(result.receipt.sha256) ||
+          !Number.isSafeInteger(result.receiptCount) || result.receiptCount < 1 || result.receiptCount > 3
+        ) throw failure('The receipt upload response was incomplete. Refresh the Register before retrying.', 'API_RESPONSE_INVALID');
+        const existing = Array.isArray(payload.existingReceiptIds)
+          ? payload.existingReceiptIds.filter((id) => typeof id === 'string' && id.trim())
+          : [];
+        return {
+          receipts: [...existing, result.receipt.id].filter((id, index, list) => list.indexOf(id) === index).slice(0, 3),
+          receiptCount: result.receiptCount,
+          receiptUpload: { id: result.receipt.id, sha256: result.receipt.sha256, byteSize: result.receipt.byteSize, replayed: result.replayed === true },
+        };
+      }
+
+      case 'getReceipt': {
+        const receiptId = typeof payload.fileId === 'string' ? payload.fileId.trim() : '';
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receiptId)) {
+          throw failure('The receipt reference is invalid. Refresh the Register and retry.', 'PAYLOAD_INVALID');
+        }
+        return { dataUrl: await requestImage('/receipts/' + encodeURIComponent(receiptId)) };
       }
 
       default:
