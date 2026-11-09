@@ -1423,14 +1423,18 @@ export function createRegister({ api, go }) {
         if (!pendingUpload || add.disabled) return;
         add.disabled = true;
         uploadStatus.className = 'muted receipt-upload-status';
-        uploadStatus.textContent = 'Uploading privately… Keep this window open until the result is confirmed.';
+        uploadStatus.textContent =
+          'Uploading privately… Keep this window open until the result is confirmed.';
         try {
-          Object.assign(voucher, await api('addReceipt', {
-            id,
-            receipt: { mime: pendingUpload.receipt.mime, data: pendingUpload.receipt.data },
-            idempotencyKey: pendingUpload.idempotencyKey,
-            existingReceiptIds: receiptState.ids,
-          }));
+          Object.assign(
+            voucher,
+            await api('addReceipt', {
+              id,
+              receipt: { mime: pendingUpload.receipt.mime, data: pendingUpload.receipt.data },
+              idempotencyKey: pendingUpload.idempotencyKey,
+              existingReceiptIds: receiptState.ids,
+            }),
+          );
           uploadStatus.textContent = 'Receipt attached and verified.';
           toast('Receipt added securely.', 'ok');
           pendingUpload = null;
@@ -1438,7 +1442,8 @@ export function createRegister({ api, go }) {
           receipts(id);
         } catch (error) {
           uploadStatus.className = 'error receipt-upload-status';
-          uploadStatus.textContent = 'The server has not confirmed this upload. Do not upload a different copy. Retry the same receipt to safely confirm the result.';
+          uploadStatus.textContent =
+            'The server has not confirmed this upload. Do not upload a different copy. Retry the same receipt to safely confirm the result.';
           if (pendingUpload) {
             pendingUpload.retryButton.hidden = false;
             pendingUpload.retryButton.disabled = false;
@@ -1452,7 +1457,8 @@ export function createRegister({ api, go }) {
       add.onchange = async () => {
         if (!add.files?.length) return;
         if (pendingUpload) {
-          uploadStatus.textContent = 'A receipt upload is awaiting confirmation. Retry that upload before selecting another image.';
+          uploadStatus.textContent =
+            'A receipt upload is awaiting confirmation. Retry that upload before selecting another image.';
           return;
         }
         try {
@@ -1464,12 +1470,15 @@ export function createRegister({ api, go }) {
           retryButton.hidden = true;
           retryButton.addEventListener('click', uploadReceipt);
           uploadStatus.after(retryButton);
-          if (!globalThis.crypto?.getRandomValues) throw new Error('Secure retry identifiers are unavailable in this browser.');
+          if (!globalThis.crypto?.getRandomValues)
+            throw new Error('Secure retry identifiers are unavailable in this browser.');
           const keyBytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
           pendingUpload = {
             receipt,
             retryButton,
-            idempotencyKey: 'receipt-' + Array.from(keyBytes, (byte) => byte.toString(16).padStart(2, '0')).join(''),
+            idempotencyKey:
+              'receipt-' +
+              Array.from(keyBytes, (byte) => byte.toString(16).padStart(2, '0')).join(''),
           };
           await uploadReceipt();
         } catch (error) {
