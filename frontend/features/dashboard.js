@@ -1337,8 +1337,9 @@ export function createDashboard({ api }) {
                   className: 'btn sm dashboard-kpi-drilldown',
                 })}
               </div>
-              ${can('viewAll')
-                ? `<div class="card stat">
+              ${ 
+                can('viewAll')
+                  ? `<div class="card stat">
                     <span class="stat-ic">${icon('book')}</span>
                     <span>Book balance · all time</span>
                     <b>${money(summary.bookBalance)}</b>
@@ -1350,7 +1351,8 @@ export function createDashboard({ api }) {
                       className: 'btn sm dashboard-kpi-drilldown',
                     })}
                   </div>`
-                : ''}
+                  : ''
+              }
             </div>
             <div class="dashboard-analysis-grid">
               <div class="dashboard-analysis-primary">
