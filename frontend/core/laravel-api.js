@@ -713,6 +713,37 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         };
       }
 
+      case 'entrySuggestions': {
+        const vendor = typeof payload.vendor === 'string' ? payload.vendor.trim() : '';
+        const type = payload.type || 'PAYMENT';
+        if (!vendor || vendor.length > 120 || !['PAYMENT', 'RECEIPT'].includes(type)) {
+          throw failure('Enter a valid payee before requesting suggestions.', 'PAYLOAD_INVALID');
+        }
+        const result = await request('/entry-suggestions', {
+          query: { vendor, type },
+        });
+        const isSuggestion = (value) =>
+          value === null ||
+          (value &&
+            typeof value === 'object' &&
+            typeof value.value === 'string' &&
+            value.value.length > 0 &&
+            ['VENDOR_DEFAULT', 'HISTORY'].includes(value.source) &&
+            Number.isSafeInteger(value.evidenceCount) &&
+            value.evidenceCount >= 0);
+        if (
+          !result ||
+          typeof result.vendor !== 'string' ||
+          !['OWN', 'PROPERTY'].includes(result.scope) ||
+          !result.suggestions ||
+          !isSuggestion(result.suggestions.category) ||
+          !isSuggestion(result.suggestions.paymentMethod)
+        ) {
+          throw failure('Entry suggestions returned an invalid response.', 'API_RESPONSE_INVALID');
+        }
+        return result;
+      }
+
       default:
         throw failure(
           'This operation is not yet available in the Laravel shadow API. No fallback write was attempted.',

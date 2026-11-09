@@ -212,6 +212,19 @@ async function run() {
         },
       });
     }
+    if (String(url).includes('/entry-suggestions?')) {
+      return jsonResponse({
+        ok: true,
+        data: {
+          vendor: 'Test supplier',
+          scope: 'OWN',
+          suggestions: {
+            category: { value: 'Maintenance', source: 'HISTORY', evidenceCount: 3 },
+            paymentMethod: { value: 'UPI', source: 'HISTORY', evidenceCount: 2 },
+          },
+        },
+      });
+    }
     if (String(url).endsWith('/sessions/current')) {
       return jsonResponse({ ok: true, data: { user: { id: 'user-1' }, csrfToken: csrf } });
     }
@@ -389,6 +402,18 @@ async function run() {
   );
   assert.equal(binaryRead.method, 'GET');
   assert.equal(binaryRead.credentials, 'same-origin');
+
+  const entrySuggestions = await api('entrySuggestions', {
+    vendor: 'Test supplier',
+    type: 'PAYMENT',
+  });
+  assert.equal(entrySuggestions.scope, 'OWN');
+  assert.equal(entrySuggestions.suggestions.category.value, 'Maintenance');
+  assert.equal(entrySuggestions.suggestions.paymentMethod.value, 'UPI');
+  const suggestionsRequest = requests.find((request) => request.url.includes('/entry-suggestions?'));
+  assert.equal(new URL(suggestionsRequest.url).searchParams.get('vendor'), 'Test supplier');
+  assert.equal(new URL(suggestionsRequest.url).searchParams.get('type'), 'PAYMENT');
+  assert.equal(suggestionsRequest.method, 'GET');
 
   const beforeUnsupported = requests.length;
   await assert.rejects(

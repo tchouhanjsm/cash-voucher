@@ -84,6 +84,7 @@ auth = createAuth({
 payments = createPayments({
   api,
   refresh: paymentRefresh,
+  isLaravelShadow: USE_LARAVEL_SHADOW,
 });
 
 const register = createRegister({
