@@ -1140,6 +1140,11 @@ with sync_playwright() as p:
         route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
 
     page.route('**/api?*', inject_visual_dashboard_summary)
+    # Login already lands on Dashboard. Move to Register first so the first
+    # Dashboard item below is a real route transition and its focus assertion
+    # measures navigation behavior rather than the browser's initial state.
+    go_view(page, 'reg')
+    page.wait_for_selector('#rf', state='visible', timeout=10000)
     visual_widths = [320, 360, 390, 440, 441, 768, 800, 801, 1024, 1100, 1101, 1280, 1440]
     for route_name, route_id, ready_selector in visual_routes:
         if route_id == 'acct':
