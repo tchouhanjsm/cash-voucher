@@ -220,6 +220,156 @@ function mapAuditPage(page) {
   };
 }
 
+const VOUCHER_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeVoucherId(payload) {
+  const id = typeof payload.id === 'string' ? payload.id.trim() : '';
+  if (!VOUCHER_ID_PATTERN.test(id)) {
+    throw failure('The voucher reference is invalid. Refresh the Register and retry.', 'PAYLOAD_INVALID');
+  }
+  return id;
+}
+
+function normalizeMutationReason(value, label) {
+  const reason = typeof value === 'string' ? value.trim() : '';
+  if (reason.length < 3 || reason.length > 200) {
+    throw failure('Enter a ' + label + ' of 3 to 200 characters.', 'PAYLOAD_INVALID');
+  }
+  return reason;
+}
+
+function normalizeUpdateFields(value) {
+  const allowed = new Set([
+    'date',
+    'vendor',
+    'amount',
+    'category',
+    'notes',
+    'paymentMethod',
+    'cashImpact',
+  ]);
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    Object.keys(value).length < 1 ||
+    Object.keys(value).some((field) => !allowed.has(field))
+  ) {
+    throw failure('Choose at least one supported voucher field to update.', 'PAYLOAD_INVALID');
+  }
+
+  const fields = {};
+  for (const [field, raw] of Object.entries(value)) {
+    switch (field) {
+      case 'date':
+        if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+          throw failure('The voucher date is invalid.', 'PAYLOAD_INVALID');
+        }
+        fields.date = raw;
+        break;
+      case 'vendor': {
+        const vendor = typeof raw === 'string' ? raw.trim() : '';
+        if (!vendor || vendor.length > 200) {
+          throw failure('Enter a payee name of up to 200 characters.', 'PAYLOAD_INVALID');
+        }
+        fields.vendor = vendor;
+        break;
+      }
+      case 'amount': {
+        const amountText =
+          typeof raw === 'number' || typeof raw === 'string' ? String(raw).trim() : '';
+        const amountNumber = Number(amountText);
+        const amountPaise = Math.round(amountNumber * 100);
+        if (
+          !/^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(amountText) ||
+          !Number.isFinite(amountNumber) ||
+          amountNumber <= 0 ||
+          amountNumber > 10000000 ||
+          Math.abs(amountNumber * 100 - amountPaise) > 0.000001 ||
+          !Number.isSafeInteger(amountPaise)
+        ) {
+          throw failure('Enter a valid positive amount with up to two decimal places.', 'PAYLOAD_INVALID');
+        }
+        fields.amount = (amountPaise / 100).toFixed(2);
+        break;
+      }
+      case 'category':
+        if (typeof raw !== 'string' || !raw.trim() || raw.trim().length > 80) {
+          throw failure('Choose a valid category.', 'PAYLOAD_INVALID');
+        }
+        fields.category = raw.trim();
+        break;
+      case 'notes':
+        if (typeof raw !== 'string' || raw.length > 500) {
+          throw failure('The note must be 500 characters or fewer.', 'PAYLOAD_INVALID');
+        }
+        fields.notes = raw;
+        break;
+      case 'paymentMethod':
+        if (!['CASH', 'UPI', 'BANK_TRANSFER'].includes(raw)) {
+          throw failure('Choose a supported payment method.', 'PAYLOAD_INVALID');
+        }
+        fields.paymentMethod = raw;
+        break;
+      case 'cashImpact':
+        if (!['CASH_IN', 'CASH_OUT', 'NO_CASH'].includes(raw)) {
+          throw failure('Choose the physical cash movement.', 'PAYLOAD_INVALID');
+        }
+        fields.cashImpact = raw;
+        break;
+      default:
+        throw failure('The voucher contains an unsupported field.', 'PAYLOAD_INVALID');
+    }
+  }
+  return fields;
+}
+
+function resolveMutationIdempotencyKey(payload, action) {
+  if (payload.idempotencyKey === undefined) {
+    return createIdempotencyKey('voucher-' + action);
+  }
+  if (
+    typeof payload.idempotencyKey !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(payload.idempotencyKey)
+  ) {
+    throw failure('The voucher operation retry key is invalid.', 'PAYLOAD_INVALID');
+  }
+  return payload.idempotencyKey;
+}
+
+function mapVoucherMutation(result, expectedId) {
+  const voucher = result?.voucher;
+  const voucherNo = Number(voucher?.voucherNo);
+  if (
+    !voucher ||
+    typeof voucher !== 'object' ||
+    Array.isArray(voucher) ||
+    voucher.id !== expectedId ||
+    !Number.isSafeInteger(voucherNo) ||
+    voucherNo < 1 ||
+    typeof voucher.date !== 'string' ||
+    typeof voucher.vendor !== 'string' ||
+    !['PAYMENT', 'RECEIPT'].includes(voucher.type) ||
+    !['ACTIVE', 'CANCELLED'].includes(voucher.status) ||
+    !['NOT_REQUIRED', 'PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].includes(
+      voucher.approvalStatus,
+    )
+  ) {
+    throw failure(
+      'The server may have applied this voucher change, but its confirmation was incomplete. Refresh the Register before retrying.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+
+  return {
+    ...voucher,
+    no: voucherNo,
+    voucherNo,
+    amount: rupeesToNumber(voucher.amount, 'updated voucher amount'),
+  };
+}
+
 function assertSameOriginBase(raw, origin) {
   if (typeof raw !== 'string' || !raw.trim()) {
     throw failure('Laravel API URL is not configured.', 'NOURL');
@@ -456,7 +606,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     }
   }
 
-  function createIdempotencyKey() {
+  function createIdempotencyKey(namespace = 'vendor') {
     const cryptoApi = globalThis.crypto;
     if (!cryptoApi || typeof cryptoApi.getRandomValues !== 'function') {
       throw failure(
@@ -465,7 +615,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       );
     }
     const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
-    return 'vendor-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return namespace + '-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
 
   async function stableIdempotencyKey(namespace, identity) {
@@ -935,6 +1085,54 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           { idempotency: true },
         );
         return result.vendor;
+      }
+
+      case 'updateVoucher': {
+        const id = normalizeVoucherId(payload);
+        const reason = normalizeMutationReason(payload.reason, 'correction reason');
+        const fields = normalizeUpdateFields(payload.fields);
+        const idempotencyKey = resolveMutationIdempotencyKey(payload, 'edit');
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(id),
+          { fields, reason },
+          { method: 'PATCH', idempotency: true, idempotencyKey },
+        );
+        return mapVoucherMutation(result, id);
+      }
+
+      case 'cancelVoucher': {
+        const id = normalizeVoucherId(payload);
+        const reason = normalizeMutationReason(payload.reason, 'cancellation reason');
+        const idempotencyKey = resolveMutationIdempotencyKey(payload, 'cancel');
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(id) + '/cancel',
+          { reason },
+          { idempotency: true, idempotencyKey },
+        );
+        return mapVoucherMutation(result, id);
+      }
+
+      case 'approveVoucher': {
+        const id = normalizeVoucherId(payload);
+        const idempotencyKey = resolveMutationIdempotencyKey(payload, 'approve');
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(id) + '/approval',
+          {},
+          { idempotency: true, idempotencyKey },
+        );
+        return mapVoucherMutation(result, id);
+      }
+
+      case 'rejectVoucher': {
+        const id = normalizeVoucherId(payload);
+        const reason = normalizeMutationReason(payload.reason, 'rejection reason');
+        const idempotencyKey = resolveMutationIdempotencyKey(payload, 'reject');
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(id) + '/rejection',
+          { reason },
+          { idempotency: true, idempotencyKey },
+        );
+        return mapVoucherMutation(result, id);
       }
 
       case 'addReceipt': {
