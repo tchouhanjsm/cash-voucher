@@ -334,8 +334,12 @@ async function run() {
       return jsonResponse({ ok: true, data: { voucher, replayed: false } }, 201);
     }
     if (String(url).includes('/vouchers/aaaaaaaa-aaaa-4aaa-8aaa-')) {
-      const match = String(url).match(/\\/vouchers\\/([^/]+)\\/receipts$/);
-      if (match && options.method === 'POST') {
+      const pathParts = new URL(String(url)).pathname.split('/');
+      const voucherId =
+        pathParts[pathParts.length - 1] === 'receipts'
+          ? pathParts[pathParts.length - 2]
+          : '';
+      if (voucherId && options.method === 'POST') {
         const idempotencyKey = options.headers['Idempotency-Key'];
         const previous = attachedReceiptOperations.get(idempotencyKey);
         if (previous) {
@@ -343,7 +347,7 @@ async function run() {
         }
         const receipt = {
           id: 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001',
-          voucherId: match[1],
+          voucherId,
           contentType: 'image/png',
           byteSize: 12,
           sha256: 'c'.repeat(64),
