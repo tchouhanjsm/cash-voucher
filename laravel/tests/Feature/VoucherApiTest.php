@@ -177,6 +177,50 @@ final class VoucherApiTest extends TestCase
             ->assertCreated();
     }
 
+    public function test_create_retry_ignores_a_refreshed_duplicate_confirmation_token(): void
+    {
+        $this->insertVoucherFixture($this->userId, 'Delayed retry supplier', 45000);
+        $payload = $this->validPayload([
+            'vendor' => 'Delayed retry supplier',
+            'amount' => '450.00',
+            'clientId' => 'delayed-retry-client-'.bin2hex(random_bytes(5)),
+        ]);
+        $token = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $payload)
+            ->assertOk()
+            ->json('data.confirmationToken');
+        self::assertNotSame('', $token);
+        $payload['duplicateConfirmationToken'] = $token;
+        $key = 'delayed-retry-'.bin2hex(random_bytes(8));
+
+        $first = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers', $payload, ['Idempotency-Key' => $key]);
+        $first->assertCreated()->assertJsonPath('data.replayed', false);
+        $voucherId = (string) $first->json('data.voucher.id');
+
+        // Model the token having expired between an unknown-outcome response and retry.
+        // The voucher payload and client operation identity are unchanged.
+        $payload['duplicateConfirmationToken'] = 'expired-review-token-replaced';
+        $retry = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers', $payload, ['Idempotency-Key' => $key]);
+
+        $retry->assertOk()
+            ->assertJsonPath('data.replayed', true)
+            ->assertJsonPath('data.voucher.id', $voucherId);
+        self::assertSame(
+            1,
+            DB::table('vouchers')->where('client_id', $payload['clientId'])->count(),
+        );
+        self::assertSame(
+            1,
+            DB::table('audit_events')
+                ->where('target_id', $voucherId)
+                ->where('event_type', 'VOUCHER_CREATED')
+                ->count(),
+            'Refreshing an ephemeral duplicate token must not create another voucher or audit event.',
+        );
+    }
+
     public function test_duplicate_check_reuses_a_stable_token_for_the_review_window_without_writing(): void
     {
         $this->insertVoucherFixture($this->userId, 'Review window supplier', 45000);

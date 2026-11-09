@@ -69,13 +69,18 @@ final class StoreVoucher
         $actorId = (string) $principal['id'];
 
         $unitOfWork = new IdempotencyService($pdo);
+        // The duplicate-confirmation token is a short-lived review proof, not a financial
+        // field. Exclude it from the idempotency fingerprint so a safe retry can replay
+        // a voucher after the review token expires or is refreshed.
+        $idempotencyPayload = $voucher;
+        unset($idempotencyPayload['duplicateConfirmationToken']);
 
         return $unitOfWork->execute(
             $actorId,
             $email,
             'createVoucher',
             $idempotencyKey,
-            $voucher,
+            $idempotencyPayload,
             function (PDO $connection) use (
                 $voucher,
                 $principal,
