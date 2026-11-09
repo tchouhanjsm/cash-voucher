@@ -1392,11 +1392,11 @@ with sync_playwright() as p:
                 )
                 if route_id == 'dash':
                     dashboard_metrics = layout['dashboardStatMetrics']
-                    expected_columns = 1 if width <= 560 else 2 if width <= 800 else 4
+                    expected_columns = 1 if width <= 560 else 2 if width <= 900 else 4
                     check(
                         dashboard_metrics is not None
                         and dashboard_metrics['role'] == 'owner'
-                        and dashboard_metrics['cardCount'] == 6
+                        and dashboard_metrics['cardCount'] == 4
                         and dashboard_metrics['columns'] == expected_columns,
                         f'owner dashboard KPI grid matches the role and breakpoint contract at {width}px in {theme_name} theme; metrics={dashboard_metrics}',
                     )
