@@ -226,7 +226,10 @@ const VOUCHER_ID_PATTERN =
 function normalizeVoucherId(payload) {
   const id = typeof payload.id === 'string' ? payload.id.trim() : '';
   if (!VOUCHER_ID_PATTERN.test(id)) {
-    throw failure('The voucher reference is invalid. Refresh the Register and retry.', 'PAYLOAD_INVALID');
+    throw failure(
+      'The voucher reference is invalid. Refresh the Register and retry.',
+      'PAYLOAD_INVALID',
+    );
   }
   return id;
 }
@@ -289,7 +292,10 @@ function normalizeUpdateFields(value) {
           Math.abs(amountNumber * 100 - amountPaise) > 0.000001 ||
           !Number.isSafeInteger(amountPaise)
         ) {
-          throw failure('Enter a valid positive amount with up to two decimal places.', 'PAYLOAD_INVALID');
+          throw failure(
+            'Enter a valid positive amount with up to two decimal places.',
+            'PAYLOAD_INVALID',
+          );
         }
         fields.amount = (amountPaise / 100).toFixed(2);
         break;
@@ -627,7 +633,9 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       );
     }
     const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
-    return namespace + '-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return (
+      namespace + '-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+    );
   }
 
   async function stableIdempotencyKey(namespace, identity) {
