@@ -740,7 +740,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       case 'checkPaymentDuplicates': {
         const entries = payload.entries;
         if (!Array.isArray(entries) || entries.length < 1 || entries.length > 100) {
-          throw failure('Check between 1 and 100 entries for possible duplicates.', 'PAYLOAD_INVALID');
+          throw failure(
+            'Check between 1 and 100 entries for possible duplicates.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const results = [];
@@ -776,7 +779,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
                   vendorId,
                 )))
           ) {
-            throw failure('An entry is incomplete or invalid. Check its date, payee and amount.', 'PAYLOAD_INVALID');
+            throw failure(
+              'An entry is incomplete or invalid. Check its date, payee and amount.',
+              'PAYLOAD_INVALID',
+            );
           }
 
           const checked = await mutate('/vouchers/duplicate-check', {
@@ -801,7 +807,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             checked.hiddenCount > checked.duplicateCount ||
             typeof checked.confirmationToken !== 'string'
           ) {
-            throw failure('The duplicate-check API returned an invalid response.', 'API_RESPONSE_INVALID');
+            throw failure(
+              'The duplicate-check API returned an invalid response.',
+              'API_RESPONSE_INVALID',
+            );
           }
 
           results.push({

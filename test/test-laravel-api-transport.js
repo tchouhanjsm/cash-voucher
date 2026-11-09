@@ -470,11 +470,19 @@ async function run() {
   const duplicateRequests = requests.filter((request) =>
     request.url.endsWith('/vouchers/duplicate-check'),
   );
-  assert.equal(duplicateRequests.length, 2, 'each batch entry is checked against the Laravel history');
+  assert.equal(
+    duplicateRequests.length,
+    2,
+    'each batch entry is checked against the Laravel history',
+  );
   assert.equal(duplicateRequests[0].method, 'POST');
   assert.equal(duplicateRequests[0].credentials, 'same-origin');
   assert.equal(duplicateRequests[0].headers['X-CSRF-Token'], csrf);
-  assert.equal(duplicateRequests[0].headers['Idempotency-Key'], undefined, 'a read-only duplicate check is not a financial write');
+  assert.equal(
+    duplicateRequests[0].headers['Idempotency-Key'],
+    undefined,
+    'a read-only duplicate check is not a financial write',
+  );
   assert.deepEqual(JSON.parse(duplicateRequests[0].body), {
     date: '2026-11-09',
     vendor: 'Matched supplier',
@@ -499,7 +507,11 @@ async function run() {
     () => api('checkPaymentDuplicates', { entries: [] }),
     (error) => error.code === 'PAYLOAD_INVALID',
   );
-  assert.equal(requests.length, beforeInvalidDuplicate, 'invalid duplicate-check input must not reach the server');
+  assert.equal(
+    requests.length,
+    beforeInvalidDuplicate,
+    'invalid duplicate-check input must not reach the server',
+  );
 
   const beforeUnsupported = requests.length;
   await assert.rejects(
