@@ -647,11 +647,11 @@ with sync_playwright() as p:
     go_view(page, 'dash')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included') || "
-        "document.querySelector('#view')?.innerText.includes('Spending trend')"
+        "document.querySelector('#view')?.querySelector('.dashboard-primary-metrics') !== null"
     )
     check(
         page.locator('#view .page-header h1').inner_text() == 'Dashboard'
-        and page.locator('#view .dashboard-empty-state, #view .dashboard-trend').count() == 1,
+        and page.locator('#view .dashboard-empty-state, #view .dashboard-primary-metrics').count() == 1,
         'dashboard recovers after the controlled empty-summary response is removed',
     )
 
@@ -1133,6 +1133,8 @@ with sync_playwright() as p:
             go_view(page, route_id)
         page.wait_for_selector(ready_selector, state='visible', timeout=10000)
         if route_id == 'dash':
+            page.wait_for_selector('.dashboard-analysis', state='visible', timeout=10000)
+            page.locator('.dashboard-analysis > summary').click()
             page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
             chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
                 role: svg.getAttribute('role'),
@@ -2660,7 +2662,7 @@ with sync_playwright() as p:
     page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
     page.wait_for_function(
-        "document.querySelector('#view')?.innerText.includes('Spending trend') || "
+        "document.querySelector('#view')?.querySelector('.dashboard-primary-metrics') !== null || "
         "document.querySelector('#view')?.innerText.includes('Dashboard totals unavailable')"
     )
     dashboard_text = page.locator('#view').text_content() or ''
@@ -2882,6 +2884,18 @@ with sync_playwright() as p:
         timeout=10000,
     )
     manager_stats = manager_page.locator('.dashboard-stats--owner > .stat').count()
+    check(
+        manager_page.locator('.dashboard-primary-actions .dashboard-primary-action').count() == 2
+        and manager_page.locator('.dashboard-primary-actions [data-k="PAYMENT"]').is_visible()
+        and manager_page.locator('.dashboard-primary-actions [data-k="RECEIPT"]').is_visible()
+        and manager_page.locator('[data-act="range"][data-k="today"]').get_attribute('aria-pressed') == 'true'
+        and manager_page.locator('.dashboard-primary-metrics, .dashboard-empty-state').count() == 1
+        and (
+            manager_page.locator('.dashboard-analysis').count() == 0
+            or not manager_page.locator('.dashboard-analysis').evaluate('(element) => element.open')
+        ),
+        'manager Dashboard starts with distinct entry actions, Today and collapsed secondary analysis',
+    )
     manager_empty_period = manager_page.locator('.dashboard-empty-state').count()
     check(
         manager_page.locator('#view .page-header h1').inner_text() == 'Dashboard'
@@ -2889,7 +2903,7 @@ with sync_playwright() as p:
         and manager_page.locator('.dashboard-cash-position').count() == 1
         and manager_page.locator('.daily-close-readiness').count() == 1
         and (
-            manager_stats == 6
+            manager_stats == 4
             or (
                 manager_stats == 0
                 and manager_empty_period == 1
