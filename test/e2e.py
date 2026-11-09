@@ -6187,6 +6187,8 @@ with sync_playwright() as p:
 
     page.route('**/api?*', inject_manager_dashboard_drilldowns)
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-analysis')
+    page.locator('.dashboard-analysis > summary').click()
     page.wait_for_selector('.dashboard-stats--owner .dashboard-kpi-drilldown')
     page.wait_for_selector('.needs-item [data-drill-key="cash-readiness-unavailable"]')
     manager_attention = page.locator('.needs-item [data-act="dashboardDrilldown"]')
@@ -6297,6 +6299,8 @@ with sync_playwright() as p:
                 'manager ' + drill_key + ' opens Register with its intended period/type/vendor context',
             )
         go_view(page, 'dash')
+        page.wait_for_selector('.dashboard-analysis')
+        page.locator('.dashboard-analysis > summary').click()
         page.wait_for_selector('[data-drill-key="' + drill_key + '"]')
     go_view(page, 'dash')
     page.wait_for_selector('.dashboard-recent-item__open')
