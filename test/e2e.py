@@ -1361,7 +1361,7 @@ with sync_playwright() as p:
                 )
                 if route_id == 'dash':
                     dashboard_metrics = layout['dashboardStatMetrics']
-                    expected_columns = 4 if width >= 801 else 2
+                    expected_columns = 1 if width <= 560 else 2 if width <= 800 else 4
                     check(
                         dashboard_metrics is not None
                         and dashboard_metrics['role'] == 'owner'
