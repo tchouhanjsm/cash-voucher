@@ -14,6 +14,7 @@ const transportTests = fs.readFileSync(
   path.join(root, 'test/test-laravel-api-transport.js'),
   'utf8',
 );
+const legacyRouteSource = fs.readFileSync(path.join(root, 'backend/99-routes.gs'), 'utf8');
 
 const STATES = new Set(['implemented', 'partial', 'planned']);
 const routeDefinitions = new Set();
@@ -92,23 +93,50 @@ for (const [name, entry] of Object.entries(actionMap.actions)) {
 }
 
 const bulk = actionMap.actions.createVouchers;
-assert.equal(bulk.capabilities?.bulkImport, 'unsupported');
+assert.equal(bulk.capabilities?.bulkImport, 'implemented');
 assert.equal(bulk.capabilities?.singleEntry, 'implemented');
-assert.match(
-  adapterSource,
-  /if\s*\(payload\.bulk\)[\s\S]*?API_ACTION_UNSUPPORTED/,
-  'bulk import must remain explicitly rejected by the Laravel adapter',
+assert.equal(bulk.capabilities?.bulkImportPath, '/imports/vouchers');
+assert.match(routeSource, /Route::post\(\s*['"]\/imports\/vouchers['"]/);
+assert.match(adapterSource, /mutate\(\s*['"]\/imports\/vouchers['"]/);
+assert.match(transportTests, /voucher-import-batch/);
+assert.match(transportTests, /quarantinedCount/);
+
+const legacyActionsBlock = legacyRouteSource.match(/const ACTIONS = \{([\s\S]*?)\n\};/);
+assert.ok(legacyActionsBlock, 'the Apps Script ACTIONS registry must remain discoverable');
+const legacyActionNames = Array.from(
+  legacyActionsBlock[1].matchAll(/^\s*([A-Za-z][A-Za-z0-9]*):\s*[A-Za-z_$][A-Za-z0-9_$]*,?\s*$/gm),
+  (match) => match[1],
+).sort();
+const inventoriedActionNames = Object.keys(actionMap.actions).sort();
+assert.deepEqual(
+  inventoriedActionNames,
+  legacyActionNames,
+  'every Apps Script operation must have exactly one parity-map entry',
 );
-assert.match(
-  transportTests,
-  /createVouchers',\s*\{\s*bulk:\s*true/,
-  'transport regression must exercise the unsupported bulk-import path',
-);
-assert.match(
-  transportTests,
-  /invalid or bulk create payloads must not reach the Laravel server/,
-  'bulk import must be rejected before any network request',
-);
+
+assert.ok(actionMap.fieldContracts, 'legacy request/response field parity must be inventoried');
+for (const field of [
+  'sourceRecordId',
+  'sourceSystem',
+  'sourceApprovalStatus',
+  'sourceVoucherNo',
+  'sourceReceipts',
+  'duplicateConfirmationToken',
+  'eventCategory',
+  'nextCursor',
+]) {
+  assert.ok(
+    adapterSource.includes(field),
+    'the browser adapter must explicitly map audited field ' + field,
+  );
+}
+for (const action of ['voucherHistory', 'checkVoucherDuplicates']) {
+  assert.equal(actionMap.actions[action].state, 'implemented');
+  assert.equal(actionMap.actions[action].clientState, 'implemented');
+  assert.equal(actionMap.actions[action].serverState, 'implemented');
+}
+assert.equal(actionMap.shadowResources.voucherImport.state, 'implemented');
+assert.equal(actionMap.shadowResources.voucherImport.maxRows, 100);
 
 assert.equal(
   actionMap.actions.checkPaymentDuplicates.path,
