@@ -1207,9 +1207,15 @@ with sync_playwright() as p:
                     f'dashboard trend is a responsive, titled SVG with exact-value points; metrics={chart_metrics}',
                 )
             else:
+                analysis_count = analysis_disclosure.count()
+                dashboard_root_count = page.locator('#view .dashboard-view').count()
+                view_analysis_count = page.locator('#view .dashboard-analysis').count()
                 check(
-                    analysis_disclosure.count() == 0,
-                    'Dashboard omits period analysis when the current role/state has no authorized analysis model',
+                    analysis_count == 0,
+                    'Dashboard omits period analysis when the current role/state has no authorized analysis model; '
+                    + f'global={analysis_count}, view={view_analysis_count}, dashboardRoots={dashboard_root_count}, '
+                    + f'role={page.locator("#popRole").inner_text() if page.locator("#popRole").count() else "unknown"}, '
+                    + f'viewText={page.locator("#view").inner_text()[:180]!r}',
                 )
 
         if route_id == 'new':
