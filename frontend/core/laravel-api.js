@@ -1927,6 +1927,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           }
 
           const sourceIds = new Set();
+          const sourceRowNumbers = new Set();
           const rows = entries.map((entry, index) => {
             if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
               throw failure('Import row ' + (index + 1) + ' is invalid.', 'PAYLOAD_INVALID');
@@ -1963,6 +1964,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
               !Number.isSafeInteger(sourceRowNumber) ||
               sourceRowNumber < 1 ||
               sourceRowNumber > 1000000 ||
+              sourceRowNumbers.has(sourceRowNumber) ||
               !isCalendarDate(date) ||
               !vendor ||
               vendor.length > 200 ||
@@ -2001,6 +2003,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
               );
             }
             sourceIds.add(sourceRecordId);
+            sourceRowNumbers.add(sourceRowNumber);
             return {
               sourceRecordId,
               sourceRowNumber,
