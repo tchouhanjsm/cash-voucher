@@ -78,7 +78,11 @@ final class VoucherController
             $visibilityScope->where('created_by_user_id', $principal['id']);
         }
 
-        $vendors = (clone $visibilityScope)
+        $facetScope = (clone $visibilityScope)
+            ->whereIn('voucher_type', ['PAYMENT', 'RECEIPT'])
+            ->whereIn('status', ['ACTIVE', 'CANCELLED']);
+
+        $vendors = (clone $facetScope)
             ->whereNotNull('vendor_name_snapshot')
             ->where('vendor_name_snapshot', '<>', '')
             ->select('vendor_name_snapshot')
@@ -89,7 +93,7 @@ final class VoucherController
             ->values()
             ->all();
 
-        $users = (clone $visibilityScope)
+        $users = (clone $facetScope)
             ->whereNotNull('created_by_email_snapshot')
             ->where('created_by_email_snapshot', '<>', '')
             ->selectRaw('LOWER(created_by_email_snapshot) AS email')
