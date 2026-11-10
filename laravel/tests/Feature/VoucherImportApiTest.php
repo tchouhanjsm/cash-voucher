@@ -95,6 +95,54 @@ final class VoucherImportApiTest extends TestCase
         );
     }
 
+    public function test_reconciliation_variance_uses_persisted_imported_amount_not_the_source_amount_again(): void
+    {
+        $manager = $this->withRoleSession('manager');
+        $sourceId = 'paise-reconciliation-'.bin2hex(random_bytes(5));
+        $batchId = 'paise-reconciliation-batch-'.bin2hex(random_bytes(5));
+        $payload = $this->manifest($batchId, [
+            $this->row($sourceId, [
+                'vendor' => 'Persisted Paise Supplier',
+                'amount' => '425.75',
+            ]),
+        ]);
+
+        $first = $manager->postJson('/api/v1/imports/vouchers', $payload, [
+            'Idempotency-Key' => $batchId,
+        ]);
+        $first->assertOk()
+            ->assertJsonPath('data.status', 'COMPLETED')
+            ->assertJsonPath('data.reconciliation.sourceTotalPaise', 42575)
+            ->assertJsonPath('data.reconciliation.importedTotalPaise', 42575)
+            ->assertJsonPath('data.reconciliation.variancePaise', 0)
+            ->assertJsonPath('data.reconciliation.balanced', true)
+            ->assertJsonPath('data.rows.0.sourceAmountPaise', 42575)
+            ->assertJsonPath('data.rows.0.importedAmountPaise', 42575);
+
+        $batchRecordId = (string) $first->json('data.batchRecordId');
+        DB::table('voucher_import_rows')
+            ->where('batch_id', $batchRecordId)
+            ->where('source_record_id', $sourceId)
+            ->update(['imported_amount_paise' => 42576]);
+
+        $reconciled = $manager->postJson('/api/v1/imports/vouchers', $payload, [
+            'Idempotency-Key' => $batchId,
+        ]);
+        $reconciled->assertOk()
+            ->assertJsonPath('data.status', 'RECONCILIATION_REQUIRED')
+            ->assertJsonPath('data.reconciliation.sourceTotalPaise', 42575)
+            ->assertJsonPath('data.reconciliation.importedTotalPaise', 42576)
+            ->assertJsonPath('data.reconciliation.variancePaise', -1)
+            ->assertJsonPath('data.reconciliation.balanced', false)
+            ->assertJsonPath('data.rows.0.importedAmountPaise', 42576);
+
+        self::assertSame(
+            1,
+            DB::table('vouchers')->where('source_legacy_id', 'manual-csv:'.$sourceId)->count(),
+            'A reconciliation discrepancy must not create a second voucher.',
+        );
+    }
+
     public function test_same_source_id_with_changed_content_is_quarantined_without_a_second_voucher(): void
     {
         $manager = $this->withRoleSession('manager');
