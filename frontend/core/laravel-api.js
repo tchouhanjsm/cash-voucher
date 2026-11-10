@@ -1952,7 +1952,9 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
               typeof sourceVoucherNo !== 'string' ||
               sourceVoucherNo.length > 32 ||
               typeof sourceReceipts !== 'string' ||
-              sourceReceipts.length > 1200
+              sourceReceipts.length > 1200 ||
+              typeof (entry.sourceVendorType ?? '') !== 'string' ||
+              String(entry.sourceVendorType ?? '').length > 30
             ) {
               throw failure(
                 'Import row ' +
@@ -1979,6 +1981,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
                 sourceApprovalStatus,
                 sourceVoucherNo,
                 sourceReceipts,
+                sourceVendorType: entry.sourceVendorType ?? '',
               },
             };
           });
