@@ -17,7 +17,7 @@ export function createBulk({ api, refresh, go }) {
         description: 'Review row data and cash-impact classifications before importing a batch.',
       }) +
       `<div class="card bulk-import-panel"><h2>1. Get your data in</h2>
-    <p class="muted">Required columns: <b>SourceID, Date, Vendor, Amount</b>; optional <b>Category, Notes, CashImpact, PaymentMethod</b>. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
+    <p class="muted">Required columns: <b>SourceID, Date, Vendor, Amount</b>; optional <b>Category, Notes, CashImpact, PaymentMethod</b>. Give each source transaction a unique, stable SourceID and keep it unchanged when retrying the same import. Replace the blank SourceID in the template before importing. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
     <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn bulk-file-label">📁 Choose file<input type="file" id="bf" class="bulk-file-input" accept=".csv,.tsv,.txt" aria-label="Choose CSV or TSV file"></label></div>
     <label class="bulk-entry-kind">These rows are<select id="bt2"><option value="PAYMENT">Payments (cash out)</option><option value="RECEIPT">Cash received (cash in)</option></select></label>
     <label>…or paste rows here<textarea id="bt" rows="5" placeholder="25/12/2026&#9;Ram Traders&#9;1500&#9;Kitchen&#9;vegetables"></textarea></label>
@@ -735,7 +735,7 @@ export function createBulk({ api, refresh, go }) {
     download(
       'voucher-template.csv',
       'SourceID,Date,Vendor,VendorID,VendorType,Amount,Category,Notes,CashImpact,PaymentMethod\r\n' +
-        'manual-row-0001,25/12/2026,Ram Traders,,,1500,Kitchen,Vegetables,CASH_OUT,CASH\r\n',
+        ',25/12/2026,Ram Traders,,,1500,Kitchen,Vegetables,CASH_OUT,CASH\r\n',
       'text/csv',
     );
   }
