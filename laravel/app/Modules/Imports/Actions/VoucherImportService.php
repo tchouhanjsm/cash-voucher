@@ -329,6 +329,24 @@ final class VoucherImportService
         $claim->execute(['id' => $rowId]);
 
         $voucher = $row['voucher'];
+        $allowedFields = [
+            'date', 'vendor', 'vendorId', 'amount', 'category', 'notes', 'type',
+            'cashImpact', 'paymentMethod', 'duplicateConfirmationToken',
+            'sourceStatus', 'sourceApprovalStatus', 'sourceVoucherNo', 'sourceReceipts',
+            'sourceVendorType',
+        ];
+        $unsupportedFields = array_values(array_diff(array_map('strval', array_keys($voucher)), $allowedFields));
+        if ($unsupportedFields !== []) {
+            $this->quarantine(
+                $pdo,
+                $rowId,
+                'UNSUPPORTED_SOURCE_FIELDS',
+                'The source row contains fields that are not covered by the import contract: '.implode(', ', array_slice($unsupportedFields, 0, 8)).'. No unsupported field was discarded.',
+            );
+
+            return;
+        }
+
         $sourceStatus = $voucher['sourceStatus'] ?? '';
         unset($voucher['sourceStatus']);
         if ($sourceStatus !== null && $sourceStatus !== '' && $sourceStatus !== 'ACTIVE') {
@@ -346,6 +364,7 @@ final class VoucherImportService
             'sourceApprovalStatus' => 'SOURCE_APPROVAL_REQUIRES_RECONCILIATION',
             'sourceVoucherNo' => 'SOURCE_VOUCHER_NUMBER_REQUIRES_RECONCILIATION',
             'sourceReceipts' => 'SOURCE_RECEIPTS_REQUIRE_PRIVATE_MIGRATION',
+            'sourceVendorType' => 'SOURCE_VENDOR_TYPE_REQUIRES_RECONCILIATION',
         ] as $field => $errorCode) {
             $value = $voucher[$field] ?? '';
             if ($value !== null && $value !== '' && $value !== [] && $value !== false) {
