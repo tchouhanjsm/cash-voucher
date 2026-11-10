@@ -38,7 +38,7 @@ Route::prefix('v1')->group(function (): void {
         try {
             $latest = DB::table('schema_migrations')->orderByDesc('version')->value('version');
             if ($latest !== '0006') {
-                throw new \RuntimeException('Expected schema baseline 0005 was not found.');
+                throw new \RuntimeException('Expected schema baseline 0006 was not found.');
             }
         } catch (\Throwable $exception) {
             report($exception);
