@@ -82,7 +82,7 @@ final class VoucherImportService
             'SELECT id, source_record_id, source_legacy_id, row_sha256, status, error_code
              FROM voucher_import_rows
              WHERE batch_id = :batch_id
-             ORDER BY row_number ASC'
+             ORDER BY source_row_number ASC'
         );
         $rowsQuery->execute(['batch_id' => $batchId]);
 
@@ -258,12 +258,12 @@ final class VoucherImportService
 
             $insertRow = $pdo->prepare(
                 'INSERT INTO voucher_import_rows (
-                    id, batch_id, source_record_id, source_legacy_id, row_number,
+                    id, batch_id, source_record_id, source_legacy_id, source_row_number,
                     row_sha256, voucher_type, source_amount_paise, status,
                     voucher_id, error_code, error_message, attempted_count,
                     created_at_utc, updated_at_utc
                  ) VALUES (
-                    :id, :batch_id, :source_record_id, :source_legacy_id, :row_number,
+                    :id, :batch_id, :source_record_id, :source_legacy_id, :source_row_number,
                     :row_sha256, :voucher_type, :source_amount, :status,
                     NULL, NULL, NULL, 0, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)
                  )'
@@ -274,7 +274,7 @@ final class VoucherImportService
                     'batch_id' => $id,
                     'source_record_id' => $row['sourceRecordId'],
                     'source_legacy_id' => $row['sourceLegacyId'],
-                    'row_number' => $row['rowNumber'],
+                    'source_row_number' => $row['rowNumber'],
                     'row_sha256' => $row['rowHash'],
                     'voucher_type' => $row['voucherType'],
                     'source_amount' => $row['amountPaise'],
@@ -477,11 +477,11 @@ final class VoucherImportService
         string $actorEmail,
     ): array {
         $rowsQuery = $pdo->prepare(
-            'SELECT row_number, source_record_id, status, voucher_id,
+            'SELECT source_row_number, source_record_id, status, voucher_id,
                     source_amount_paise, error_code, error_message
              FROM voucher_import_rows
              WHERE batch_id = :batch_id
-             ORDER BY row_number ASC'
+             ORDER BY source_row_number ASC'
         );
         $rowsQuery->execute(['batch_id' => $batchId]);
         $rows = $rowsQuery->fetchAll(PDO::FETCH_ASSOC);
@@ -519,7 +519,7 @@ final class VoucherImportService
             }
 
             $item = [
-                'rowNumber' => (int) $row['row_number'],
+                'rowNumber' => (int) $row['source_row_number'],
                 'sourceRecordId' => (string) $row['source_record_id'],
                 'status' => $status,
                 'voucherId' => $row['voucher_id'] === null ? null : (string) $row['voucher_id'],
