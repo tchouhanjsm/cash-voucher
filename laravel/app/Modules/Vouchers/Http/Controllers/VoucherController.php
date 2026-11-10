@@ -78,23 +78,27 @@ final class VoucherController
             $visibilityScope->where('created_by_user_id', $principal['id']);
         }
 
+        $validTypeScope = static function ($builder): void {
+            $builder->whereRaw("BINARY voucher_type IN ('PAYMENT', 'RECEIPT')");
+        };
         $validStatusScope = static function ($builder): void {
-            $builder
-                ->whereIn('status', ['ACTIVE', 'CANCELLED'])
-                ->orWhereNull('status')
-                ->orWhere('status', '');
+            $builder->where(function ($status): void {
+                $status
+                    ->whereRaw("BINARY status IN ('ACTIVE', 'CANCELLED')")
+                    ->orWhereNull('status')
+                    ->orWhereRaw("BINARY status = ''");
+            });
         };
 
         $facetScope = (clone $visibilityScope)
-            ->whereIn('voucher_type', ['PAYMENT', 'RECEIPT'])
+            ->where($validTypeScope)
             ->where($validStatusScope);
 
         $vendors = (clone $facetScope)
             ->whereNotNull('vendor_name_snapshot')
-            ->where('vendor_name_snapshot', '<>', '')
-            ->select('vendor_name_snapshot')
-            ->distinct()
-            ->orderBy('vendor_name_snapshot')
+            ->whereRaw("BINARY vendor_name_snapshot <> ''")
+            ->selectRaw('DISTINCT BINARY vendor_name_snapshot AS vendor_name_snapshot')
+            ->orderByRaw('BINARY vendor_name_snapshot')
             ->pluck('vendor_name_snapshot')
             ->map(static fn ($value): string => (string) $value)
             ->values()
@@ -115,30 +119,32 @@ final class VoucherController
             ->where(function ($query): void {
                 $query
                     ->whereNull('id')
-                    ->orWhere('id', '')
-                    ->orWhereNotIn('voucher_type', ['PAYMENT', 'RECEIPT'])
+                    ->orWhereRaw("BINARY TRIM(id) = ''")
+                    ->orWhereNull('voucher_type')
+                    ->orWhereRaw("BINARY voucher_type = ''")
+                    ->orWhereRaw("BINARY voucher_type NOT IN ('PAYMENT', 'RECEIPT')")
                     ->orWhere(function ($status): void {
                         $status
                             ->whereNotNull('status')
-                            ->where('status', '<>', '')
-                            ->whereNotIn('status', ['ACTIVE', 'CANCELLED']);
+                            ->whereRaw("BINARY status <> ''")
+                            ->whereRaw("BINARY status NOT IN ('ACTIVE', 'CANCELLED')");
                     });
             })
             ->count();
 
-        $malformedFieldCount = (clone $visibilityScope)
-            ->where(function ($query): void {
-                $query
-                    ->whereNull('vendor_name_snapshot')
-                    ->orWhereNull('category')
-                    ->orWhereNull('created_by_email_snapshot')
-                    ->orWhereNull('voucher_type')
-                    ->orWhereNull('status');
-            })
-            ->count();
+        $malformedFieldCount = 0;
+        foreach ([
+            'vendor_name_snapshot',
+            'category',
+            'created_by_email_snapshot',
+            'voucher_type',
+            'status',
+        ] as $field) {
+            $malformedFieldCount += (clone $visibilityScope)->whereNull($field)->count();
+        }
 
         $query = (clone $visibilityScope)
-            ->whereIn('voucher_type', ['PAYMENT', 'RECEIPT'])
+            ->where($validTypeScope)
             ->where($validStatusScope);
 
         if ($from !== '') {
@@ -148,20 +154,23 @@ final class VoucherController
             $query->where('business_date', '<=', $to);
         }
         if ($type !== '') {
-            $query->where('voucher_type', $type);
+            $query->whereRaw('BINARY voucher_type = BINARY ?', [$type]);
         }
         if ($status === 'ACTIVE') {
             $query->where(function ($builder): void {
-                $builder->where('status', 'ACTIVE')->orWhereNull('status')->orWhere('status', '');
+                $builder
+                    ->whereRaw("BINARY status = 'ACTIVE'")
+                    ->orWhereNull('status')
+                    ->orWhereRaw("BINARY status = ''");
             });
         } elseif ($status === 'CANCELLED') {
-            $query->where('status', 'CANCELLED');
+            $query->whereRaw("BINARY status = 'CANCELLED'");
         }
         if ($vendor !== '') {
-            $query->where('vendor_name_snapshot', $vendor);
+            $query->whereRaw('BINARY vendor_name_snapshot = BINARY ?', [$vendor]);
         }
         if ($category !== '') {
-            $query->where('category', $category);
+            $query->whereRaw('BINARY category = BINARY ?', [$category]);
         }
         if ($createdBy !== '') {
             $query->whereRaw('LOWER(created_by_email_snapshot) = ?', [$createdBy]);
@@ -170,33 +179,30 @@ final class VoucherController
             if ($approval === 'NOT_REQUIRED') {
                 $query->where(function ($builder): void {
                     $builder
-                        ->where('voucher_type', 'RECEIPT')
+                        ->whereRaw("BINARY voucher_type = 'RECEIPT'")
                         ->orWhere(function ($payment): void {
                             $payment
-                                ->where('voucher_type', 'PAYMENT')
+                                ->whereRaw("BINARY voucher_type = 'PAYMENT'")
                                 ->where(function ($status): void {
                                     $status
-                                        ->where('approval_status', 'NOT_REQUIRED')
+                                        ->whereRaw("BINARY approval_status = 'NOT_REQUIRED'")
                                         ->orWhereNull('approval_status')
-                                        ->orWhere('approval_status', '');
+                                        ->orWhereRaw("BINARY approval_status = ''");
                                 });
                         });
                 });
             } elseif ($approval === 'REVIEW_REQUIRED') {
                 $query
-                    ->where('voucher_type', 'PAYMENT')
+                    ->whereRaw("BINARY voucher_type = 'PAYMENT'")
                     ->whereNotNull('approval_status')
-                    ->where('approval_status', '<>', '')
-                    ->whereNotIn('approval_status', [
-                        'NOT_REQUIRED',
-                        'PENDING',
-                        'APPROVED',
-                        'REJECTED',
-                    ]);
+                    ->whereRaw("BINARY approval_status <> ''")
+                    ->whereRaw(
+                        "BINARY approval_status NOT IN ('NOT_REQUIRED', 'PENDING', 'APPROVED', 'REJECTED')",
+                    );
             } else {
                 $query
-                    ->where('voucher_type', 'PAYMENT')
-                    ->where('approval_status', $approval);
+                    ->whereRaw("BINARY voucher_type = 'PAYMENT'")
+                    ->whereRaw('BINARY approval_status = BINARY ?', [$approval]);
             }
         }
         if ($paymentMethod === 'UNRECORDED') {
@@ -204,15 +210,19 @@ final class VoucherController
         } elseif ($paymentMethod === 'UNRECOGNIZED') {
             $query
                 ->whereRaw("TRIM(payment_method) <> ''")
-                ->whereRaw("TRIM(payment_method) NOT IN (?, ?, ?)", ['CASH', 'UPI', 'BANK_TRANSFER']);
+                ->whereRaw("BINARY TRIM(payment_method) NOT IN ('CASH', 'UPI', 'BANK_TRANSFER')");
         } elseif ($paymentMethod !== 'ALL') {
-            $query->whereRaw('TRIM(payment_method) = ?', [$paymentMethod]);
+            $query->whereRaw('BINARY TRIM(payment_method) = BINARY ?', [$paymentMethod]);
         }
 
         if ($cashImpact === 'UNCLASSIFIED') {
-            $query->whereNotIn('cash_impact', ['CASH_IN', 'CASH_OUT', 'NO_CASH']);
+            $query->where(function ($builder): void {
+                $builder
+                    ->whereNull('cash_impact')
+                    ->orWhereRaw("BINARY cash_impact NOT IN ('CASH_IN', 'CASH_OUT', 'NO_CASH')");
+            });
         } elseif ($cashImpact !== 'ALL') {
-            $query->where('cash_impact', $cashImpact);
+            $query->whereRaw('BINARY cash_impact = BINARY ?', [$cashImpact]);
         }
 
         if ($amountValidity === 'VALID') {
@@ -233,7 +243,7 @@ final class VoucherController
             $query->where(function ($builder) use ($pattern): void {
                 $builder
                     ->whereRaw(
-                        "LOWER(CONCAT(CASE WHEN voucher_type = 'RECEIPT' THEN 'R-' ELSE '' END, voucher_number)) LIKE ? ESCAPE '!'",
+                        "LOWER(CONCAT(CASE WHEN BINARY voucher_type = 'RECEIPT' THEN 'R-' ELSE '' END, voucher_number)) LIKE ? ESCAPE '!'",
                         [$pattern],
                     )
                     ->orWhereRaw("LOWER(vendor_name_snapshot) LIKE ? ESCAPE '!'", [$pattern])
@@ -252,24 +262,24 @@ final class VoucherController
             $builder->whereBetween('amount_paise', [1, 1_000_000_000]);
         };
         $paidPaise = (clone $activeQuery)
-            ->where('voucher_type', 'PAYMENT')
+            ->whereRaw("BINARY voucher_type = 'PAYMENT'")
             ->where(function ($builder): void {
                 $builder
-                    ->whereIn('approval_status', ['NOT_REQUIRED', 'APPROVED'])
+                    ->whereRaw("BINARY approval_status IN ('NOT_REQUIRED', 'APPROVED')")
                     ->orWhereNull('approval_status')
-                    ->orWhere('approval_status', '');
+                    ->orWhereRaw("BINARY approval_status = ''");
             })
             ->where($validAmountQuery)
             ->sum('amount_paise');
         $receivedPaise = (clone $activeQuery)
-            ->where('voucher_type', 'RECEIPT')
+            ->whereRaw("BINARY voucher_type = 'RECEIPT'")
             ->where($validAmountQuery)
             ->sum('amount_paise');
         $approvalExceptionCount = (clone $activeQuery)
-            ->where('voucher_type', 'PAYMENT')
+            ->whereRaw("BINARY voucher_type = 'PAYMENT'")
             ->whereNotNull('approval_status')
-            ->where('approval_status', '<>', '')
-            ->whereNotIn('approval_status', ['NOT_REQUIRED', 'APPROVED'])
+            ->whereRaw("BINARY approval_status <> ''")
+            ->whereRaw("BINARY approval_status NOT IN ('NOT_REQUIRED', 'APPROVED')")
             ->count();
         $invalidAmountCount = (clone $activeQuery)
             ->where(function ($builder): void {
