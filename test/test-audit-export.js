@@ -181,7 +181,8 @@ async function run() {
   assert.match(structuredCsv, /"COVERAGE"/);
   assert.ok(structuredCsv.includes('not a point-in-time snapshot'));
   assert.match(structuredCsv, /"VOUCHER_UPDATED"/);
-  assert.match(structuredCsv, /"'=HYPERLINK/);
+  assert.ok(structuredCsv.includes('""vendor"":""=HYPERLINK('));
+  assert.doesNotMatch(structuredCsv, /,"=HYPERLINK\(/);
   assert.doesNotMatch(structuredCsv, /sessionToken/);
   assert.throws(
     () =>
