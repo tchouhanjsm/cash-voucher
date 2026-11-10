@@ -231,6 +231,44 @@ final class VoucherImportApiTest extends TestCase
         self::assertSame(0, DB::table('voucher_import_batches')->where('source_batch_id', $batchId)->count());
     }
 
+    public function test_original_source_row_numbers_survive_chunking_and_are_part_of_the_immutable_manifest(): void
+    {
+        $manager = $this->withRoleSession('manager');
+        $batchId = 'source-row-map-'.bin2hex(random_bytes(5));
+        $first = $this->row('source-row-first-'.bin2hex(random_bytes(4)));
+        $first['sourceRowNumber'] = 121;
+        $second = $this->row('source-row-second-'.bin2hex(random_bytes(4)), [
+            'vendor' => 'Second source row supplier',
+            'amount' => '126.75',
+        ]);
+        $second['sourceRowNumber'] = 245;
+
+        $payload = $this->manifest($batchId, [$first, $second]);
+        $response = $manager->postJson('/api/v1/imports/vouchers', $payload, [
+            'Idempotency-Key' => $batchId,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.rows.0.rowNumber', 121)
+            ->assertJsonPath('data.rows.1.rowNumber', 245)
+            ->assertJsonPath('data.reconciliation.balanced', true);
+
+        $stored = DB::table('voucher_import_rows')
+            ->where('batch_id', $response->json('data.batchRecordId'))
+            ->orderBy('source_row_number')
+            ->pluck('source_row_number')
+            ->map(static fn ($value): int => (int) $value)
+            ->all();
+        self::assertSame([121, 245], $stored);
+
+        $changedPosition = $payload;
+        $changedPosition['rows'][0]['sourceRowNumber'] = 122;
+        $manager->postJson('/api/v1/imports/vouchers', $changedPosition, [
+            'Idempotency-Key' => $batchId,
+        ])->assertConflict()
+            ->assertJsonPath('error.code', 'IMPORT_BATCH_CONFLICT');
+    }
+
     public function test_duplicate_source_ids_in_one_manifest_fail_before_batch_creation(): void
     {
         $manager = $this->withRoleSession('manager');
