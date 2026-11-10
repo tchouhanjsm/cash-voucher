@@ -509,6 +509,41 @@ async function run() {
         },
       });
     }
+    if (String(url).includes('/vouchers/22222222-2222-4222-8222-222222222222/history?')) {
+      return jsonResponse({
+        ok: true,
+        data: {
+          source: 'laravel-sql-audit-events',
+          eventCategory: 'ALL',
+          voucher: {
+            id: '22222222-2222-4222-8222-222222222222',
+            voucherNo: '81001',
+            date: '2026-11-10',
+            vendor: 'Structured Supplier',
+            type: 'PAYMENT',
+            status: 'ACTIVE',
+          },
+          items: [
+            {
+              id: '33333333-3333-4333-8333-333333333333',
+              actorUserId: '44444444-4444-4444-8444-444444444444',
+              actorEmail: 'owner@example.test',
+              eventType: 'VOUCHER_UPDATED',
+              targetType: 'voucher',
+              targetId: '22222222-2222-4222-8222-222222222222',
+              before: { vendor: 'Old supplier' },
+              after: { vendor: 'Structured Supplier' },
+              reason: 'Corrected vendor',
+              occurredAtUtc: '2026-11-10 06:30:00.123456',
+            },
+          ],
+          count: 1,
+          limit: 50,
+          hasMore: true,
+          nextCursor: 'structured-cursor',
+        },
+      });
+    }
     if (String(url).includes('/audit-events?')) {
       return jsonResponse({
         ok: true,
@@ -877,6 +912,30 @@ async function run() {
 
   await api('auditLog', { beforeRow: 'opaque-cursor' });
   assert.match(requests[10].url, /cursor=opaque-cursor/);
+
+  const voucherHistory = await api('voucherHistory', {
+    id: '22222222-2222-4222-8222-222222222222',
+    limit: 50,
+    cursor: null,
+    eventCategory: 'ALL',
+  });
+  assert.equal(voucherHistory.source, 'laravel-sql-audit-events');
+  assert.equal(voucherHistory.voucher.vendor, 'Structured Supplier');
+  assert.equal(voucherHistory.items.length, 1);
+  assert.equal(voucherHistory.items[0].targetId, voucherHistory.voucher.id);
+  assert.equal(voucherHistory.items[0].eventType, 'VOUCHER_UPDATED');
+  assert.equal(voucherHistory.nextCursor, 'structured-cursor');
+  assert.equal(voucherHistory.hasMore, true);
+  const voucherHistoryRequest = requests.at(-1);
+  assert.match(voucherHistoryRequest.url, /\\/vouchers\\/22222222-2222-4222-8222-222222222222\\/history\\?/);
+  assert.match(voucherHistoryRequest.url, /eventCategory=ALL/);
+  assert.match(voucherHistoryRequest.url, /limit=50/);
+  const beforeInvalidHistory = requests.length;
+  await assert.rejects(
+    () => api('voucherHistory', { id: 'not-a-voucher-id' }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  assert.equal(requests.length, beforeInvalidHistory, 'invalid history IDs must not reach the API');
 
   const createdUserPayload = {
     name: '  New Property Staff  ',
