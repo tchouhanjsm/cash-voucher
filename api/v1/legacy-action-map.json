@@ -158,10 +158,7 @@
       "adapterAction": "getReceipt"
     },
     "saveVendor": {
-      "method": [
-        "POST",
-        "PATCH"
-      ],
+      "method": ["POST", "PATCH"],
       "path": "/vendors[/{vendorId}]",
       "access": "vendors",
       "kind": "write",
@@ -191,10 +188,7 @@
       "adapterAction": "listUsers"
     },
     "saveUser": {
-      "method": [
-        "POST",
-        "PATCH"
-      ],
+      "method": ["POST", "PATCH"],
       "path": "/users[/{userId}]",
       "access": "users",
       "kind": "write",
@@ -381,7 +375,18 @@
       "clientState": "planned",
       "adapterAction": null,
       "notes": "No complete Laravel-shadow server and browser implementation is currently mapped."
-    },
+    }
+  },
+  "phpFoundation": {
+    "implementedActions": [
+      "changePassword",
+      "login",
+      "logout",
+      "saveVendor",
+      "toggleVendor"
+    ]
+  },
+  "shadowResources": {
     "entrySuggestions": {
       "method": "GET",
       "path": "/entry-suggestions",
