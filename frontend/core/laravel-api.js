@@ -128,7 +128,7 @@ function mapDailyOperations(preview) {
       : rupeesToNumber(source.expectedCash, 'expected drawer cash');
   const includedVouchers = closed ? close.includedVouchers : null;
   if (closed && !Array.isArray(includedVouchers)) {
-throw failure(
+    throw failure(
       'The saved cash-close voucher snapshot is incomplete.',
       'API_RESPONSE_INVALID',
     );
@@ -181,7 +181,7 @@ function isCalendarDate(value) {
 
 function mapCashCloseVoucher(item, label = 'cash-close voucher') {
   if (!item || typeof item !== 'object' || Array.isArray(item)) {
-throw failure(
+    throw failure(
       'The Laravel cash-close API returned an invalid voucher.',
       'API_RESPONSE_INVALID',
     );
@@ -193,7 +193,7 @@ throw failure(
         ? item.no
         : '';
   if (!voucherNo || typeof item.date !== 'string' || typeof item.vendor !== 'string') {
-throw failure(
+    throw failure(
       'The Laravel cash-close API returned an incomplete voucher.',
       'API_RESPONSE_INVALID',
     );
@@ -250,7 +250,7 @@ function mapCashCloseRecord(close, requireCorrections = false) {
 
   if (close.corrections !== undefined) {
     if (!Array.isArray(close.corrections)) {
-throw failure(
+      throw failure(
         'The saved cash-close corrections are invalid.',
         'API_RESPONSE_INVALID',
       );
@@ -267,7 +267,7 @@ throw failure(
         typeof item.details !== 'string' ||
         typeof item.reason !== 'string'
       ) {
-throw failure(
+        throw failure(
           'The saved cash-close correction is incomplete.',
           'API_RESPONSE_INVALID',
         );
@@ -289,7 +289,7 @@ throw failure(
       };
     });
   } else if (requireCorrections) {
-throw failure(
+    throw failure(
       'The saved cash-close corrections are missing.',
       'API_RESPONSE_INVALID',
     );
@@ -307,7 +307,7 @@ function mapCashClosePreview(preview) {
     typeof preview.date !== 'string' ||
     !Array.isArray(preview.recentCloses)
   ) {
-throw failure(
+    throw failure(
       'The Laravel cash-close preview returned an invalid response.',
       'API_RESPONSE_INVALID',
     );
@@ -327,7 +327,7 @@ throw failure(
   const mapPreviewVoucher = (item, label) => mapCashCloseVoucher(item, label);
   const mapIssue = (item, label) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
-throw failure(
+      throw failure(
         'The Laravel cash-close preview contains an invalid issue row.',
         'API_RESPONSE_INVALID',
       );
@@ -339,7 +339,7 @@ throw failure(
           ? item.no
           : '';
     if (!voucherNo || typeof item.id !== 'string' || typeof item.vendor !== 'string') {
-throw failure(
+      throw failure(
         'The Laravel cash-close preview contains an incomplete issue row.',
         'API_RESPONSE_INVALID',
       );
@@ -360,7 +360,7 @@ throw failure(
     !Array.isArray(preview.unclassified) ||
     !Array.isArray(preview.invalidVouchers)
   ) {
-throw failure(
+    throw failure(
       'The Laravel cash-close preview is missing voucher details.',
       'API_RESPONSE_INVALID',
     );
@@ -417,7 +417,7 @@ function mapRecordedMovementReportPage(report, filters, expectedOffset, expected
     typeof report.hasMore !== 'boolean' ||
     report.hasMore !== report.offset + report.items.length < report.totalCount
   ) {
-throw failure(
+    throw failure(
       'The Laravel movement report returned an incomplete response.',
       'API_RESPONSE_INVALID',
     );
@@ -456,7 +456,7 @@ throw failure(
       (item.amount !== null && typeof item.amount !== 'string') ||
       (item.amountValid !== (item.amount !== null))
     ) {
-throw failure(
+      throw failure(
         'The Laravel movement report contains an invalid voucher row.',
         'API_RESPONSE_INVALID',
       );
@@ -477,7 +477,7 @@ throw failure(
       item.n < 0 ||
       typeof item.s !== 'string'
     ) {
-throw failure(
+      throw failure(
         'The Laravel movement report contains an invalid payment-method total.',
         'API_RESPONSE_INVALID',
       );
@@ -512,7 +512,7 @@ function mapUserMutation(result, expectedId = '') {
     typeof user.active !== 'boolean' ||
     typeof user.mustChangePassword !== 'boolean'
   ) {
-throw failure(
+    throw failure(
       'The Laravel user API returned an invalid user record.',
       'API_RESPONSE_INVALID',
     );
@@ -545,7 +545,7 @@ function mapAuditPage(page) {
     (page.nextCursor !== null && typeof page.nextCursor !== 'string') ||
     (page.hasMore && !page.nextCursor)
   ) {
-throw failure(
+    throw failure(
       'The Laravel audit API returned an invalid page.',
       'API_RESPONSE_INVALID',
     );
@@ -562,7 +562,7 @@ throw failure(
       (item.before !== null && typeof item.before !== 'object') ||
       (item.after !== null && typeof item.after !== 'object')
     ) {
-throw failure(
+      throw failure(
         'The Laravel audit API returned an invalid event.',
         'API_RESPONSE_INVALID',
       );
@@ -630,7 +630,7 @@ function normalizeUpdateFields(value) {
     Object.keys(value).length < 1 ||
     Object.keys(value).some((field) => !allowed.has(field))
   ) {
-throw failure(
+    throw failure(
       'Choose at least one supported voucher field to update.',
       'PAYLOAD_INVALID',
     );
@@ -856,7 +856,7 @@ function mapRegisterPage(page) {
       page.facets[field].some((value) => typeof value !== 'string') ||
       new Set(page.facets[field]).size !== page.facets[field].length
     ) {
-throw failure(
+      throw failure(
         'The Laravel Register filter options are invalid.',
         'API_RESPONSE_INVALID',
       );
@@ -988,7 +988,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     try {
       envelope = await response.json();
     } catch {
-throw failure(
+      throw failure(
         'Unexpected Laravel API response. Expected a JSON API envelope.',
         'BAD',
       );
@@ -1057,7 +1057,7 @@ throw failure(
     }
     const declaredLength = response.headers?.get?.('Content-Length');
     if (declaredLength && (!/^\d+$/.test(declaredLength) || Number(declaredLength) > 1600000)) {
-throw failure(
+      throw failure(
         'The receipt image is larger than the allowed limit.',
         'RECEIPT_SIZE_INVALID',
       );
@@ -1148,7 +1148,7 @@ throw failure(
         new TextEncoder().encode(namespace + ':' + identity),
       );
     } catch {
-throw failure(
+      throw failure(
         'A secure retry identifier could not be prepared.',
         'CRYPTO_UNAVAILABLE',
       );
@@ -1327,7 +1327,7 @@ throw failure(
           limit < 1 ||
           limit > 200
         ) {
-throw failure(
+          throw failure(
             'Choose valid report dates and filters before loading the report.',
             'PAYLOAD_INVALID',
           );
@@ -1379,7 +1379,7 @@ throw failure(
         while (current.hasMore) {
           const nextOffset = current.offset + current.items.length;
           if (nextOffset <= current.offset || nextOffset >= first.totalCount) {
-throw failure(
+            throw failure(
               'The report pagination did not advance safely. Retry with a narrower range.',
               'API_RESPONSE_INVALID',
             );
@@ -1393,7 +1393,7 @@ throw failure(
           }
           for (const item of current.items) {
             if (seenIds.has(item.id)) {
-throw failure(
+              throw failure(
                 'The report returned a duplicate voucher across pages.',
                 'API_RESPONSE_INVALID',
               );
@@ -1475,7 +1475,7 @@ throw failure(
           varianceReason.length > 200 ||
           !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(requestId)
         ) {
-throw failure(
+          throw failure(
             'Enter a valid date, counted cash and retry identity before closing.',
             'PAYLOAD_INVALID',
           );
@@ -1497,7 +1497,7 @@ throw failure(
         }
         const close = mapCashCloseRecord(result.close);
         if (close.date !== date) {
-throw failure(
+          throw failure(
             'The server returned a close for a different business date.',
             'API_RESPONSE_INVALID',
           );
@@ -1522,7 +1522,7 @@ throw failure(
           (voucherId !== '' && !VOUCHER_ID_PATTERN.test(voucherId)) ||
           !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(requestId)
         ) {
-throw failure(
+          throw failure(
             'Enter a valid correction type, details, reason and retry identity.',
             'PAYLOAD_INVALID',
           );
@@ -1589,7 +1589,7 @@ throw failure(
         const suppliedId = payload.id !== undefined && payload.id !== null;
         const userId = suppliedId && typeof payload.id === 'string' ? payload.id.trim() : '';
         if (suppliedId && !VOUCHER_ID_PATTERN.test(userId)) {
-throw failure(
+          throw failure(
             'The user reference is invalid. Refresh the Users list and retry.',
             'PAYLOAD_INVALID',
           );
@@ -1606,7 +1606,7 @@ throw failure(
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
           !['staff', 'manager', 'owner', 'accountant'].includes(role)
         ) {
-throw failure(
+          throw failure(
             'Enter a valid user name, email address and role.',
             'PAYLOAD_INVALID',
           );
@@ -1617,7 +1617,7 @@ throw failure(
         const method = userId ? 'PATCH' : 'POST';
         if (userId) {
           if (typeof payload.active !== 'boolean') {
-throw failure(
+            throw failure(
               'Choose whether this user account is active.',
               'PAYLOAD_INVALID',
             );
@@ -1633,7 +1633,7 @@ throw failure(
             temporaryPassword.length < 8 ||
             temporaryPassword.length > 128
           ) {
-throw failure(
+            throw failure(
               'Temporary password must be between 8 and 128 characters.',
               'PAYLOAD_INVALID',
             );
@@ -1667,7 +1667,7 @@ throw failure(
             ? payload.temporaryPassword
             : payload.password;
         if (!VOUCHER_ID_PATTERN.test(userId)) {
-throw failure(
+          throw failure(
             'The user reference is invalid. Refresh the Users list and retry.',
             'PAYLOAD_INVALID',
           );
@@ -1677,7 +1677,7 @@ throw failure(
           temporaryPassword.length < 8 ||
           temporaryPassword.length > 128
         ) {
-throw failure(
+          throw failure(
             'Temporary password must be between 8 and 128 characters.',
             'PAYLOAD_INVALID',
           );
@@ -1750,7 +1750,7 @@ throw failure(
           typeof payload.propertyAddress !== 'string' ||
           !/^-?(?:0|[1-9][0-9]{0,8})(?:\.[0-9]{1,2})?$/.test(openingBalance)
         ) {
-throw failure(
+          throw failure(
             'Enter valid property settings and an opening balance in INR.',
             'PAYLOAD_INVALID',
           );
@@ -1776,7 +1776,7 @@ throw failure(
           typeof idempotencyKey !== 'string' ||
           !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(idempotencyKey)
         ) {
-throw failure(
+          throw failure(
             'The settings operation retry key is invalid.',
             'PAYLOAD_INVALID',
           );
@@ -1795,7 +1795,7 @@ throw failure(
           !Array.isArray(result.settings.categories) ||
           !Array.isArray(result.settings.receiptCategories)
         ) {
-throw failure(
+          throw failure(
             'The Laravel settings API returned an invalid response.',
             'API_RESPONSE_INVALID',
           );
@@ -1832,7 +1832,7 @@ throw failure(
         const clientIds = new Set();
         for (const entry of entries) {
           if (clientIds.has(entry.clientId)) {
-throw failure(
+            throw failure(
               'Each entry must have a different transaction ID.',
               'PAYLOAD_INVALID',
             );
@@ -2028,7 +2028,7 @@ throw failure(
       case 'toggleVendor': {
         const vendorId = typeof payload.id === 'string' ? payload.id.trim() : '';
         if (!vendorId || typeof payload.active !== 'boolean') {
-throw failure(
+          throw failure(
             'A vendor ID and desired active state are required.',
             'PAYLOAD_INVALID',
           );
@@ -2103,7 +2103,7 @@ throw failure(
           !receipt.data.length ||
           receipt.data.length > 2200000
         ) {
-throw failure(
+          throw failure(
             'Choose a valid JPG, PNG or WebP receipt image.',
             'PAYLOAD_INVALID',
           );
@@ -2265,7 +2265,7 @@ throw failure(
         const vendor = typeof payload.vendor === 'string' ? payload.vendor.trim() : '';
         const type = payload.type || 'PAYMENT';
         if (!vendor || vendor.length > 120 || !['PAYMENT', 'RECEIPT'].includes(type)) {
-throw failure(
+          throw failure(
             'Enter a valid payee before requesting suggestions.',
             'PAYLOAD_INVALID',
           );
@@ -2290,7 +2290,7 @@ throw failure(
           !isSuggestion(result.suggestions.category) ||
           !isSuggestion(result.suggestions.paymentMethod)
         ) {
-throw failure(
+          throw failure(
             'Entry suggestions returned an invalid response.',
             'API_RESPONSE_INVALID',
           );
