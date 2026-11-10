@@ -6,6 +6,7 @@ import { busy, fail, head } from '../core/ui.js';
 export function createBulk({ api, refresh, go }) {
   let rows = [];
   let type = 'PAYMENT';
+  let sourceSystem = 'manual-csv';
 
   function render() {
     rows = [];
@@ -16,7 +17,7 @@ export function createBulk({ api, refresh, go }) {
         description: 'Review row data and cash-impact classifications before importing a batch.',
       }) +
       `<div class="card bulk-import-panel"><h2>1. Get your data in</h2>
-    <p class="muted">Columns: <b>Date, Vendor, Amount</b>, optional <b>Category, Notes, CashImpact</b>. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
+    <p class="muted">Required columns: <b>SourceID, Date, Vendor, Amount</b>; optional <b>Category, Notes, CashImpact, PaymentMethod</b>. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
     <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn bulk-file-label">📁 Choose file<input type="file" id="bf" class="bulk-file-input" accept=".csv,.tsv,.txt" aria-label="Choose CSV or TSV file"></label></div>
     <label class="bulk-entry-kind">These rows are<select id="bt2"><option value="PAYMENT">Payments (cash out)</option><option value="RECEIPT">Cash received (cash in)</option></select></label>
     <label>…or paste rows here<textarea id="bt" rows="5" placeholder="25/12/2026&#9;Ram Traders&#9;1500&#9;Kitchen&#9;vegetables"></textarea></label>
@@ -136,32 +137,68 @@ export function createBulk({ api, refresh, go }) {
     const headers = input[0].map(normalize);
     const find = (pattern) => headers.findIndex((value) => pattern.test(value));
     let indexes = {
+      sourceRecordId: find(/^(sourceid|voucherid|recordid|externalid|transactionid)$/),
       date: find(/^date|voucherdate/),
       vendor: find(/vendor|paidto|payee|party|name/),
+      vendorId: find(/^vendorid$/),
       amount: find(/amount|amt|rs|inr/),
-      cat: find(/categor|head|type/),
+      cat: find(/categor|head/),
       notes: find(/note|remark|desc|narration|particular/),
       cashImpact: find(/cashimpact|drawerimpact|cashmovement/),
+      paymentMethod: find(/^paymentmethod$/),
+      type: find(/^(type|vouchertype)$/),
+      sourceStatus: find(/^status$/),
+      sourceApprovalStatus: find(/^approvalstatus$/),
+      sourceVoucherNo: find(/^(voucherno|receiptnumber)$/),
+      sourceReceipts: find(/^receipts?$/),
     };
     let body = input.slice(1);
+    sourceSystem = indexes.sourceRecordId >= 0 && headers[indexes.sourceRecordId] === 'voucherid'
+      ? 'apps-script-vouchers'
+      : 'manual-csv';
 
     if (indexes.date < 0 || indexes.vendor < 0 || indexes.amount < 0) {
-      indexes = { date: 0, vendor: 1, amount: 2, cat: 3, notes: 4, cashImpact: 5 };
+      indexes = {
+        sourceRecordId: -1,
+        date: 0,
+        vendor: 1,
+        vendorId: -1,
+        amount: 2,
+        cat: 3,
+        notes: 4,
+        cashImpact: 5,
+        paymentMethod: -1,
+        type: -1,
+        sourceStatus: -1,
+        sourceApprovalStatus: -1,
+        sourceVoucherNo: -1,
+        sourceReceipts: -1,
+      };
       body = input;
+      sourceSystem = 'manual-csv';
     }
 
     return body.map((row) => ({
+      sourceRecordId: indexes.sourceRecordId >= 0 ? row[indexes.sourceRecordId] : '',
       date: row[indexes.date],
       vendor: row[indexes.vendor],
+      vendorId: indexes.vendorId >= 0 ? row[indexes.vendorId] : '',
       amount: row[indexes.amount],
       cat: indexes.cat >= 0 ? row[indexes.cat] : '',
       notes: indexes.notes >= 0 ? row[indexes.notes] : '',
       cashImpact: indexes.cashImpact >= 0 ? row[indexes.cashImpact] : '',
+      paymentMethod: indexes.paymentMethod >= 0 ? row[indexes.paymentMethod] : '',
+      type: indexes.type >= 0 ? row[indexes.type] : '',
+      sourceStatus: indexes.sourceStatus >= 0 ? row[indexes.sourceStatus] : '',
+      sourceApprovalStatus: indexes.sourceApprovalStatus >= 0 ? row[indexes.sourceApprovalStatus] : '',
+      sourceVoucherNo: indexes.sourceVoucherNo >= 0 ? row[indexes.sourceVoucherNo] : '',
+      sourceReceipts: indexes.sourceReceipts >= 0 ? row[indexes.sourceReceipts] : '',
     }));
   }
 
-  function checkRows(raw, existingDuplicateIndexes = new Set()) {
+  function checkRows(raw, duplicateResultsByIndex = new Map()) {
     const seen = new Set();
+    const seenSourceIds = new Set();
     const allowedCategories = type === 'RECEIPT' ? rcats() : categories();
     const output = [];
 
@@ -170,36 +207,55 @@ export function createBulk({ api, refresh, go }) {
       const vendor = String(row.vendor ?? '').trim();
       const amount = parseAmt(row.amount);
       const categoryInput = String(row.cat ?? '').trim();
-      const impactInput = String(row.cashImpact ?? '')
-        .trim()
-        .toUpperCase();
+      const impactInput = String(row.cashImpact ?? '').trim().toUpperCase();
+      const sourceRecordId = String(row.sourceRecordId ?? '').trim();
+      const rawPaymentMethod = String(row.paymentMethod ?? '').trim().toUpperCase().replace(/[ -]+/g, '_');
+      const paymentMethod = rawPaymentMethod === 'BANKTRANSFER' ? 'BANK_TRANSFER' : rawPaymentMethod;
+      const rowType = String(row.type ?? '').trim().toUpperCase() || type;
       const errors = [];
       const warnings = [];
 
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(sourceRecordId)) errors.push('missing or invalid SourceID');
+      else if (seenSourceIds.has(sourceRecordId)) errors.push('duplicate SourceID in file');
+      else seenSourceIds.add(sourceRecordId);
       if (!date) errors.push('bad date');
       else if (date > addDays(today(), 1)) errors.push('future date');
       if (!vendor) errors.push('no vendor');
       if (!(amount > 0) || amount > 1e7) errors.push('bad amount');
+      if (!['PAYMENT', 'RECEIPT'].includes(rowType)) errors.push('bad transaction type');
+      if (!['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod)) errors.push('bad payment method');
 
       let category = allowedCategories.find(
         (item) => item.toLowerCase() === categoryInput.toLowerCase(),
       );
-
       if (categoryInput && !category) warnings.push('category → Other');
-
       category ||= 'Other';
 
       if (impactInput && !CASH_IMPACT_CHOICES.includes(impactInput)) errors.push('bad cash impact');
       const cashImpactSuggested = !impactInput;
-      const cashImpact = cashImpactSuggested ? suggestCashImpact(type, category) : impactInput;
-
+      const cashImpact = cashImpactSuggested ? suggestCashImpact(rowType, category) : impactInput;
       const key = `${date}|${vendor.toLowerCase()}|${amount}`;
-      const duplicate = !errors.length && (existingDuplicateIndexes.has(index) || seen.has(key));
-
+      const localDuplicate = !errors.length && seen.has(key);
       if (!errors.length) seen.add(key);
+
+      const duplicateResult = duplicateResultsByIndex.get(index) || null;
+      const serverDuplicate = Number.isSafeInteger(duplicateResult?.duplicateCount)
+        ? duplicateResult.duplicateCount > 0
+        : false;
+      const duplicate = localDuplicate || serverDuplicate;
+      const sourceIdForClient = sourceRecordId || uid();
 
       output.push({
         n: index + 1,
+        sourceRecordId,
+        cid: 'bulk-' + sourceIdForClient,
+        sourceStatus: String(row.sourceStatus ?? '').trim(),
+        sourceApprovalStatus: String(row.sourceApprovalStatus ?? '').trim(),
+        sourceVoucherNo: String(row.sourceVoucherNo ?? '').trim(),
+        sourceReceipts: String(row.sourceReceipts ?? '').trim(),
+        vendorId: String(row.vendorId ?? '').trim(),
+        paymentMethod,
+        type: rowType,
         date,
         vendor,
         amount,
@@ -210,6 +266,13 @@ export function createBulk({ api, refresh, go }) {
         errs: errors,
         warns: warnings,
         dup: duplicate,
+        localDup: localDuplicate,
+        serverDup: serverDuplicate,
+        duplicateConfirmed: false,
+        duplicateConfirmationToken:
+          typeof duplicateResult?.confirmationToken === 'string'
+            ? duplicateResult.confirmationToken
+            : '',
         skip: duplicate,
       });
     });
@@ -283,28 +346,62 @@ export function createBulk({ api, refresh, go }) {
       const date = parseDate(row.date);
       const vendor = String(row.vendor ?? '').trim();
       const amount = parseAmt(row.amount);
-      if (date && vendor && amount > 0 && amount <= 1e7) {
-        duplicateCandidates.push({ index, date, vendor, amount });
+      const sourceRecordId = String(row.sourceRecordId ?? '').trim();
+      const rowType = String(row.type ?? '').trim().toUpperCase() || type;
+      const category = String(row.cat ?? '').trim() || 'Other';
+      const paymentMethod = String(row.paymentMethod ?? '').trim().toUpperCase().replace(/[ -]+/g, '_');
+      const normalizedPaymentMethod = paymentMethod === 'BANKTRANSFER' ? 'BANK_TRANSFER' : paymentMethod;
+      const requestedImpact = String(row.cashImpact ?? '').trim().toUpperCase();
+      const cashImpact = requestedImpact || suggestCashImpact(rowType, category);
+      if (
+        /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(sourceRecordId) &&
+        date &&
+        vendor &&
+        amount > 0 &&
+        amount <= 1e7 &&
+        ['PAYMENT', 'RECEIPT'].includes(rowType) &&
+        CASH_IMPACT_CHOICES.includes(cashImpact) &&
+        ['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(normalizedPaymentMethod)
+      ) {
+        duplicateCandidates.push({
+          rowIndex: index,
+          clientId: 'bulk-' + sourceRecordId,
+          date,
+          vendor,
+          vendorId: String(row.vendorId ?? '').trim() || null,
+          amount: amount.toFixed(2),
+          type: rowType,
+          cashImpact,
+          paymentMethod: normalizedPaymentMethod,
+          category,
+          notes: String(row.notes ?? '').trim(),
+        });
       }
     });
 
-    const existingDuplicateIndexes = new Set();
+    const duplicateResultsByIndex = new Map();
     if (duplicateCandidates.length) {
-      const duplicateResult = await api('checkVoucherDuplicates', {
-        type,
-        entries: duplicateCandidates,
+      const duplicateResult = await api('checkPaymentDuplicates', {
+        entries: duplicateCandidates.map(({ rowIndex, ...entry }) => entry),
       });
-      if (!Array.isArray(duplicateResult?.duplicateIndexes)) {
+      if (!Array.isArray(duplicateResult?.results) || duplicateResult.results.length !== duplicateCandidates.length) {
         throw new Error('The server could not verify possible duplicates. Retry before importing.');
       }
-      duplicateResult.duplicateIndexes.forEach((index) => {
-        if (Number.isSafeInteger(index) && index >= 0 && index < mappedRows.length) {
-          existingDuplicateIndexes.add(index);
+      duplicateResult.results.forEach((result, candidateIndex) => {
+        const rowIndex = duplicateCandidates[candidateIndex].rowIndex;
+        if (
+          !result ||
+          result.index !== candidateIndex ||
+          typeof result.confirmationToken !== 'string' ||
+          !Number.isSafeInteger(result.duplicateCount)
+        ) {
+          throw new Error('The duplicate-review response was incomplete. Retry before importing.');
         }
+        duplicateResultsByIndex.set(rowIndex, result);
       });
     }
 
-    rows = checkRows(mappedRows, existingDuplicateIndexes);
+    rows = checkRows(mappedRows, duplicateResultsByIndex);
     drawPreview();
   }
 
@@ -433,8 +530,8 @@ export function createBulk({ api, refresh, go }) {
   function downloadTemplate() {
     download(
       'voucher-template.csv',
-      'Date,Vendor,Amount,Category,Notes,CashImpact\r\n' +
-        '25/12/2026,Ram Traders,1500,Kitchen,Vegetables,CASH_OUT\r\n',
+      'SourceID,Date,Vendor,Amount,Category,Notes,CashImpact,PaymentMethod\r\n' +
+        'manual-row-0001,25/12/2026,Ram Traders,1500,Kitchen,Vegetables,CASH_OUT,CASH\r\n',
       'text/csv',
     );
   }
