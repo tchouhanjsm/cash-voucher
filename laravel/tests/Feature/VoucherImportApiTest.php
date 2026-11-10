@@ -328,7 +328,7 @@ final class VoucherImportApiTest extends TestCase
 
         self::assertSame(0, DB::table('vouchers')->where('source_legacy_id', 'manual-csv:'.$sourceId)->count());
 
-        // Simulate the Owner reconciling the sequence through the authorized settings workflow.
+        // Simulate an Owner-approved sequence correction in the disposable test database.
         DB::table('voucher_number_sequences')->where('voucher_type', 'PAYMENT')->update([
             'next_number' => $issuedNumber + 1,
             'updated_at_utc' => DB::raw('UTC_TIMESTAMP(6)'),
