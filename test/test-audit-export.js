@@ -3,7 +3,8 @@
 const assert = require('node:assert/strict');
 
 async function run() {
-  const { createAuditReconciliationCsv, createStructuredVoucherAuditCsv } = await import('../frontend/core/audit-export.js');
+  const { createAuditReconciliationCsv, createStructuredVoucherAuditCsv } =
+    await import('../frontend/core/audit-export.js');
   const validScan = {
     eventCategory: 'ALL',
     scannedRows: 10,
@@ -198,7 +199,12 @@ async function run() {
   assert.throws(
     () =>
       createStructuredVoucherAuditCsv(
-        { voucher: structuredVoucher, eventCategory: 'ALL', events: structuredEvents, hasMore: 'unknown' },
+        {
+          voucher: structuredVoucher,
+          eventCategory: 'ALL',
+          events: structuredEvents,
+          hasMore: 'unknown',
+        },
         '2026-11-10T06:31:00.000Z',
       ),
     /metadata does not match/,
