@@ -997,7 +997,9 @@ async function run() {
   assert.equal(voucherHistory.nextCursor, 'structured-cursor');
   assert.equal(voucherHistory.hasMore, true);
   const voucherHistoryRequest = requests.at(-1);
-  assert.ok(voucherHistoryRequest.url.includes('/vouchers/22222222-2222-4222-8222-222222222222/history?'));
+  assert.ok(
+    voucherHistoryRequest.url.includes('/vouchers/22222222-2222-4222-8222-222222222222/history?'),
+  );
   assert.match(voucherHistoryRequest.url, /limit=50/);
   const beforeInvalidHistory = requests.length;
   await assert.rejects(
@@ -1611,7 +1613,10 @@ async function run() {
   assert.equal(repeatedBulkImport.created[0].id, bulkImport.created[0].id);
   const importWrites = requests.filter((request) => request.url.endsWith('/imports/vouchers'));
   assert.equal(importWrites.length, 2);
-  assert.equal(importWrites[0].headers['Idempotency-Key'], importWrites[1].headers['Idempotency-Key']);
+  assert.equal(
+    importWrites[0].headers['Idempotency-Key'],
+    importWrites[1].headers['Idempotency-Key'],
+  );
 
   const beforeInvalidCreate = requests.length;
   await assert.rejects(
