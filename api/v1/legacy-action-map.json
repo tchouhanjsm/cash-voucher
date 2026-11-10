@@ -717,6 +717,7 @@
       "laravelResponseFields": [
         "batchId",
         "status",
+        "rows[].rowNumber",
         "created[]",
         "rows[]",
         "rows[].sourceRecordId",
