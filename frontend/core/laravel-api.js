@@ -520,6 +520,97 @@ function mapUserMutation(result, expectedId = '') {
   };
 }
 
+function mapVoucherHistoryPage(page, expectedVoucherId, expectedCategory) {
+  const voucher = page?.voucher;
+  const items = page?.items;
+  if (
+    !page ||
+    typeof page !== 'object' ||
+    Array.isArray(page) ||
+    page.source !== 'laravel-sql-audit-events' ||
+    !voucher ||
+    typeof voucher !== 'object' ||
+    Array.isArray(voucher) ||
+    voucher.id !== expectedVoucherId ||
+    !VOUCHER_ID_PATTERN.test(voucher.id) ||
+    typeof voucher.voucherNo !== 'string' ||
+    typeof voucher.date !== 'string' ||
+    typeof voucher.vendor !== 'string' ||
+    !['PAYMENT', 'RECEIPT'].includes(voucher.type) ||
+    !['ACTIVE', 'CANCELLED'].includes(voucher.status) ||
+    page.eventCategory !== expectedCategory ||
+    !Array.isArray(items) ||
+    !Number.isSafeInteger(page.count) ||
+    page.count !== items.length ||
+    !Number.isSafeInteger(page.limit) ||
+    page.limit < 1 ||
+    page.limit > 100 ||
+    items.length > page.limit ||
+    typeof page.hasMore !== 'boolean' ||
+    (page.hasMore !== (typeof page.nextCursor === 'string' && page.nextCursor.length > 0)) ||
+    !(page.nextCursor === null || (typeof page.nextCursor === 'string' && page.nextCursor.length <= 512))
+  ) {
+    throw failure('The Laravel voucher-history API returned an invalid page.', 'API_RESPONSE_INVALID');
+  }
+
+  const seenIds = new Set();
+  const mappedItems = items.map((item) => {
+    if (
+      !item ||
+      typeof item !== 'object' ||
+      Array.isArray(item) ||
+      !VOUCHER_ID_PATTERN.test(String(item.id || '')) ||
+      seenIds.has(item.id) ||
+      !(item.actorUserId === null || VOUCHER_ID_PATTERN.test(String(item.actorUserId || ''))) ||
+      typeof item.actorEmail !== 'string' ||
+      item.actorEmail.length > 254 ||
+      typeof item.eventType !== 'string' ||
+      !/^[A-Z][A-Z0-9_]{1,79}$/.test(item.eventType) ||
+      item.targetType !== 'voucher' ||
+      item.targetId !== expectedVoucherId ||
+      typeof item.reason !== 'string' ||
+      item.reason.length > 500 ||
+      typeof item.occurredAtUtc !== 'string' ||
+      !/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?$/.test(item.occurredAtUtc) ||
+      !(item.before === null || (item.before && typeof item.before === 'object')) ||
+      !(item.after === null || (item.after && typeof item.after === 'object'))
+    ) {
+      throw failure('The Laravel voucher history contains an invalid event.', 'API_RESPONSE_INVALID');
+    }
+    seenIds.add(item.id);
+    return {
+      id: item.id,
+      actorUserId: item.actorUserId,
+      actorEmail: item.actorEmail,
+      eventType: item.eventType,
+      targetType: item.targetType,
+      targetId: item.targetId,
+      before: item.before,
+      after: item.after,
+      reason: item.reason,
+      occurredAtUtc: item.occurredAtUtc,
+    };
+  });
+
+  return {
+    source: 'laravel-sql-audit-events',
+    eventCategory: page.eventCategory,
+    voucher: {
+      id: voucher.id,
+      voucherNo: voucher.voucherNo,
+      date: voucher.date,
+      vendor: voucher.vendor,
+      type: voucher.type,
+      status: voucher.status,
+    },
+    items: mappedItems,
+    count: page.count,
+    limit: page.limit,
+    hasMore: page.hasMore,
+    nextCursor: page.nextCursor,
+  };
+}
+
 function mapAuditPage(page) {
   if (
     !page ||
@@ -1766,6 +1857,27 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           },
         });
         return mapAuditPage(page);
+      }
+
+      case 'voucherHistory': {
+        const id = typeof payload.id === 'string' ? payload.id.trim() : '';
+        const eventCategory = payload.eventCategory ?? 'ALL';
+        const limit = payload.limit ?? 50;
+        const cursor = payload.cursor ?? null;
+        if (
+          !VOUCHER_ID_PATTERN.test(id) ||
+          !['ALL', 'CREATED', 'UPDATED', 'CANCELLED', 'APPROVED', 'REJECTED', 'RECEIPT_ATTACHED', 'OTHER'].includes(eventCategory) ||
+          !Number.isSafeInteger(limit) ||
+          limit < 1 ||
+          limit > 100 ||
+          !(cursor === null || (typeof cursor === 'string' && cursor.length > 0 && cursor.length <= 512))
+        ) {
+          throw failure('Choose a valid voucher and history filter before loading history.', 'PAYLOAD_INVALID');
+        }
+        const page = await request('/vouchers/' + encodeURIComponent(id) + '/history', {
+          query: { limit, cursor, eventCategory },
+        });
+        return mapVoucherHistoryPage(page, id, eventCategory);
       }
 
       case 'createVouchers': {
