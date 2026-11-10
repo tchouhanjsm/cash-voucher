@@ -172,14 +172,11 @@ sort($registeredActions);
 sort($mappedActions);
 check($registeredActions === array_values(array_diff($mappedActions, ['login'])), 'every registered Apps Script action has a versioned API contract mapping');
 check(isset($actionMap['actions']['login']), 'the special public login action is mapped separately');
-$implementedActions = array_keys(array_filter(
-    $actionMap['actions'],
-    static fn (array $action): bool => ($action['state'] ?? '') === 'implemented'
-));
-sort($implementedActions);
+$foundationActions = $actionMap['phpFoundation']['implementedActions'] ?? [];
+sort($foundationActions);
 check(
-    $implementedActions === ['changePassword', 'login', 'logout', 'saveVendor', 'toggleVendor'],
-    'only authentication and the explicitly ported vendor actions are marked implemented in the replacement action map'
+    $foundationActions === ['changePassword', 'login', 'logout', 'saveVendor', 'toggleVendor'],
+    'the PHP foundation retains its explicit implemented-action boundary separately from Laravel-shadow parity'
 );
 check(
     ($actionMap['actions']['login']['state'] ?? null) === 'implemented'
