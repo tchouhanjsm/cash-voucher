@@ -160,7 +160,7 @@ async function run() {
       eventType: 'VOUCHER_UPDATED',
       targetType: 'voucher',
       targetId: structuredVoucher.id,
-      before: { vendor: 'Old supplier', sessionToken: '[REDACTED]' },
+      before: { vendor: 'Old supplier', sessionToken: 'do-not-export-session-secret' },
       after: { vendor: '=HYPERLINK("https://example.invalid","safe")' },
       reason: 'Corrected vendor name',
       occurredAtUtc: '2026-11-10 06:30:00.123456',
@@ -183,7 +183,9 @@ async function run() {
   assert.match(structuredCsv, /"VOUCHER_UPDATED"/);
   assert.ok(structuredCsv.includes('""vendor"":""=HYPERLINK('));
   assert.doesNotMatch(structuredCsv, /,"=HYPERLINK\(/);
-  assert.doesNotMatch(structuredCsv, /sessionToken/);
+  assert.ok(structuredCsv.includes('sessionToken'));
+  assert.ok(structuredCsv.includes('[REDACTED]'));
+  assert.doesNotMatch(structuredCsv, /do-not-export-session-secret/);
   assert.throws(
     () =>
       createStructuredVoucherAuditCsv(
