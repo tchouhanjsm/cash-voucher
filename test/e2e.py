@@ -6636,7 +6636,7 @@ with sync_playwright() as p:
 
     page.click('[data-act=import]')
     page.wait_for_selector('.ok-panel')
-    check('2 imported · 0 replayed' in page.inner_text('#bprev'), 'payment import completion names payments')
+    check('Imported 2 payments' in page.inner_text('#bprev'), 'payment import completion names payments')
     check(
         page.locator('#bprev .ok-panel').get_attribute('role') == 'status'
         and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite'
@@ -6670,9 +6670,9 @@ with sync_playwright() as p:
         'bulk import progress has an accessible status announcement',
     )
     page.click('[data-act=import]')
-    page.wait_for_function("document.querySelector('#bprev .ok-panel')?.innerText.includes('1 imported · 0 replayed')")
+    page.wait_for_function("document.querySelector('#bprev .ok-panel')?.innerText.includes('Imported 1 cash receipts')")
     check(
-        '1 imported · 0 replayed' in page.inner_text('#bprev')
+        'Imported 1 cash receipts' in page.inner_text('#bprev')
         and page.locator('#bprev .ok-panel').get_attribute('role') == 'status'
         and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite',
         'receipt import completion is accurate and announced',
