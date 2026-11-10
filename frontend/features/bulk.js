@@ -391,7 +391,11 @@ export function createBulk({ api, refresh, go }) {
     const duplicateResultsByIndex = new Map();
     if (duplicateCandidates.length) {
       const duplicateResult = await api('checkPaymentDuplicates', {
-        entries: duplicateCandidates.map(({ rowIndex, ...entry }) => entry),
+        entries: duplicateCandidates.map((candidate) => {
+          const entry = { ...candidate };
+          delete entry.rowIndex;
+          return entry;
+        }),
       });
       if (!Array.isArray(duplicateResult?.results) || duplicateResult.results.length !== duplicateCandidates.length) {
         throw new Error('The server could not verify possible duplicates. Retry before importing.');
