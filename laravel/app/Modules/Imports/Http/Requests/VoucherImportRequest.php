@@ -32,6 +32,7 @@ final class VoucherImportRequest extends FormRequest
                 'max:100',
                 'regex:/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/D',
             ],
+            'rows.*.sourceRowNumber' => ['sometimes', 'integer', 'min:1', 'max:1000000'],
             'rows.*.voucher' => ['required', 'array'],
         ];
     }
