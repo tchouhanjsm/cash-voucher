@@ -11,7 +11,7 @@
     "GET /sessions/current",
     "POST /sessions/current/logout",
     "POST /sessions/current/password",
-    "POST /api/v1/imports/vouchers (manager/owner; stable source ID; reconciliation and quarantine)"
+    "POST /imports/vouchers (manager/owner; stable source ID; reconciliation and quarantine)"
   ],
   "legacyRoleKeys": [
     "staff",
