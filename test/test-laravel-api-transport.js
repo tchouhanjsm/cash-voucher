@@ -1553,6 +1553,23 @@ async function run() {
     (error) => error.code === 'PAYLOAD_INVALID',
   );
   await assert.rejects(
+    () =>
+      api('cashClosePreview', {
+        date: '2026-02-30',
+        openingCash: '10.00',
+        openingReason: 'Invalid date probe',
+      }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  await assert.rejects(
+    () =>
+      api('recordedMovementReport', {
+        from: '2026-02-30',
+        to: '2026-03-01',
+      }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  await assert.rejects(
     () => api('recordCashCloseCorrection', { closeId: 'not-a-uuid', type: 'OTHER' }),
     (error) => error.code === 'PAYLOAD_INVALID',
   );
