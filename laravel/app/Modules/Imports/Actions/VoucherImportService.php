@@ -329,8 +329,20 @@ final class VoucherImportService
         $claim->execute(['id' => $rowId]);
 
         $voucher = $row['voucher'];
+        $sourceStatus = $voucher['sourceStatus'] ?? '';
+        unset($voucher['sourceStatus']);
+        if ($sourceStatus !== null && $sourceStatus !== '' && $sourceStatus !== 'ACTIVE') {
+            $this->quarantine(
+                $pdo,
+                $rowId,
+                'SOURCE_STATUS_REQUIRES_RECONCILIATION',
+                'Only active source entries can use this bulk-entry importer. Reconcile cancelled or otherwise changed vouchers through the historical migration workflow.',
+            );
+
+            return;
+        }
+
         foreach ([
-            'sourceStatus' => 'SOURCE_STATUS_REQUIRES_RECONCILIATION',
             'sourceApprovalStatus' => 'SOURCE_APPROVAL_REQUIRES_RECONCILIATION',
             'sourceVoucherNo' => 'SOURCE_VOUCHER_NUMBER_REQUIRES_RECONCILIATION',
             'sourceReceipts' => 'SOURCE_RECEIPTS_REQUIRE_PRIVATE_MIGRATION',
@@ -463,11 +475,14 @@ final class VoucherImportService
         $replayedCount = 0;
         $quarantinedCount = 0;
         $pendingCount = 0;
+        $unpricedCount = 0;
         $items = [];
         foreach ($rows as $row) {
             $amount = (int) ($row['source_amount_paise'] ?? 0);
             if ($row['source_amount_paise'] !== null) {
                 $sourceTotal += $amount;
+            } else {
+                $unpricedCount++;
             }
             $status = (string) $row['status'];
             if ($status === 'IMPORTED') {
@@ -504,7 +519,7 @@ final class VoucherImportService
         $variance = $sourceTotal - $importedTotal - $quarantinedTotal - $pendingTotal;
         $status = $pendingCount > 0
             ? 'PROCESSING'
-            : ($quarantinedCount > 0 ? 'RECONCILIATION_REQUIRED' : 'COMPLETED');
+            : ($quarantinedCount > 0 || $unpricedCount > 0 ? 'RECONCILIATION_REQUIRED' : 'COMPLETED');
 
         $pdo->beginTransaction();
         try {
@@ -544,6 +559,7 @@ final class VoucherImportService
                     'replayedCount' => $replayedCount,
                     'quarantinedCount' => $quarantinedCount,
                     'pendingCount' => $pendingCount,
+                    'unpricedCount' => $unpricedCount,
                     'sourceTotalPaise' => $sourceTotal,
                     'importedTotalPaise' => $importedTotal,
                     'quarantinedTotalPaise' => $quarantinedTotal,
@@ -570,12 +586,13 @@ final class VoucherImportService
                 'replayedCount' => $replayedCount,
                 'quarantinedCount' => $quarantinedCount,
                 'pendingCount' => $pendingCount,
+                'unpricedCount' => $unpricedCount,
                 'sourceTotalPaise' => $sourceTotal,
                 'importedTotalPaise' => $importedTotal,
                 'quarantinedTotalPaise' => $quarantinedTotal,
                 'pendingTotalPaise' => $pendingTotal,
                 'variancePaise' => $variance,
-                'balanced' => $variance === 0,
+                'balanced' => $variance === 0 && $pendingCount === 0 && $unpricedCount === 0,
             ],
             'rows' => $items,
         ];
@@ -587,7 +604,8 @@ final class VoucherImportService
         $query = $pdo->prepare(
             'SELECT id, voucher_number, business_date, vendor_name_snapshot, vendor_id,
                     vendor_type, amount_paise, category, notes, voucher_type, status,
-                    cash_impact, payment_method, approval_status, created_by_email_snapshot
+                    cash_impact, payment_method, approval_status, created_by_email_snapshot,
+                    client_id
              FROM vouchers WHERE id = :id LIMIT 1'
         );
         $query->execute(['id' => $voucherId]);
@@ -613,7 +631,7 @@ final class VoucherImportService
             'cashImpact' => (string) $voucher['cash_impact'],
             'paymentMethod' => (string) $voucher['payment_method'],
             'approvalStatus' => (string) $voucher['approval_status'],
-            'clientId' => 'import-'.substr(hash('sha256', 'apps-script-vouchers:'.$voucherId), 0, 64),
+            'clientId' => (string) $voucher['client_id'],
             'createdBy' => (string) $voucher['created_by_email_snapshot'],
         ];
     }
