@@ -46,11 +46,11 @@
       "path": "/vouchers/duplicate-check",
       "access": "create",
       "kind": "read-validation",
-      "state": "planned",
-      "serverState": "planned",
-      "clientState": "planned",
-      "adapterAction": null,
-      "notes": "No distinct browser-adapter operation is mapped. The shared server endpoint is verified through checkPaymentDuplicates only."
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "checkVoucherDuplicates",
+      "notes": "Legacy bulk duplicate review is mapped to the same scoped server duplicate guard as checkPaymentDuplicates; response is a row-indexed review result with confirmation tokens."
     },
     "checkPaymentDuplicates": {
       "method": "POST",
@@ -87,15 +87,17 @@
       "path": "/vouchers",
       "access": "create; bulk additionally requires bulk",
       "kind": "write",
-      "state": "partial",
+      "state": "implemented",
       "serverState": "implemented",
-      "clientState": "partial",
+      "clientState": "implemented",
       "adapterAction": "createVouchers",
       "capabilities": {
         "singleEntry": "implemented",
-        "bulkImport": "unsupported"
+        "bulkImport": "implemented",
+        "bulkImportPath": "/imports/vouchers",
+        "sourceIdentity": "sourceRecordId"
       },
-      "notes": "Sequential single-voucher writes are implemented. Bulk payloads are rejected before network access; no fallback writer is attempted."
+      "notes": "Single entry and bounded 100-row source-identified batches are mapped. Batch and row ledgers support idempotent replay, conflict quarantine and paise reconciliation. Historical number, approval/cancellation and private receipt states are quarantined rather than overwritten."
     },
     "updateVoucher": {
       "method": "PATCH",
@@ -158,7 +160,10 @@
       "adapterAction": "getReceipt"
     },
     "saveVendor": {
-      "method": ["POST", "PATCH"],
+      "method": [
+        "POST",
+        "PATCH"
+      ],
       "path": "/vendors[/{vendorId}]",
       "access": "vendors",
       "kind": "write",
@@ -188,7 +193,10 @@
       "adapterAction": "listUsers"
     },
     "saveUser": {
-      "method": ["POST", "PATCH"],
+      "method": [
+        "POST",
+        "PATCH"
+      ],
       "path": "/users[/{userId}]",
       "access": "users",
       "kind": "write",
@@ -242,11 +250,11 @@
       "path": "/vouchers/{voucherId}/history",
       "access": "viewAll-or-own-record-scope",
       "kind": "read",
-      "state": "partial",
+      "state": "implemented",
       "serverState": "implemented",
-      "clientState": "planned",
-      "adapterAction": null,
-      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
+      "clientState": "implemented",
+      "adapterAction": "voucherHistory",
+      "notes": "The Register uses SQL keyset cursors and source-labeled structured-event CSV. Export coverage explicitly excludes unlinked legacy spreadsheet rows and is not a point-in-time snapshot."
     },
     "backupStatus": {
       "method": "GET",
@@ -378,7 +386,13 @@
     }
   },
   "phpFoundation": {
-    "implementedActions": ["changePassword", "login", "logout", "saveVendor", "toggleVendor"]
+    "implementedActions": [
+      "changePassword",
+      "login",
+      "logout",
+      "saveVendor",
+      "toggleVendor"
+    ]
   },
   "shadowResources": {
     "entrySuggestions": {
@@ -391,6 +405,118 @@
       "clientState": "implemented",
       "adapterAction": "entrySuggestions",
       "notes": "Hints are advisory and require an explicit employee selection."
+    },
+    "voucherImport": {
+      "method": "POST",
+      "path": "/imports/vouchers",
+      "access": "manager or owner; create and bulk capabilities",
+      "kind": "idempotent-financial-import",
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "createVouchers",
+      "sourceIdentity": "sourceSystem:sourceRecordId",
+      "batchIdentity": "sourceSystem:batchId+canonical row manifest SHA-256",
+      "maxRows": 100,
+      "notes": "Imports active/new-entry-shaped vouchers. Legacy statuses, original numbering and receipt references are quarantined for separate historical migration. Apps Script remains production authority."
+    }
+  },
+  "fieldContracts": {
+    "createVouchers": {
+      "requiredEntryFields": [
+        "sourceRecordId",
+        "date",
+        "vendor",
+        "amount",
+        "type",
+        "cashImpact",
+        "clientId"
+      ],
+      "optionalEntryFields": [
+        "vendorId",
+        "category",
+        "notes",
+        "paymentMethod",
+        "duplicateConfirmationToken",
+        "sourceStatus",
+        "sourceApprovalStatus",
+        "sourceVoucherNo",
+        "sourceReceipts"
+      ],
+      "responseFields": [
+        "batchId",
+        "status",
+        "rows",
+        "reconciliation.rowCount",
+        "reconciliation.importedCount",
+        "reconciliation.replayedCount",
+        "reconciliation.quarantinedCount",
+        "reconciliation.pendingCount",
+        "reconciliation.variancePaise",
+        "reconciliation.balanced"
+      ],
+      "guarantees": [
+        "stable source ID",
+        "stable batch retry identity",
+        "source row hash",
+        "unique source_legacy_id",
+        "transactional voucher plus audit event",
+        "explicit quarantine",
+        "paise-based reconciliation"
+      ],
+      "notes": "Per-row outcomes preserve source identifiers. Rows with non-importable historical state are never flattened into the active-entry payload."
+    },
+    "voucherHistory": {
+      "requestFields": [
+        "id",
+        "cursor",
+        "limit",
+        "eventCategory"
+      ],
+      "responseFields": [
+        "source",
+        "voucher",
+        "items[].id",
+        "items[].eventType",
+        "items[].targetId",
+        "items[].before",
+        "items[].after",
+        "items[].reason",
+        "items[].occurredAtUtc",
+        "nextCursor",
+        "hasMore"
+      ],
+      "exportFields": [
+        "sourceSystem",
+        "sourceScope",
+        "coverageStatement",
+        "eventId",
+        "occurredAtUtc",
+        "actorEmail",
+        "eventType",
+        "targetId",
+        "beforeJson",
+        "afterJson"
+      ],
+      "notes": "The structured SQL export does not fabricate spreadsheet row numbers or claim historical spreadsheet coverage."
+    },
+    "checkVoucherDuplicates": {
+      "requestFields": [
+        "entries[].clientId",
+        "entries[].date",
+        "entries[].vendor",
+        "entries[].amount",
+        "entries[].type",
+        "entries[].cashImpact",
+        "entries[].paymentMethod"
+      ],
+      "responseFields": [
+        "results[].index",
+        "results[].clientId",
+        "results[].duplicateCount",
+        "results[].hiddenCount",
+        "results[].confirmationToken"
+      ]
     }
   }
 }
