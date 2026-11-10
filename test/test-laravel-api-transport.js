@@ -998,7 +998,6 @@ async function run() {
   assert.equal(voucherHistory.hasMore, true);
   const voucherHistoryRequest = requests.at(-1);
   assert.ok(voucherHistoryRequest.url.includes('/vouchers/22222222-2222-4222-8222-222222222222/history?'));
-  assert.ok(voucherHistoryRequest.url.includes('/vouchers/22222222-2222-4222-8222-222222222222/history?'));
   assert.match(voucherHistoryRequest.url, /limit=50/);
   const beforeInvalidHistory = requests.length;
   await assert.rejects(
