@@ -227,6 +227,27 @@ function isSnapshot(value) {
   return value === null || isRecord(value);
 }
 
+const SENSITIVE_AUDIT_KEY =
+  /password|passphrase|password_hash|salt|token|secret|credential|csrf|session|authorization|api[_-]?key/i;
+
+function redactStructuredSnapshot(value, depth = 0) {
+  if (depth > 32) {
+    throw new TypeError('Structured audit snapshot exceeds the safe export depth.');
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => redactStructuredSnapshot(item, depth + 1));
+  }
+  if (!isRecord(value)) return value;
+
+  const redacted = {};
+  Object.entries(value).forEach(([key, item]) => {
+    redacted[key] = SENSITIVE_AUDIT_KEY.test(key)
+      ? '[REDACTED]'
+      : redactStructuredSnapshot(item, depth + 1);
+  });
+  return redacted;
+}
+
 /**
  * Export only the structured SQL audit events actually loaded by the browser.
  * The coverage row explicitly disclaims a point-in-time snapshot and unlinked
@@ -312,8 +333,8 @@ export function createStructuredVoucherAuditCsv(
       event.targetType,
       event.targetId,
       event.reason,
-      event.before === null ? '' : JSON.stringify(event.before),
-      event.after === null ? '' : JSON.stringify(event.after),
+      event.before === null ? '' : JSON.stringify(redactStructuredSnapshot(event.before)),
+      event.after === null ? '' : JSON.stringify(redactStructuredSnapshot(event.after)),
     ]);
   });
 
