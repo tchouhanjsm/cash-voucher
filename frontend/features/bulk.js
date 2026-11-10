@@ -464,8 +464,7 @@ export function createBulk({ api, refresh, go }) {
     const counts = document.createElement('p');
     if (summary.mode === 'apps-script') {
       counts.textContent =
-        summary.replayed +
-        ' row(s) safely skipped because the same ClientID was already saved.';
+        summary.replayed + ' row(s) safely skipped because the same ClientID was already saved.';
     } else {
       counts.textContent =
         summary.imported +
@@ -630,7 +629,11 @@ export function createBulk({ api, refresh, go }) {
             Number.isSafeInteger(data.skipped) &&
             data.skipped >= 0 &&
             data.skipped <= data.created.length;
-          const mode = isShadowResult ? 'laravel-shadow' : isAppsScriptResult ? 'apps-script' : null;
+          const mode = isShadowResult
+            ? 'laravel-shadow'
+            : isAppsScriptResult
+              ? 'apps-script'
+              : null;
           if (!mode || (summary.mode !== null && summary.mode !== mode)) {
             throw new Error(
               'The bulk import response does not match the active transport. No success was assumed; retry the same SourceIDs after checking the server.',
