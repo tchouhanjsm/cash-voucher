@@ -1634,6 +1634,15 @@ async function run() {
       }),
     (error) => error.code === 'PAYLOAD_INVALID',
   );
+  await assert.rejects(
+    () =>
+      api('createVouchers', {
+        bulk: true,
+        sourceSystem: 'manual-csv',
+        entries: [{ ...bulkEntries[0], sourceRowNumber: 0 }],
+      }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
   assert.equal(
     requests.length,
     beforeInvalidCreate,
