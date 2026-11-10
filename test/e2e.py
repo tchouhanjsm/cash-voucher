@@ -1178,6 +1178,19 @@ with sync_playwright() as p:
                 f'{route_name}: route navigation places focus on the destination heading',
             )
         if route_id == 'dash':
+            # The shared page header is rendered before the async Dashboard summary.
+            # Wait for the explicit analysis or empty-state model before testing its
+            # authorized presence; otherwise the shell can be sampled mid-render.
+            page.wait_for_function(
+                """() => {
+                    const view = document.querySelector('#view .dashboard-view');
+                    return Boolean(view && (
+                        view.querySelector('.dashboard-analysis')
+                        || view.querySelector('.dashboard-empty-state')
+                    ));
+                }""",
+                timeout=10000,
+            )
             analysis_disclosure = page.locator('.dashboard-analysis')
             if analysis_disclosure.count() == 1:
                 open_disclosure(page, '.dashboard-analysis')
