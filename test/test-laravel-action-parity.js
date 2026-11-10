@@ -38,8 +38,7 @@ function hasServerRoute(methods, routePath) {
 }
 
 function hasAdapterAction(action) {
-  const escaped = action.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp('case\\s+[\\'"]' + escaped + '[\\'"]\\s*:').test(adapterSource);
+  return adapterSource.includes("case '" + action + "':");
 }
 
 assert.equal(actionMap.schemaVersion, 2, 'action map v2 must declare split server/client coverage');
