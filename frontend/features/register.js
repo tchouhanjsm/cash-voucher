@@ -14,7 +14,10 @@ import {
   S,
 } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
-import { createStructuredVoucherAuditCsv } from '../core/audit-export.js';
+import {
+  createAuditReconciliationCsv,
+  createStructuredVoucherAuditCsv,
+} from '../core/audit-export.js';
 import {
   addDays,
   compress,
@@ -1523,7 +1526,11 @@ export function createRegister({ api, go }) {
     const loading = document.createElement('p');
     loading.className = 'muted';
     loading.textContent = 'Loading voucher history…';
-    dialog(voucher ? 'Voucher history for ' + voucherNo(voucher) : 'Voucher history', loading, null);
+    dialog(
+      voucher ? 'Voucher history for ' + voucherNo(voucher) : 'Voucher history',
+      loading,
+      null,
+    );
 
     api('voucherHistory', {
       id: voucherId,
@@ -1865,13 +1872,14 @@ export function createRegister({ api, go }) {
       older.textContent = 'Loading older events…';
       try {
         const requestedBeforeRow = beforeRow;
-        const page = !append && suppliedFirstPage
-          ? suppliedFirstPage
-          : await api('voucherHistory', {
-              id: voucherId,
-              beforeRow: requestedBeforeRow,
-              eventCategory,
-            });
+        const page =
+          !append && suppliedFirstPage
+            ? suppliedFirstPage
+            : await api('voucherHistory', {
+                id: voucherId,
+                beforeRow: requestedBeforeRow,
+                eventCategory,
+              });
         suppliedFirstPage = null;
         if (!isValidPage(page, requestedBeforeRow)) {
           throw new Error('The server returned invalid voucher-history data.');
@@ -2202,14 +2210,15 @@ export function createRegister({ api, go }) {
       filter.disabled = true;
       older.textContent = 'Loading older events…';
       try {
-        const page = !append && suppliedFirstPage
-          ? suppliedFirstPage
-          : await api('voucherHistory', {
-              id: voucherId,
-              cursor: append ? cursor : null,
-              limit: Math.min(100, MAX_EXPORT_EVENTS - loadedEvents.length),
-              eventCategory,
-            });
+        const page =
+          !append && suppliedFirstPage
+            ? suppliedFirstPage
+            : await api('voucherHistory', {
+                id: voucherId,
+                cursor: append ? cursor : null,
+                limit: Math.min(100, MAX_EXPORT_EVENTS - loadedEvents.length),
+                eventCategory,
+              });
         suppliedFirstPage = null;
         if (!page || page.source !== 'laravel-sql-audit-events' || page.voucher?.id !== voucherId) {
           throw new Error('The server returned voucher history from an unexpected source.');
