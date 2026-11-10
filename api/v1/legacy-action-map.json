@@ -336,44 +336,40 @@
       "path": "/reports/recorded-movements",
       "access": "reports",
       "kind": "read",
-      "state": "partial",
+      "state": "implemented",
       "serverState": "implemented",
-      "clientState": "planned",
-      "adapterAction": null,
-      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
+      "clientState": "implemented",
+      "adapterAction": "recordedMovementReport"
     },
     "cashClosePreview": {
       "method": "GET",
       "path": "/cash-closes/preview",
       "access": "cashClose",
       "kind": "read",
-      "state": "partial",
+      "state": "implemented",
       "serverState": "implemented",
-      "clientState": "partial",
-      "adapterAction": "dailyOperationsSummary",
-      "notes": "The preview endpoint is available through dailyOperationsSummary; the legacy cashClosePreview action name is not exposed directly."
+      "clientState": "implemented",
+      "adapterAction": "cashClosePreview"
     },
     "createCashClose": {
       "method": "POST",
       "path": "/cash-closes",
       "access": "cashClose",
       "kind": "write",
-      "state": "partial",
+      "state": "implemented",
       "serverState": "implemented",
-      "clientState": "planned",
-      "adapterAction": null,
-      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
+      "clientState": "implemented",
+      "adapterAction": "createCashClose"
     },
     "recordCashCloseCorrection": {
       "method": "POST",
       "path": "/cash-closes/{closeId}/corrections",
       "access": "cashClose",
       "kind": "append-only-write",
-      "state": "partial",
+      "state": "implemented",
       "serverState": "implemented",
-      "clientState": "planned",
-      "adapterAction": null,
-      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
+      "clientState": "implemented",
+      "adapterAction": "recordCashCloseCorrection"
     },
     "reportIssue": {
       "method": "POST",
