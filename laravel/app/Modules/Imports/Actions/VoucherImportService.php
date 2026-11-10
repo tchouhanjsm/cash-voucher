@@ -415,7 +415,7 @@ final class VoucherImportService
         }
 
         $voucher['sourceLegacyId'] = $sourceLegacyId;
-        $voucher['clientId'] = 'import-'.substr(hash('sha256', $sourceLegacyId), 0, 64);
+        $voucher['clientId'] = 'import-'.$sourceLegacyId;
         $idempotencyKey = 'import-voucher-'.hash('sha256', $sourceLegacyId.':'.$row['rowHash']);
 
         try {
