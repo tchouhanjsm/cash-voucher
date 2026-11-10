@@ -6,6 +6,7 @@ use App\Modules\CashClose\Http\Controllers\CashCloseController;
 use App\Modules\Receipts\Http\Controllers\ReceiptController;
 use App\Modules\Reports\Http\Controllers\ReportsController;
 use App\Modules\Vouchers\Http\Controllers\VoucherController;
+use App\Modules\Imports\Http\Controllers\VoucherImportController;
 use App\Modules\Vendors\Http\Controllers\VendorController;
 use App\Modules\Vendors\Http\Controllers\EntrySuggestionController;
 use App\Modules\Users\Http\Controllers\UserController;
@@ -70,7 +71,8 @@ Route::prefix('v1')->group(function (): void {
                 'bootstrap:read',
                 'vouchers:list',
                 'vouchers:duplicate-check',
-                'vouchers:create',\n                'imports:vouchers:create-and-reconcile',
+                'vouchers:create',
+                'imports:vouchers:create-and-reconcile',
                 'vouchers:update',
                 'vouchers:cancel',
                 'vouchers:approve',
@@ -109,7 +111,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/cash-closes', [CashCloseController::class, 'create']);
         Route::post('/cash-closes/{closeId}/corrections', [CashCloseController::class, 'recordCorrection']);
         Route::post('/vouchers/duplicate-check', [VoucherController::class, 'duplicateCheck']);
-        Route::post('/vouchers', [VoucherController::class, 'store']);\n        Route::post('/imports/vouchers', [VoucherImportController::class, 'store']);
+        Route::post('/vouchers', [VoucherController::class, 'store']);
+        Route::post('/imports/vouchers', [VoucherImportController::class, 'store']);
         Route::patch('/vouchers/{voucherId}', [VoucherController::class, 'update']);
         Route::post('/vouchers/{voucherId}/cancel', [VoucherController::class, 'cancel']);
         Route::post('/vouchers/{voucherId}/approval', [VoucherController::class, 'approve']);
