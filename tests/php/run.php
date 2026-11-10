@@ -199,10 +199,10 @@ check(
 $pdo = Database::connectFromEnvironment();
 $runner = new MigrationRunner($pdo, dirname(__DIR__, 2) . '/database/migrations');
 $migrations = $runner->status();
-check(count($migrations) === 6, 'six ordered migrations are registered');
-check(count(array_filter($migrations, static fn (array $row): bool => $row['applied'])) === 6, 'all six migrations are applied');
+check(count($migrations) === 7, 'seven ordered migrations are registered');
+check(count(array_filter($migrations, static fn (array $row): bool => $row['applied'])) === 7, 'all seven migrations are applied');
 $ready = $kernel->handle(Request::fromValues('GET', '/api/v1/health/ready'));
-check($ready->status() === 200 && ($ready->body()['data']['schemaVersion'] ?? null) === '0006', 'readiness endpoint requires the expected schema version');
+check($ready->status() === 200 && ($ready->body()['data']['schemaVersion'] ?? null) === '0007', 'readiness endpoint requires the expected schema version');
 
 $requiredTables = [
     'users', 'vendors', 'settings', 'vouchers', 'voucher_approval_events',
