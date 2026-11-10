@@ -15,13 +15,31 @@ final class VoucherImportApiTest extends TestCase
 
         // Keep the shared test database's sequence above historical numeric fixtures.
         foreach (['PAYMENT', 'RECEIPT'] as $type) {
-            $sequence = DB::table('voucher_number_sequences')->where('voucher_type', $type)->value('next_number');
+            $sequence = DB::table('voucher_number_sequences')
+                ->where('voucher_type', $type)
+                ->value('next_number');
             if ($sequence === null) {
                 continue;
             }
             $maxIssued = DB::table('vouchers')
                 ->where('voucher_type', $type)
-                ->whereRaw('voucher_number REGEXP ?', ['^[0-9]+    public function test_manager_import_is_repeatable_by_batch_and_source_record_identity(): void
+                ->where('voucher_number', '<>', '')
+                ->whereRaw('voucher_number NOT REGEXP ?', ['[^0-9]'])
+                ->selectRaw('COALESCE(MAX(CAST(voucher_number AS UNSIGNED)), 0) AS max_number')
+                ->value('max_number');
+            $safeNext = (int) $maxIssued + 1;
+            if ((int) $sequence < $safeNext) {
+                DB::table('voucher_number_sequences')
+                    ->where('voucher_type', $type)
+                    ->update([
+                        'next_number' => $safeNext,
+                        'updated_at_utc' => DB::raw('UTC_TIMESTAMP(6)'),
+                    ]);
+            }
+        }
+    }
+
+    public function test_manager_import_is_repeatable_by_batch_and_source_record_identity(): void
     {
         $manager = $this->withRoleSession('manager');
         $sourceId = 'legacy-voucher-'.bin2hex(random_bytes(5));
