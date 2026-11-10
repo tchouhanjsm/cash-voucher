@@ -24,6 +24,10 @@ final class AuditListRequest extends FormRequest
         return [
             'limit' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'cursor' => ['sometimes', 'string', 'max:512'],
+            'eventCategory' => [
+                'sometimes',
+                'in:ALL,CREATED,UPDATED,CANCELLED,APPROVED,REJECTED,RECEIPT_ATTACHED,OTHER',
+            ],
         ];
     }
 }
