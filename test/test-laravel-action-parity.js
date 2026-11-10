@@ -171,6 +171,35 @@ for (const field of [
     'the browser adapter must explicitly map audited field ' + field,
   );
 }
+const createVoucherContract = actionMap.fieldContracts.createVouchers;
+for (const field of [
+  'entries[].vendorType',
+  'entries[].receipts[]',
+  'entries[].receipts[].mime',
+  'entries[].receipts[].data',
+]) {
+  assert.ok(
+    createVoucherContract.legacyRequestFields.includes(field),
+    'createVouchers must inventory the Apps Script request field ' + field,
+  );
+}
+for (const field of [
+  'created[].no',
+  'created[].vendorType',
+  'created[].paymentMethod',
+  'created[].createdAt',
+  'created[].updatedAt',
+  'created[].receipts[]',
+  'created[].cancelReason',
+  'created[].approvedBy',
+  'created[].approvedAt',
+  'created[].approvalReason',
+]) {
+  assert.ok(
+    createVoucherContract.legacyResponseFields.includes(field),
+    'createVouchers must inventory the Apps Script response field ' + field,
+  );
+}
 for (const action of ['voucherHistory', 'checkVoucherDuplicates']) {
   assert.equal(actionMap.actions[action].state, 'implemented');
   assert.equal(actionMap.actions[action].clientState, 'implemented');
