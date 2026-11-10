@@ -12,7 +12,6 @@
 
 **Verification boundary:** CI tests use synthetic fixtures and disposable MySQL; they are not owner-local runtime proof. Owner-local Composer/PHP 8.3, MySQL, browser Network/Console, Laravel log, target private-storage and restore checks remain pending until separately recorded with exact evidence.
 
-
 ## CVL-031 vendor write transport slice — 8 November 2026
 
 **Branch:** `feat/laravel-vendor-transport-clean-20261108`, based on the merged PR #273 integration head.
