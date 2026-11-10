@@ -39,7 +39,7 @@ function hasServerRoute(methods, routePath) {
 
 function hasAdapterAction(action) {
   const escaped = action.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp('case\\s+[\\'"]' + escaped + '[\\'"]\\s*:').test(adapterSource);
+  return new RegExp("case\\s+['\"]" + escaped + "['\"]\\s*:").test(adapterSource);
 }
 
 assert.equal(actionMap.schemaVersion, 2, 'action map v2 must declare split server/client coverage');
@@ -114,6 +114,15 @@ assert.equal(
   'daily operations preview must map to the registered cash-close preview route',
 );
 assert.ok(actionMap.actions.entrySuggestions, 'new Laravel-shadow entry suggestions must be inventoried');
+for (const action of ['saveUser', 'resetPassword', 'saveSettings']) {
+  assert.equal(actionMap.actions[action].state, 'implemented', action + ' must be end-to-end mapped');
+  assert.equal(actionMap.actions[action].clientState, 'implemented');
+  assert.equal(actionMap.actions[action].serverState, 'implemented');
+}
+assert.match(adapterSource, /stableIdempotencyKey\('user-save'/);
+assert.match(adapterSource, /stableIdempotencyKey\('user-reset'/);
+assert.match(adapterSource, /stableIdempotencyKey\('settings-save'/);
+
 
 console.log(
   'Laravel operation parity OK — ' +
