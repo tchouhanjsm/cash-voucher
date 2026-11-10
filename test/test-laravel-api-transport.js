@@ -338,89 +338,105 @@ async function run() {
       const replayed = cashCloseCreateKeys.has(key);
       cashCloseCreateKeys.add(key);
       const body = JSON.parse(options.body);
-      return jsonResponse({
-        ok: true,
-        data: {
-          close: {
-            id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-            date: body.date,
-            drawerKey: 'MAIN',
-            openingCash: body.openingCash || '100.00',
-            openingSource: 'MANUAL',
-            openingCloseId: '',
-            openingReason: body.openingReason || 'Opening float',
-            cashInTotal: '25.50',
-            cashOutTotal: '0.00',
-            expectedCash: '125.50',
-            countedCash: body.countedCash,
-            variance: '0.00',
-            varianceReason: body.varianceReason || '',
-            includedVoucherCount: 1,
-            includedVoucherIds: ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'],
-            includedVouchers: [
-              {
-                id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-                voucherNo: 'R-120',
-                date: body.date,
-                vendor: 'Cash customer',
-                paymentMethod: 'CASH',
-                amount: '25.50',
-                amountPaise: 2550,
-                cashImpact: 'CASH_IN',
-              },
-            ],
-            createdByUserId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-            createdAtUtc: '2026-11-10 05:00:00.000000',
-            timeZone: 'Asia/Kolkata',
+      return jsonResponse(
+        {
+          ok: true,
+          data: {
+            close: {
+              id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+              date: body.date,
+              drawerKey: 'MAIN',
+              openingCash: body.openingCash || '100.00',
+              openingSource: 'MANUAL',
+              openingCloseId: '',
+              openingReason: body.openingReason || 'Opening float',
+              cashInTotal: '25.50',
+              cashOutTotal: '0.00',
+              expectedCash: '125.50',
+              countedCash: body.countedCash,
+              variance: '0.00',
+              varianceReason: body.varianceReason || '',
+              includedVoucherCount: 1,
+              includedVoucherIds: ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'],
+              includedVouchers: [
+                {
+                  id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                  voucherNo: 'R-120',
+                  date: body.date,
+                  vendor: 'Cash customer',
+                  paymentMethod: 'CASH',
+                  amount: '25.50',
+                  amountPaise: 2550,
+                  cashImpact: 'CASH_IN',
+                },
+              ],
+              createdByUserId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+              createdAtUtc: '2026-11-10 05:00:00.000000',
+              timeZone: 'Asia/Kolkata',
+            },
+            replayed,
           },
-          replayed,
         },
-      }, replayed ? 200 : 201);
+        replayed ? 200 : 201,
+      );
     }
-    if (new URL(String(url)).pathname.endsWith('/cash-closes/cccccccc-cccc-4ccc-8ccc-cccccccccccc/corrections')) {
+    if (
+      new URL(String(url)).pathname.endsWith(
+        '/cash-closes/cccccccc-cccc-4ccc-8ccc-cccccccccccc/corrections',
+      )
+    ) {
       const key = options.headers['Idempotency-Key'];
       const replayed = cashCloseCorrectionKeys.has(key);
       cashCloseCorrectionKeys.add(key);
       const body = JSON.parse(options.body);
-      return jsonResponse({
-        ok: true,
-        data: {
-          correction: {
-            id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
-            closeId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-            date: '2026-11-10',
-            voucherId: body.voucherId || '',
-            type: body.type,
-            details: body.details,
-            reason: body.reason,
-            createdByUserId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-            createdAtUtc: '2026-11-10 05:01:00.000000',
+      return jsonResponse(
+        {
+          ok: true,
+          data: {
+            correction: {
+              id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+              closeId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+              date: '2026-11-10',
+              voucherId: body.voucherId || '',
+              type: body.type,
+              details: body.details,
+              reason: body.reason,
+              createdByUserId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+              createdAtUtc: '2026-11-10 05:01:00.000000',
+            },
+            replayed,
           },
-          replayed,
         },
-      }, replayed ? 200 : 201);
+        replayed ? 200 : 201,
+      );
     }
     if (String(url).endsWith('/users') && options.method === 'POST') {
       const body = JSON.parse(options.body);
-      return jsonResponse({
-        ok: true,
-        data: {
-          user: {
-            id: '88888888-8888-4888-8888-888888888888',
-            name: body.name,
-            email: body.email,
-            role: body.role,
-            active: true,
-            mustChangePassword: true,
-            createdAtUtc: '2026-11-10 10:00:00.000000',
-            updatedAtUtc: '2026-11-10 10:00:00.000000',
-            lastLoginAtUtc: null,
+      return jsonResponse(
+        {
+          ok: true,
+          data: {
+            user: {
+              id: '88888888-8888-4888-8888-888888888888',
+              name: body.name,
+              email: body.email,
+              role: body.role,
+              active: true,
+              mustChangePassword: true,
+              createdAtUtc: '2026-11-10 10:00:00.000000',
+              updatedAtUtc: '2026-11-10 10:00:00.000000',
+              lastLoginAtUtc: null,
+            },
+            replayed: false,
           },
-          replayed: false,
         },
-      }, 201);
+        201,
+      );
     }
-    if (String(url).endsWith('/users/88888888-8888-4888-8888-888888888888') && options.method === 'PATCH') {
+    if (
+      String(url).endsWith('/users/88888888-8888-4888-8888-888888888888') &&
+      options.method === 'PATCH'
+    ) {
       const body = JSON.parse(options.body);
       return jsonResponse({
         ok: true,
@@ -884,7 +900,10 @@ async function run() {
     temporaryPassword: 'Temporary-Password-2026',
   });
   assert.match(createUserRequest.headers['Idempotency-Key'], /^user-save-[a-f0-9]{64}$/);
-  assert.equal(createUserRequest.headers['Idempotency-Key'].includes('Temporary-Password-2026'), false);
+  assert.equal(
+    createUserRequest.headers['Idempotency-Key'].includes('Temporary-Password-2026'),
+    false,
+  );
   await api('saveUser', createdUserPayload);
   assert.equal(
     requests.at(-1).headers['Idempotency-Key'],
@@ -968,7 +987,13 @@ async function run() {
 
   const beforeInvalidAdmin = requests.length;
   await assert.rejects(
-    () => api('saveUser', { name: 'Bad Role', email: 'bad@example.test', role: 'admin', password: 'Temporary-Password-2026' }),
+    () =>
+      api('saveUser', {
+        name: 'Bad Role',
+        email: 'bad@example.test',
+        role: 'admin',
+        password: 'Temporary-Password-2026',
+      }),
     (error) => error.code === 'PAYLOAD_INVALID',
   );
   await assert.rejects(
@@ -976,15 +1001,16 @@ async function run() {
     (error) => error.code === 'PAYLOAD_INVALID',
   );
   await assert.rejects(
-    () => api('saveSettings', {
-      propertyName: 'Invalid settings',
-      propertyAddress: '',
-      categories: [''],
-      receiptCategories: ['Other'],
-      nextVoucherNo: '',
-      nextReceiptNo: '',
-      openingBalance: '1e6',
-    }),
+    () =>
+      api('saveSettings', {
+        propertyName: 'Invalid settings',
+        propertyAddress: '',
+        categories: [''],
+        receiptCategories: ['Other'],
+        nextVoucherNo: '',
+        nextReceiptNo: '',
+        openingBalance: '1e6',
+      }),
     (error) => error.code === 'PAYLOAD_INVALID',
   );
   assert.equal(
@@ -992,7 +1018,6 @@ async function run() {
     beforeInvalidAdmin,
     'invalid user and settings operations must be rejected before network access',
   );
-
 
   const receiptUpload = await api('addReceipt', {
     id: '22222222-2222-4222-8222-222222222222',
@@ -1468,7 +1493,11 @@ async function run() {
     () => api('recordedMovementReport', { from: '2026-11-11', to: '2026-11-10' }),
     (error) => error.code === 'PAYLOAD_INVALID',
   );
-  assert.equal(requests.length, beforeInvalidReport, 'invalid report filters must fail before network access');
+  assert.equal(
+    requests.length,
+    beforeInvalidReport,
+    'invalid report filters must fail before network access',
+  );
 
   const cashPreview = await api('cashClosePreview', {
     date: '2026-11-08',
@@ -1479,12 +1508,16 @@ async function run() {
   assert.equal(cashPreview.cashInTotal, 25.5);
   assert.equal(cashPreview.includedVouchers[0].no, 'R-120');
   assert.equal(cashPreview.includedVouchers[0].amount, 25.5);
-  const cashPreviewRequest = requests.find((request) =>
-    new URL(request.url).pathname.endsWith('/cash-closes/preview') &&
-    new URL(request.url).searchParams.has('openingCash'),
+  const cashPreviewRequest = requests.find(
+    (request) =>
+      new URL(request.url).pathname.endsWith('/cash-closes/preview') &&
+      new URL(request.url).searchParams.has('openingCash'),
   );
   assert.ok(cashPreviewRequest);
-  assert.equal(new URL(cashPreviewRequest.url).searchParams.get('openingReason'), 'Manual opening float');
+  assert.equal(
+    new URL(cashPreviewRequest.url).searchParams.get('openingReason'),
+    'Manual opening float',
+  );
 
   const createClosePayload = {
     date: '2026-11-10',
@@ -1531,9 +1564,14 @@ async function run() {
   assert.equal(correction.replayed, false);
   const correctionRequest = requests.at(-1);
   assert.equal(correctionRequest.method, 'POST');
-  assert.ok(correctionRequest.url.endsWith('/cash-closes/' + correctionPayload.closeId + '/corrections'));
+  assert.ok(
+    correctionRequest.url.endsWith('/cash-closes/' + correctionPayload.closeId + '/corrections'),
+  );
   assert.equal(correctionRequest.headers['X-CSRF-Token'], csrf);
-  assert.match(correctionRequest.headers['Idempotency-Key'], /^cash-close-correction-[a-f0-9]{64}$/);
+  assert.match(
+    correctionRequest.headers['Idempotency-Key'],
+    /^cash-close-correction-[a-f0-9]{64}$/,
+  );
   assert.deepEqual(JSON.parse(correctionRequest.body), {
     type: 'CASH_COUNT',
     details: 'Recounted coins after close',
@@ -1573,7 +1611,11 @@ async function run() {
     () => api('recordCashCloseCorrection', { closeId: 'not-a-uuid', type: 'OTHER' }),
     (error) => error.code === 'PAYLOAD_INVALID',
   );
-  assert.equal(requests.length, beforeInvalidCashClose, 'invalid cash-close mutations must fail before network access');
+  assert.equal(
+    requests.length,
+    beforeInvalidCashClose,
+    'invalid cash-close mutations must fail before network access',
+  );
 
   const beforeUnsupported = requests.length;
   await assert.rejects(
