@@ -640,6 +640,7 @@ async function run() {
           status: 'IMPORTED',
           voucherId: voucher.id,
           sourceAmountPaise: voucher.amountPaise,
+          importedAmountPaise: voucher.amountPaise,
           errorCode: null,
           errorMessage: null,
           voucher,
