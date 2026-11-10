@@ -237,7 +237,7 @@ final class VoucherImportService
                  ) VALUES (
                     :id, :source_system, :source_batch_id, :request_sha256, :status,
                     :row_count, 0, 0, 0, :pending_count, :source_total, 0, 0,
-                    :source_total, 0, :creator, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)
+                    :pending_total, 0, :creator, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)
                  )'
             );
             $sourceTotal = array_sum(array_map(
@@ -253,6 +253,7 @@ final class VoucherImportService
                 'row_count' => count($rows),
                 'pending_count' => count($rows),
                 'source_total' => $sourceTotal,
+                'pending_total' => $sourceTotal,
                 'creator' => $actorId,
             ]);
 
