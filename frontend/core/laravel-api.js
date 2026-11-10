@@ -1,6 +1,7 @@
 const SESSION_MARKER = 'laravel-cookie-session';
 const CSRF_PATTERN = /^[a-f0-9]{64}$/;
-const VOUCHER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const VOUCHER_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function failure(message, code) {
   return Object.assign(new Error(message), { code });
@@ -549,10 +550,16 @@ function mapVoucherHistoryPage(page, expectedVoucherId, expectedCategory) {
     page.limit > 100 ||
     items.length > page.limit ||
     typeof page.hasMore !== 'boolean' ||
-    (page.hasMore !== (typeof page.nextCursor === 'string' && page.nextCursor.length > 0)) ||
-    !(page.nextCursor === null || (typeof page.nextCursor === 'string' && page.nextCursor.length <= 512))
+    page.hasMore !== (typeof page.nextCursor === 'string' && page.nextCursor.length > 0) ||
+    !(
+      page.nextCursor === null ||
+      (typeof page.nextCursor === 'string' && page.nextCursor.length <= 512)
+    )
   ) {
-    throw failure('The Laravel voucher-history API returned an invalid page.', 'API_RESPONSE_INVALID');
+    throw failure(
+      'The Laravel voucher-history API returned an invalid page.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   const seenIds = new Set();
@@ -574,10 +581,19 @@ function mapVoucherHistoryPage(page, expectedVoucherId, expectedCategory) {
       item.reason.length > 500 ||
       typeof item.occurredAtUtc !== 'string' ||
       !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?$/.test(item.occurredAtUtc) ||
-      !(item.before === null || (item.before && typeof item.before === 'object' && !Array.isArray(item.before))) ||
-      !(item.after === null || (item.after && typeof item.after === 'object' && !Array.isArray(item.after)))
+      !(
+        item.before === null ||
+        (item.before && typeof item.before === 'object' && !Array.isArray(item.before))
+      ) ||
+      !(
+        item.after === null ||
+        (item.after && typeof item.after === 'object' && !Array.isArray(item.after))
+      )
     ) {
-      throw failure('The Laravel voucher history contains an invalid event.', 'API_RESPONSE_INVALID');
+      throw failure(
+        'The Laravel voucher history contains an invalid event.',
+        'API_RESPONSE_INVALID',
+      );
     }
     seenIds.add(item.id);
     return {
@@ -1865,13 +1881,28 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const cursor = payload.cursor ?? null;
         if (
           !VOUCHER_ID_PATTERN.test(id) ||
-          !['ALL', 'CREATED', 'UPDATED', 'CANCELLED', 'APPROVED', 'REJECTED', 'RECEIPT_ATTACHED', 'OTHER'].includes(eventCategory) ||
+          ![
+            'ALL',
+            'CREATED',
+            'UPDATED',
+            'CANCELLED',
+            'APPROVED',
+            'REJECTED',
+            'RECEIPT_ATTACHED',
+            'OTHER',
+          ].includes(eventCategory) ||
           !Number.isSafeInteger(limit) ||
           limit < 1 ||
           limit > 100 ||
-          !(cursor === null || (typeof cursor === 'string' && cursor.length > 0 && cursor.length <= 512))
+          !(
+            cursor === null ||
+            (typeof cursor === 'string' && cursor.length > 0 && cursor.length <= 512)
+          )
         ) {
-          throw failure('Choose a valid voucher and history filter before loading history.', 'PAYLOAD_INVALID');
+          throw failure(
+            'Choose a valid voucher and history filter before loading history.',
+            'PAYLOAD_INVALID',
+          );
         }
         const page = await request('/vouchers/' + encodeURIComponent(id) + '/history', {
           query: { limit, cursor, eventCategory },
@@ -1889,7 +1920,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             entries.length < 1 ||
             entries.length > 100
           ) {
-            throw failure('Import between 1 and 100 rows with a valid source system.', 'PAYLOAD_INVALID');
+            throw failure(
+              'Import between 1 and 100 rows with a valid source system.',
+              'PAYLOAD_INVALID',
+            );
           }
 
           const sourceIds = new Set();
@@ -1909,7 +1943,8 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             const type = entry.type || 'PAYMENT';
             const cashImpact = entry.cashImpact || '';
             const paymentMethod = entry.paymentMethod ?? '';
-            const category = entry.category === undefined || entry.category === '' ? 'Other' : entry.category;
+            const category =
+              entry.category === undefined || entry.category === '' ? 'Other' : entry.category;
             const notes = entry.notes === undefined || entry.notes === null ? '' : entry.notes;
             const vendorId =
               entry.vendorId === undefined || entry.vendorId === null || entry.vendorId === ''
@@ -1939,7 +1974,8 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
               category.trim().length > 80 ||
               typeof notes !== 'string' ||
               notes.length > 500 ||
-              (vendorId !== null && (typeof vendorId !== 'string' || !VOUCHER_ID_PATTERN.test(vendorId))) ||
+              (vendorId !== null &&
+                (typeof vendorId !== 'string' || !VOUCHER_ID_PATTERN.test(vendorId))) ||
               typeof duplicateConfirmationToken !== 'string' ||
               duplicateConfirmationToken.length > 2048 ||
               typeof sourceStatus !== 'string' ||
@@ -2007,10 +2043,21 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             !reconciliation ||
             !Number.isSafeInteger(reconciliation.rowCount) ||
             reconciliation.rowCount !== rows.length ||
-            !['importedCount', 'replayedCount', 'quarantinedCount', 'pendingCount', 'unpricedCount'].every(
+            ![
+              'importedCount',
+              'replayedCount',
+              'quarantinedCount',
+              'pendingCount',
+              'unpricedCount',
+            ].every(
               (field) => Number.isSafeInteger(reconciliation[field]) && reconciliation[field] >= 0,
             ) ||
-            !['sourceTotalPaise', 'importedTotalPaise', 'quarantinedTotalPaise', 'pendingTotalPaise'].every(
+            ![
+              'sourceTotalPaise',
+              'importedTotalPaise',
+              'quarantinedTotalPaise',
+              'pendingTotalPaise',
+            ].every(
               (field) => Number.isSafeInteger(reconciliation[field]) && reconciliation[field] >= 0,
             ) ||
             !Number.isSafeInteger(reconciliation.variancePaise) ||
@@ -2029,11 +2076,17 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
               Array.isArray(row) ||
               row.sourceRecordId !== rows[index].sourceRecordId ||
               !['IMPORTED', 'REPLAYED', 'QUARANTINED', 'PENDING'].includes(row.status) ||
-              !(row.voucher === null || (row.voucher && typeof row.voucher === 'object' && !Array.isArray(row.voucher))) ||
+              !(
+                row.voucher === null ||
+                (row.voucher && typeof row.voucher === 'object' && !Array.isArray(row.voucher))
+              ) ||
               !(row.errorCode === null || typeof row.errorCode === 'string') ||
               !(row.errorMessage === null || typeof row.errorMessage === 'string')
             ) {
-              throw failure('The voucher import API returned an invalid row outcome.', 'API_RESPONSE_INVALID');
+              throw failure(
+                'The voucher import API returned an invalid row outcome.',
+                'API_RESPONSE_INVALID',
+              );
             }
             if (row.voucher === null) return { ...row, voucher: null };
             const voucher = row.voucher;
@@ -2049,7 +2102,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
               typeof voucher.status !== 'string' ||
               !['NOT_REQUIRED', 'PENDING'].includes(voucher.approvalStatus)
             ) {
-              throw failure('The voucher import API returned an invalid saved voucher.', 'API_RESPONSE_INVALID');
+              throw failure(
+                'The voucher import API returned an invalid saved voucher.',
+                'API_RESPONSE_INVALID',
+              );
             }
             return {
               ...row,
