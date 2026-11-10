@@ -2083,12 +2083,20 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
               !row ||
               typeof row !== 'object' ||
               Array.isArray(row) ||
-              row.sourceRecordId !== rows[index].sourceRecordId ||
+              !rows.some(
+                (expected) =>
+                  expected.sourceRecordId === row.sourceRecordId &&
+                  expected.sourceRowNumber === row.rowNumber,
+              ) ||
               !['IMPORTED', 'REPLAYED', 'QUARANTINED', 'PENDING'].includes(row.status) ||
               !(
                 row.voucher === null ||
                 (row.voucher && typeof row.voucher === 'object' && !Array.isArray(row.voucher))
               ) ||
+              !(row.sourceAmountPaise === null || (Number.isSafeInteger(row.sourceAmountPaise) && row.sourceAmountPaise > 0)) ||
+              !(row.importedAmountPaise === null || (Number.isSafeInteger(row.importedAmountPaise) && row.importedAmountPaise > 0)) ||
+              (['IMPORTED', 'REPLAYED'].includes(row.status) !== (row.importedAmountPaise !== null)) ||
+              (['IMPORTED', 'REPLAYED'].includes(row.status) !== (row.voucher !== null)) ||
               !(row.errorCode === null || typeof row.errorCode === 'string') ||
               !(row.errorMessage === null || typeof row.errorMessage === 'string')
             ) {
