@@ -174,7 +174,7 @@ async function run() {
     },
     '2026-11-10T06:31:00.000Z',
   );
-  assert.ok(structuredCsv.startsWith('\\uFEFF'));
+  assert.ok(structuredCsv.startsWith('\uFEFF'));
   assert.match(structuredCsv, /"sourceSystem","sourceScope","voucherId"/);
   assert.match(structuredCsv, /"laravel-sql-audit_events","voucher_id"/);
   assert.match(structuredCsv, /"COVERAGE"/);
