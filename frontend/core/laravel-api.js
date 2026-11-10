@@ -128,7 +128,10 @@ function mapDailyOperations(preview) {
       : rupeesToNumber(source.expectedCash, 'expected drawer cash');
   const includedVouchers = closed ? close.includedVouchers : null;
   if (closed && !Array.isArray(includedVouchers)) {
-    throw failure('The saved cash-close voucher snapshot is incomplete.', 'API_RESPONSE_INVALID');
+throw failure(
+      'The saved cash-close voucher snapshot is incomplete.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   const pendingApprovalCount = pendingApprovals.length;
@@ -170,7 +173,6 @@ function mapDailyOperations(preview) {
   };
 }
 
-
 function isCalendarDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(value + 'T00:00:00.000Z');
@@ -179,7 +181,10 @@ function isCalendarDate(value) {
 
 function mapCashCloseVoucher(item, label = 'cash-close voucher') {
   if (!item || typeof item !== 'object' || Array.isArray(item)) {
-    throw failure('The Laravel cash-close API returned an invalid voucher.', 'API_RESPONSE_INVALID');
+throw failure(
+      'The Laravel cash-close API returned an invalid voucher.',
+      'API_RESPONSE_INVALID',
+    );
   }
   const voucherNo =
     typeof item.voucherNo === 'string'
@@ -188,7 +193,10 @@ function mapCashCloseVoucher(item, label = 'cash-close voucher') {
         ? item.no
         : '';
   if (!voucherNo || typeof item.date !== 'string' || typeof item.vendor !== 'string') {
-    throw failure('The Laravel cash-close API returned an incomplete voucher.', 'API_RESPONSE_INVALID');
+throw failure(
+      'The Laravel cash-close API returned an incomplete voucher.',
+      'API_RESPONSE_INVALID',
+    );
   }
   const amount =
     item.amount === null || item.amount === undefined
@@ -242,7 +250,10 @@ function mapCashCloseRecord(close, requireCorrections = false) {
 
   if (close.corrections !== undefined) {
     if (!Array.isArray(close.corrections)) {
-      throw failure('The saved cash-close corrections are invalid.', 'API_RESPONSE_INVALID');
+throw failure(
+        'The saved cash-close corrections are invalid.',
+        'API_RESPONSE_INVALID',
+      );
     }
     mapped.corrections = close.corrections.map((item) => {
       if (
@@ -256,7 +267,10 @@ function mapCashCloseRecord(close, requireCorrections = false) {
         typeof item.details !== 'string' ||
         typeof item.reason !== 'string'
       ) {
-        throw failure('The saved cash-close correction is incomplete.', 'API_RESPONSE_INVALID');
+throw failure(
+          'The saved cash-close correction is incomplete.',
+          'API_RESPONSE_INVALID',
+        );
       }
       return {
         ...item,
@@ -275,7 +289,10 @@ function mapCashCloseRecord(close, requireCorrections = false) {
       };
     });
   } else if (requireCorrections) {
-    throw failure('The saved cash-close corrections are missing.', 'API_RESPONSE_INVALID');
+throw failure(
+      'The saved cash-close corrections are missing.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   return mapped;
@@ -290,7 +307,10 @@ function mapCashClosePreview(preview) {
     typeof preview.date !== 'string' ||
     !Array.isArray(preview.recentCloses)
   ) {
-    throw failure('The Laravel cash-close preview returned an invalid response.', 'API_RESPONSE_INVALID');
+throw failure(
+      'The Laravel cash-close preview returned an invalid response.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   const mapped = {
@@ -307,7 +327,10 @@ function mapCashClosePreview(preview) {
   const mapPreviewVoucher = (item, label) => mapCashCloseVoucher(item, label);
   const mapIssue = (item, label) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
-      throw failure('The Laravel cash-close preview contains an invalid issue row.', 'API_RESPONSE_INVALID');
+throw failure(
+        'The Laravel cash-close preview contains an invalid issue row.',
+        'API_RESPONSE_INVALID',
+      );
     }
     const voucherNo =
       typeof item.voucherNo === 'string'
@@ -316,7 +339,10 @@ function mapCashClosePreview(preview) {
           ? item.no
           : '';
     if (!voucherNo || typeof item.id !== 'string' || typeof item.vendor !== 'string') {
-      throw failure('The Laravel cash-close preview contains an incomplete issue row.', 'API_RESPONSE_INVALID');
+throw failure(
+        'The Laravel cash-close preview contains an incomplete issue row.',
+        'API_RESPONSE_INVALID',
+      );
     }
     return {
       ...item,
@@ -334,7 +360,10 @@ function mapCashClosePreview(preview) {
     !Array.isArray(preview.unclassified) ||
     !Array.isArray(preview.invalidVouchers)
   ) {
-    throw failure('The Laravel cash-close preview is missing voucher details.', 'API_RESPONSE_INVALID');
+throw failure(
+      'The Laravel cash-close preview is missing voucher details.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   mapped.openingCash = amountOrNull(preview.openingCash, 'opening cash');
@@ -366,12 +395,7 @@ function mapRecordedMovementReportPage(report, filters, expectedOffset, expected
     'invalidAmountCount',
     'totalCount',
   ];
-  const amountFields = [
-    'paymentTotal',
-    'receiptTotal',
-    'activePaymentTotal',
-    'activeReceiptTotal',
-  ];
+  const amountFields = ['paymentTotal', 'receiptTotal', 'activePaymentTotal', 'activeReceiptTotal'];
   if (
     !report ||
     typeof report !== 'object' ||
@@ -393,7 +417,10 @@ function mapRecordedMovementReportPage(report, filters, expectedOffset, expected
     typeof report.hasMore !== 'boolean' ||
     report.hasMore !== report.offset + report.items.length < report.totalCount
   ) {
-    throw failure('The Laravel movement report returned an incomplete response.', 'API_RESPONSE_INVALID');
+throw failure(
+      'The Laravel movement report returned an incomplete response.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   const mappedItems = report.items.map((item) => {
@@ -429,7 +456,10 @@ function mapRecordedMovementReportPage(report, filters, expectedOffset, expected
       (item.amount !== null && typeof item.amount !== 'string') ||
       (item.amountValid !== (item.amount !== null))
     ) {
-      throw failure('The Laravel movement report contains an invalid voucher row.', 'API_RESPONSE_INVALID');
+throw failure(
+        'The Laravel movement report contains an invalid voucher row.',
+        'API_RESPONSE_INVALID',
+      );
     }
     return {
       ...item,
@@ -447,14 +477,19 @@ function mapRecordedMovementReportPage(report, filters, expectedOffset, expected
       item.n < 0 ||
       typeof item.s !== 'string'
     ) {
-      throw failure('The Laravel movement report contains an invalid payment-method total.', 'API_RESPONSE_INVALID');
+throw failure(
+        'The Laravel movement report contains an invalid payment-method total.',
+        'API_RESPONSE_INVALID',
+      );
     }
     return { ...item, s: rupeesToNumber(item.s, 'payment-method total') };
   });
 
   return {
     ...report,
-    ...Object.fromEntries(amountFields.map((field) => [field, rupeesToNumber(report[field], field)])),
+    ...Object.fromEntries(
+      amountFields.map((field) => [field, rupeesToNumber(report[field], field)]),
+    ),
     items: mappedItems,
     byPaymentMethod,
   };
@@ -477,7 +512,10 @@ function mapUserMutation(result, expectedId = '') {
     typeof user.active !== 'boolean' ||
     typeof user.mustChangePassword !== 'boolean'
   ) {
-    throw failure('The Laravel user API returned an invalid user record.', 'API_RESPONSE_INVALID');
+throw failure(
+      'The Laravel user API returned an invalid user record.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   return {
@@ -507,7 +545,10 @@ function mapAuditPage(page) {
     (page.nextCursor !== null && typeof page.nextCursor !== 'string') ||
     (page.hasMore && !page.nextCursor)
   ) {
-    throw failure('The Laravel audit API returned an invalid page.', 'API_RESPONSE_INVALID');
+throw failure(
+      'The Laravel audit API returned an invalid page.',
+      'API_RESPONSE_INVALID',
+    );
   }
 
   const rows = page.items.map((item) => {
@@ -521,7 +562,10 @@ function mapAuditPage(page) {
       (item.before !== null && typeof item.before !== 'object') ||
       (item.after !== null && typeof item.after !== 'object')
     ) {
-      throw failure('The Laravel audit API returned an invalid event.', 'API_RESPONSE_INVALID');
+throw failure(
+        'The Laravel audit API returned an invalid event.',
+        'API_RESPONSE_INVALID',
+      );
     }
     return {
       id: item.id,
@@ -586,7 +630,10 @@ function normalizeUpdateFields(value) {
     Object.keys(value).length < 1 ||
     Object.keys(value).some((field) => !allowed.has(field))
   ) {
-    throw failure('Choose at least one supported voucher field to update.', 'PAYLOAD_INVALID');
+throw failure(
+      'Choose at least one supported voucher field to update.',
+      'PAYLOAD_INVALID',
+    );
   }
 
   const fields = {};
@@ -809,7 +856,10 @@ function mapRegisterPage(page) {
       page.facets[field].some((value) => typeof value !== 'string') ||
       new Set(page.facets[field]).size !== page.facets[field].length
     ) {
-      throw failure('The Laravel Register filter options are invalid.', 'API_RESPONSE_INVALID');
+throw failure(
+        'The Laravel Register filter options are invalid.',
+        'API_RESPONSE_INVALID',
+      );
     }
     facets[field] = page.facets[field];
   }
@@ -938,7 +988,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     try {
       envelope = await response.json();
     } catch {
-      throw failure('Unexpected Laravel API response. Expected a JSON API envelope.', 'BAD');
+throw failure(
+        'Unexpected Laravel API response. Expected a JSON API envelope.',
+        'BAD',
+      );
     }
 
     const apiError = envelope?.error;
@@ -1004,7 +1057,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     }
     const declaredLength = response.headers?.get?.('Content-Length');
     if (declaredLength && (!/^\d+$/.test(declaredLength) || Number(declaredLength) > 1600000)) {
-      throw failure('The receipt image is larger than the allowed limit.', 'RECEIPT_SIZE_INVALID');
+throw failure(
+        'The receipt image is larger than the allowed limit.',
+        'RECEIPT_SIZE_INVALID',
+      );
     }
     let bytes;
     try {
@@ -1092,7 +1148,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         new TextEncoder().encode(namespace + ':' + identity),
       );
     } catch {
-      throw failure('A secure retry identifier could not be prepared.', 'CRYPTO_UNAVAILABLE');
+throw failure(
+        'A secure retry identifier could not be prepared.',
+        'CRYPTO_UNAVAILABLE',
+      );
     }
 
     const hex = Array.from(new Uint8Array(digest), (byte) =>
@@ -1258,7 +1317,9 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           from > to ||
           !['ALL', 'PAYMENT', 'RECEIPT'].includes(type) ||
           !['ALL', 'ACTIVE', 'CANCELLED'].includes(status) ||
-          !['ALL', 'CASH', 'UPI', 'BANK_TRANSFER', 'UNRECORDED', 'UNRECOGNIZED'].includes(paymentMethod) ||
+          !['ALL', 'CASH', 'UPI', 'BANK_TRANSFER', 'UNRECORDED', 'UNRECOGNIZED'].includes(
+            paymentMethod,
+          ) ||
           !Number.isSafeInteger(offset) ||
           offset < 0 ||
           offset > 1_000_000 ||
@@ -1266,7 +1327,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           limit < 1 ||
           limit > 200
         ) {
-          throw failure('Choose valid report dates and filters before loading the report.', 'PAYLOAD_INVALID');
+throw failure(
+            'Choose valid report dates and filters before loading the report.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const filters = { from, to, type, status, paymentMethod };
@@ -1315,7 +1379,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         while (current.hasMore) {
           const nextOffset = current.offset + current.items.length;
           if (nextOffset <= current.offset || nextOffset >= first.totalCount) {
-            throw failure('The report pagination did not advance safely. Retry with a narrower range.', 'API_RESPONSE_INVALID');
+throw failure(
+              'The report pagination did not advance safely. Retry with a narrower range.',
+              'API_RESPONSE_INVALID',
+            );
           }
           current = await fetchPage(nextOffset);
           if (stableSummary(current) !== expectedSummary) {
@@ -1326,7 +1393,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           }
           for (const item of current.items) {
             if (seenIds.has(item.id)) {
-              throw failure('The report returned a duplicate voucher across pages.', 'API_RESPONSE_INVALID');
+throw failure(
+                'The report returned a duplicate voucher across pages.',
+                'API_RESPONSE_INVALID',
+              );
             }
             seenIds.add(item.id);
             items.push(item);
@@ -1379,7 +1449,8 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
 
       case 'createCashClose': {
         const date = typeof payload.date === 'string' ? payload.date : '';
-        const countedCash = typeof payload.countedCash === 'string' ? payload.countedCash.trim() : '';
+        const countedCash =
+          typeof payload.countedCash === 'string' ? payload.countedCash.trim() : '';
         const openingCash =
           payload.openingCash === undefined || payload.openingCash === null
             ? ''
@@ -1404,7 +1475,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           varianceReason.length > 200 ||
           !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(requestId)
         ) {
-          throw failure('Enter a valid date, counted cash and retry identity before closing.', 'PAYLOAD_INVALID');
+throw failure(
+            'Enter a valid date, counted cash and retry identity before closing.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const body = { date, countedCash, varianceReason };
@@ -1423,7 +1497,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         }
         const close = mapCashCloseRecord(result.close);
         if (close.date !== date) {
-          throw failure('The server returned a close for a different business date.', 'API_RESPONSE_INVALID');
+throw failure(
+            'The server returned a close for a different business date.',
+            'API_RESPONSE_INVALID',
+          );
         }
         return { close, replayed: result.replayed };
       }
@@ -1445,7 +1522,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           (voucherId !== '' && !VOUCHER_ID_PATTERN.test(voucherId)) ||
           !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(requestId)
         ) {
-          throw failure('Enter a valid correction type, details, reason and retry identity.', 'PAYLOAD_INVALID');
+throw failure(
+            'Enter a valid correction type, details, reason and retry identity.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const body = { type, details, reason };
@@ -1482,8 +1562,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             ...correction,
             createdBy:
               typeof correction.createdByUserId === 'string' ? correction.createdByUserId : '',
-            createdAt:
-              typeof correction.createdAtUtc === 'string' ? correction.createdAtUtc : '',
+            createdAt: typeof correction.createdAtUtc === 'string' ? correction.createdAtUtc : '',
           },
           replayed: result.replayed,
         };
@@ -1510,7 +1589,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const suppliedId = payload.id !== undefined && payload.id !== null;
         const userId = suppliedId && typeof payload.id === 'string' ? payload.id.trim() : '';
         if (suppliedId && !VOUCHER_ID_PATTERN.test(userId)) {
-          throw failure('The user reference is invalid. Refresh the Users list and retry.', 'PAYLOAD_INVALID');
+throw failure(
+            'The user reference is invalid. Refresh the Users list and retry.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const name = typeof payload.name === 'string' ? payload.name.trim() : '';
@@ -1524,7 +1606,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
           !['staff', 'manager', 'owner', 'accountant'].includes(role)
         ) {
-          throw failure('Enter a valid user name, email address and role.', 'PAYLOAD_INVALID');
+throw failure(
+            'Enter a valid user name, email address and role.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const body = { name, email, role };
@@ -1532,7 +1617,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const method = userId ? 'PATCH' : 'POST';
         if (userId) {
           if (typeof payload.active !== 'boolean') {
-            throw failure('Choose whether this user account is active.', 'PAYLOAD_INVALID');
+throw failure(
+              'Choose whether this user account is active.',
+              'PAYLOAD_INVALID',
+            );
           }
           body.active = payload.active;
         } else {
@@ -1545,7 +1633,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             temporaryPassword.length < 8 ||
             temporaryPassword.length > 128
           ) {
-            throw failure('Temporary password must be between 8 and 128 characters.', 'PAYLOAD_INVALID');
+throw failure(
+              'Temporary password must be between 8 and 128 characters.',
+              'PAYLOAD_INVALID',
+            );
           }
           body.temporaryPassword = temporaryPassword;
         }
@@ -1576,14 +1667,20 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             ? payload.temporaryPassword
             : payload.password;
         if (!VOUCHER_ID_PATTERN.test(userId)) {
-          throw failure('The user reference is invalid. Refresh the Users list and retry.', 'PAYLOAD_INVALID');
+throw failure(
+            'The user reference is invalid. Refresh the Users list and retry.',
+            'PAYLOAD_INVALID',
+          );
         }
         if (
           typeof temporaryPassword !== 'string' ||
           temporaryPassword.length < 8 ||
           temporaryPassword.length > 128
         ) {
-          throw failure('Temporary password must be between 8 and 128 characters.', 'PAYLOAD_INVALID');
+throw failure(
+            'Temporary password must be between 8 and 128 characters.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const idempotencyKey =
@@ -1606,7 +1703,8 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       }
 
       case 'saveSettings': {
-        const propertyName = typeof payload.propertyName === 'string' ? payload.propertyName.trim() : '';
+        const propertyName =
+          typeof payload.propertyName === 'string' ? payload.propertyName.trim() : '';
         const propertyAddress =
           typeof payload.propertyAddress === 'string' ? payload.propertyAddress.trim() : '';
         const normalizeCategories = (value, label) => {
@@ -1632,7 +1730,12 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         };
         const normalizeSequence = (value, label) => {
           if (value === null || value === undefined || value === '') return null;
-          const text = typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : '';
+          const text =
+            typeof value === 'number'
+              ? String(value)
+              : typeof value === 'string'
+                ? value.trim()
+                : '';
           if (!/^[1-9][0-9]{0,8}$/.test(text)) {
             throw failure('Enter a valid ' + label + '.', 'PAYLOAD_INVALID');
           }
@@ -1647,14 +1750,20 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           typeof payload.propertyAddress !== 'string' ||
           !/^-?(?:0|[1-9][0-9]{0,8})(?:\.[0-9]{1,2})?$/.test(openingBalance)
         ) {
-          throw failure('Enter valid property settings and an opening balance in INR.', 'PAYLOAD_INVALID');
+throw failure(
+            'Enter valid property settings and an opening balance in INR.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const body = {
           propertyName,
           propertyAddress,
           categories: normalizeCategories(payload.categories, 'Categories'),
-          receiptCategories: normalizeCategories(payload.receiptCategories, 'Cash-received categories'),
+          receiptCategories: normalizeCategories(
+            payload.receiptCategories,
+            'Cash-received categories',
+          ),
           nextVoucherNo: normalizeSequence(payload.nextVoucherNo, 'next payment voucher number'),
           nextReceiptNo: normalizeSequence(payload.nextReceiptNo, 'next cash-received number'),
           openingBalance,
@@ -1667,7 +1776,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           typeof idempotencyKey !== 'string' ||
           !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(idempotencyKey)
         ) {
-          throw failure('The settings operation retry key is invalid.', 'PAYLOAD_INVALID');
+throw failure(
+            'The settings operation retry key is invalid.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const result = await mutate('/settings', body, {
@@ -1683,7 +1795,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           !Array.isArray(result.settings.categories) ||
           !Array.isArray(result.settings.receiptCategories)
         ) {
-          throw failure('The Laravel settings API returned an invalid response.', 'API_RESPONSE_INVALID');
+throw failure(
+            'The Laravel settings API returned an invalid response.',
+            'API_RESPONSE_INVALID',
+          );
         }
         return result.settings;
       }
@@ -1717,7 +1832,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const clientIds = new Set();
         for (const entry of entries) {
           if (clientIds.has(entry.clientId)) {
-            throw failure('Each entry must have a different transaction ID.', 'PAYLOAD_INVALID');
+throw failure(
+              'Each entry must have a different transaction ID.',
+              'PAYLOAD_INVALID',
+            );
           }
           clientIds.add(entry.clientId);
         }
@@ -1910,7 +2028,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       case 'toggleVendor': {
         const vendorId = typeof payload.id === 'string' ? payload.id.trim() : '';
         if (!vendorId || typeof payload.active !== 'boolean') {
-          throw failure('A vendor ID and desired active state are required.', 'PAYLOAD_INVALID');
+throw failure(
+            'A vendor ID and desired active state are required.',
+            'PAYLOAD_INVALID',
+          );
         }
         const result = await mutate(
           '/vendors/' + encodeURIComponent(vendorId) + '/active',
@@ -1982,7 +2103,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           !receipt.data.length ||
           receipt.data.length > 2200000
         ) {
-          throw failure('Choose a valid JPG, PNG or WebP receipt image.', 'PAYLOAD_INVALID');
+throw failure(
+            'Choose a valid JPG, PNG or WebP receipt image.',
+            'PAYLOAD_INVALID',
+          );
         }
 
         const idempotencyKey =
@@ -2141,7 +2265,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const vendor = typeof payload.vendor === 'string' ? payload.vendor.trim() : '';
         const type = payload.type || 'PAYMENT';
         if (!vendor || vendor.length > 120 || !['PAYMENT', 'RECEIPT'].includes(type)) {
-          throw failure('Enter a valid payee before requesting suggestions.', 'PAYLOAD_INVALID');
+throw failure(
+            'Enter a valid payee before requesting suggestions.',
+            'PAYLOAD_INVALID',
+          );
         }
         const result = await request('/entry-suggestions', {
           query: { vendor, type },
@@ -2163,7 +2290,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           !isSuggestion(result.suggestions.category) ||
           !isSuggestion(result.suggestions.paymentMethod)
         ) {
-          throw failure('Entry suggestions returned an invalid response.', 'API_RESPONSE_INVALID');
+throw failure(
+            'Entry suggestions returned an invalid response.',
+            'API_RESPONSE_INVALID',
+          );
         }
         return result;
       }
