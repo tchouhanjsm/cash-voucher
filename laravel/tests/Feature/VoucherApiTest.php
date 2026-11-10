@@ -48,7 +48,11 @@ final class VoucherApiTest extends TestCase
         $receiptId = $this->insertVoucherFixture($otherUser, 'Acme Return', 4500);
         $pendingId = $this->insertVoucherFixture($this->userId, 'Pending Supplier', 0);
         $cancelledId = $this->insertVoucherFixture($otherUser, 'Cancelled Supplier', 6000);
+        $malformedId = $this->insertVoucherFixture($otherUser, 'Malformed Hidden Supplier', 1000);
 
+        DB::table('vouchers')->where('id', $malformedId)->update([
+            'voucher_type' => 'BROKEN',
+        ]);
         DB::table('vouchers')->where('id', $paymentId)->update([
             'voucher_type' => 'PAYMENT',
             'voucher_number' => '501',
@@ -105,13 +109,18 @@ final class VoucherApiTest extends TestCase
             ->assertJsonPath('data.totals.received', '45.00')
             ->assertJsonPath('data.totals.approvalExceptionCount', 1)
             ->assertJsonPath('data.totals.invalidAmountCount', 1)
-            ->assertJsonPath('data.totals.malformedRecordCount', 0)
+            ->assertJsonPath('data.totals.malformedRecordCount', 1)
             ->assertJsonPath('data.totals.malformedFieldCount', 0);
 
         $visibleVendors = $all->json('data.facets.vendors');
         foreach (['Acme Return', 'Acme Steel', 'Cancelled Supplier', 'Pending Supplier'] as $vendor) {
             self::assertContains($vendor, $visibleVendors);
         }
+        self::assertNotContains(
+            'Malformed Hidden Supplier',
+            $visibleVendors,
+            'Malformed records must not pollute Register filter facets.',
+        );
         $visibleUsers = $all->json('data.facets.users');
         self::assertContains($managerEmail, $visibleUsers);
         self::assertContains($otherEmail, $visibleUsers);
