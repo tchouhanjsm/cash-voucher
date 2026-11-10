@@ -170,6 +170,43 @@ function mapDailyOperations(preview) {
   };
 }
 
+function mapUserMutation(result, expectedId = '') {
+  const user = result?.user;
+  if (
+    !user ||
+    typeof user !== 'object' ||
+    Array.isArray(user) ||
+    typeof user.id !== 'string' ||
+    !VOUCHER_ID_PATTERN.test(user.id) ||
+    (expectedId && user.id !== expectedId) ||
+    typeof user.name !== 'string' ||
+    !user.name.trim() ||
+    typeof user.email !== 'string' ||
+    !user.email.trim() ||
+    !['staff', 'manager', 'owner', 'accountant'].includes(user.role) ||
+    typeof user.active !== 'boolean' ||
+    typeof user.mustChangePassword !== 'boolean'
+  ) {
+    throw failure('The Laravel user API returned an invalid user record.', 'API_RESPONSE_INVALID');
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    active: user.active,
+    mustChangePassword: user.mustChangePassword,
+    createdAtUtc: typeof user.createdAtUtc === 'string' ? user.createdAtUtc : '',
+    updatedAtUtc: typeof user.updatedAtUtc === 'string' ? user.updatedAtUtc : '',
+    lastLoginAtUtc:
+      typeof user.lastLoginAtUtc === 'string' || user.lastLoginAtUtc === null
+        ? user.lastLoginAtUtc
+        : null,
+    replayed: result.replayed === true,
+  };
+}
+
 function mapAuditPage(page) {
   if (
     !page ||
@@ -937,6 +974,188 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           role: user.role,
           active: user.active,
         }));
+      }
+
+      case 'saveUser': {
+        const suppliedId = payload.id !== undefined && payload.id !== null;
+        const userId = suppliedId && typeof payload.id === 'string' ? payload.id.trim() : '';
+        if (suppliedId && !VOUCHER_ID_PATTERN.test(userId)) {
+          throw failure('The user reference is invalid. Refresh the Users list and retry.', 'PAYLOAD_INVALID');
+        }
+
+        const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+        const email = typeof payload.email === 'string' ? payload.email.trim().toLowerCase() : '';
+        const role = payload.role;
+        if (
+          !name ||
+          name.length > 80 ||
+          !email ||
+          email.length > 254 ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+          !['staff', 'manager', 'owner', 'accountant'].includes(role)
+        ) {
+          throw failure('Enter a valid user name, email address and role.', 'PAYLOAD_INVALID');
+        }
+
+        const body = { name, email, role };
+        const route = userId ? '/users/' + encodeURIComponent(userId) : '/users';
+        const method = userId ? 'PATCH' : 'POST';
+        if (userId) {
+          if (typeof payload.active !== 'boolean') {
+            throw failure('Choose whether this user account is active.', 'PAYLOAD_INVALID');
+          }
+          body.active = payload.active;
+        } else {
+          const temporaryPassword =
+            typeof payload.temporaryPassword === 'string'
+              ? payload.temporaryPassword
+              : payload.password;
+          if (
+            typeof temporaryPassword !== 'string' ||
+            temporaryPassword.length < 8 ||
+            temporaryPassword.length > 128
+          ) {
+            throw failure('Temporary password must be between 8 and 128 characters.', 'PAYLOAD_INVALID');
+          }
+          body.temporaryPassword = temporaryPassword;
+        }
+
+        const idempotencyKey =
+          payload.idempotencyKey === undefined
+            ? await stableIdempotencyKey('user-save', JSON.stringify({ userId, ...body }))
+            : payload.idempotencyKey;
+        if (
+          typeof idempotencyKey !== 'string' ||
+          !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(idempotencyKey)
+        ) {
+          throw failure('The user operation retry key is invalid.', 'PAYLOAD_INVALID');
+        }
+
+        const result = await mutate(route, body, {
+          method,
+          idempotency: true,
+          idempotencyKey,
+        });
+        return mapUserMutation(result, userId);
+      }
+
+      case 'resetPassword': {
+        const userId = typeof payload.id === 'string' ? payload.id.trim() : '';
+        const temporaryPassword =
+          typeof payload.temporaryPassword === 'string'
+            ? payload.temporaryPassword
+            : payload.password;
+        if (!VOUCHER_ID_PATTERN.test(userId)) {
+          throw failure('The user reference is invalid. Refresh the Users list and retry.', 'PAYLOAD_INVALID');
+        }
+        if (
+          typeof temporaryPassword !== 'string' ||
+          temporaryPassword.length < 8 ||
+          temporaryPassword.length > 128
+        ) {
+          throw failure('Temporary password must be between 8 and 128 characters.', 'PAYLOAD_INVALID');
+        }
+
+        const idempotencyKey =
+          payload.idempotencyKey === undefined
+            ? await stableIdempotencyKey('user-reset', userId + ':' + temporaryPassword)
+            : payload.idempotencyKey;
+        if (
+          typeof idempotencyKey !== 'string' ||
+          !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(idempotencyKey)
+        ) {
+          throw failure('The password reset retry key is invalid.', 'PAYLOAD_INVALID');
+        }
+
+        const result = await mutate(
+          '/users/' + encodeURIComponent(userId) + '/password-reset',
+          { temporaryPassword },
+          { idempotency: true, idempotencyKey },
+        );
+        return mapUserMutation(result, userId);
+      }
+
+      case 'saveSettings': {
+        const propertyName = typeof payload.propertyName === 'string' ? payload.propertyName.trim() : '';
+        const propertyAddress =
+          typeof payload.propertyAddress === 'string' ? payload.propertyAddress.trim() : '';
+        const normalizeCategories = (value, label) => {
+          if (!Array.isArray(value) || value.length > 60) {
+            throw failure(label + ' must contain 1 to 60 values.', 'PAYLOAD_INVALID');
+          }
+          const normalized = [];
+          for (const item of value) {
+            if (typeof item !== 'string') {
+              throw failure(label + ' must contain text values.', 'PAYLOAD_INVALID');
+            }
+            const name = item.trim();
+            if (!name) continue;
+            if (name.length > 40) {
+              throw failure(label + ' entries must be 40 characters or fewer.', 'PAYLOAD_INVALID');
+            }
+            if (!normalized.includes(name)) normalized.push(name);
+          }
+          if (!normalized.length) {
+            throw failure(label + ' must contain at least one value.', 'PAYLOAD_INVALID');
+          }
+          return normalized;
+        };
+        const normalizeSequence = (value, label) => {
+          if (value === null || value === undefined || value === '') return null;
+          const text = typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : '';
+          if (!/^[1-9][0-9]{0,8}$/.test(text)) {
+            throw failure('Enter a valid ' + label + '.', 'PAYLOAD_INVALID');
+          }
+          return text;
+        };
+        const openingBalance =
+          typeof payload.openingBalance === 'string' ? payload.openingBalance.trim() : '';
+        if (
+          !propertyName ||
+          propertyName.length > 120 ||
+          propertyAddress.length > 300 ||
+          typeof payload.propertyAddress !== 'string' ||
+          !/^-?(?:0|[1-9][0-9]{0,8})(?:\.[0-9]{1,2})?$/.test(openingBalance)
+        ) {
+          throw failure('Enter valid property settings and an opening balance in INR.', 'PAYLOAD_INVALID');
+        }
+
+        const body = {
+          propertyName,
+          propertyAddress,
+          categories: normalizeCategories(payload.categories, 'Categories'),
+          receiptCategories: normalizeCategories(payload.receiptCategories, 'Cash-received categories'),
+          nextVoucherNo: normalizeSequence(payload.nextVoucherNo, 'next payment voucher number'),
+          nextReceiptNo: normalizeSequence(payload.nextReceiptNo, 'next cash-received number'),
+          openingBalance,
+        };
+        const idempotencyKey =
+          payload.idempotencyKey === undefined
+            ? await stableIdempotencyKey('settings-save', JSON.stringify(body))
+            : payload.idempotencyKey;
+        if (
+          typeof idempotencyKey !== 'string' ||
+          !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(idempotencyKey)
+        ) {
+          throw failure('The settings operation retry key is invalid.', 'PAYLOAD_INVALID');
+        }
+
+        const result = await mutate('/settings', body, {
+          method: 'PUT',
+          idempotency: true,
+          idempotencyKey,
+        });
+        if (
+          !result?.settings ||
+          typeof result.settings !== 'object' ||
+          Array.isArray(result.settings) ||
+          typeof result.settings.propertyName !== 'string' ||
+          !Array.isArray(result.settings.categories) ||
+          !Array.isArray(result.settings.receiptCategories)
+        ) {
+          throw failure('The Laravel settings API returned an invalid response.', 'API_RESPONSE_INVALID');
+        }
+        return result.settings;
       }
 
       case 'auditLog': {
