@@ -2093,10 +2093,17 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
                 row.voucher === null ||
                 (row.voucher && typeof row.voucher === 'object' && !Array.isArray(row.voucher))
               ) ||
-              !(row.sourceAmountPaise === null || (Number.isSafeInteger(row.sourceAmountPaise) && row.sourceAmountPaise > 0)) ||
-              !(row.importedAmountPaise === null || (Number.isSafeInteger(row.importedAmountPaise) && row.importedAmountPaise > 0)) ||
-              (['IMPORTED', 'REPLAYED'].includes(row.status) !== (row.importedAmountPaise !== null)) ||
-              (['IMPORTED', 'REPLAYED'].includes(row.status) !== (row.voucher !== null)) ||
+              !(
+                row.sourceAmountPaise === null ||
+                (Number.isSafeInteger(row.sourceAmountPaise) && row.sourceAmountPaise > 0)
+              ) ||
+              !(
+                row.importedAmountPaise === null ||
+                (Number.isSafeInteger(row.importedAmountPaise) && row.importedAmountPaise > 0)
+              ) ||
+              ['IMPORTED', 'REPLAYED'].includes(row.status) !==
+                (row.importedAmountPaise !== null) ||
+              ['IMPORTED', 'REPLAYED'].includes(row.status) !== (row.voucher !== null) ||
               !(row.errorCode === null || typeof row.errorCode === 'string') ||
               !(row.errorMessage === null || typeof row.errorMessage === 'string')
             ) {
