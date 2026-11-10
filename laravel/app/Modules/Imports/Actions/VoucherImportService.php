@@ -122,6 +122,7 @@ final class VoucherImportService
     {
         $prepared = [];
         $seen = [];
+        $seenRowNumbers = [];
         foreach (array_values($rows) as $index => $row) {
             if (
                 ! is_array($row)
@@ -151,6 +152,14 @@ final class VoucherImportService
                     'Each source row must have a valid 1-based row number between 1 and 1,000,000.',
                 );
             }
+            if (isset($seenRowNumbers[$sourceRowNumber])) {
+                throw new ApiException(
+                    422,
+                    'IMPORT_ROW_NUMBER_DUPLICATE',
+                    'Source row numbers must be unique within an import batch.',
+                );
+            }
+            $seenRowNumbers[$sourceRowNumber] = true;
             if (isset($seen[$sourceRecordId])) {
                 throw new ApiException(422, 'IMPORT_SOURCE_ID_DUPLICATE', 'Source record IDs must be unique within an import batch.');
             }
