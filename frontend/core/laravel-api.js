@@ -1933,6 +1933,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             }
             const sourceRecordId =
               typeof entry.sourceRecordId === 'string' ? entry.sourceRecordId.trim() : '';
+            const sourceRowNumber = entry.sourceRowNumber ?? index + 1;
             const date = typeof entry.date === 'string' ? entry.date : '';
             const vendor = typeof entry.vendor === 'string' ? entry.vendor.trim() : '';
             const amountNumber =
@@ -1959,6 +1960,9 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             if (
               !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(sourceRecordId) ||
               sourceIds.has(sourceRecordId) ||
+              !Number.isSafeInteger(sourceRowNumber) ||
+              sourceRowNumber < 1 ||
+              sourceRowNumber > 1000000 ||
               !isCalendarDate(date) ||
               !vendor ||
               vendor.length > 200 ||
@@ -1999,6 +2003,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             sourceIds.add(sourceRecordId);
             return {
               sourceRecordId,
+              sourceRowNumber,
               voucher: {
                 date,
                 vendor,
@@ -2022,6 +2027,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           // A refreshed duplicate-review token must not change the business batch identity.
           const identityRows = rows.map((row) => ({
             sourceRecordId: row.sourceRecordId,
+            sourceRowNumber: row.sourceRowNumber,
             voucher: { ...row.voucher, duplicateConfirmationToken: '' },
           }));
           const batchId = await stableIdempotencyKey(
