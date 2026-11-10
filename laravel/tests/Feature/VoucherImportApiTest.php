@@ -101,6 +101,87 @@ final class VoucherImportApiTest extends TestCase
         );
     }
 
+    public function test_import_recovers_a_committed_source_voucher_when_the_import_row_update_was_interrupted(): void
+    {
+        $manager = $this->withRoleSession('manager');
+        $sourceId = 'recovery-source-'.bin2hex(random_bytes(5));
+        $sourceLegacyId = 'manual-csv:'.$sourceId;
+        $voucherId = $this->insertVoucherFixture(
+            $this->userId,
+            'Voucher Import Supplier',
+            12550,
+        );
+        DB::table('vouchers')->where('id', $voucherId)->update([
+            'source_legacy_id' => $sourceLegacyId,
+            'notes' => 'Repeatable import fixture',
+        ]);
+
+        $batchId = 'recovery-batch-'.bin2hex(random_bytes(5));
+        $payload = $this->manifest($batchId, [$this->row($sourceId)]);
+        $response = $manager->postJson('/api/v1/imports/vouchers', $payload, [
+            'Idempotency-Key' => $batchId,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'COMPLETED')
+            ->assertJsonPath('data.reconciliation.importedCount', 0)
+            ->assertJsonPath('data.reconciliation.replayedCount', 1)
+            ->assertJsonPath('data.reconciliation.quarantinedCount', 0)
+            ->assertJsonPath('data.reconciliation.balanced', true)
+            ->assertJsonPath('data.rows.0.status', 'REPLAYED')
+            ->assertJsonPath('data.rows.0.voucherId', $voucherId);
+
+        self::assertSame(
+            1,
+            DB::table('vouchers')->where('source_legacy_id', $sourceLegacyId)->count(),
+            'Recovery must reconcile the already-committed voucher instead of creating a second one.',
+        );
+    }
+
+    public function test_an_authorized_operator_can_resume_an_immutable_batch_after_a_retryable_blocker_is_removed(): void
+    {
+        $manager = $this->withRoleSession('manager');
+        $sourceId = 'resume-source-'.bin2hex(random_bytes(5));
+        $batchId = 'resume-batch-'.bin2hex(random_bytes(5));
+        $payload = $this->manifest($batchId, [$this->row($sourceId)]);
+        $this->insertCashCloseFixture($this->userId, $this->businessDate);
+
+        $blocked = $manager->postJson('/api/v1/imports/vouchers', $payload, [
+            'Idempotency-Key' => $batchId,
+        ]);
+        $blocked->assertOk()
+            ->assertJsonPath('data.status', 'RECONCILIATION_REQUIRED')
+            ->assertJsonPath('data.reconciliation.quarantinedCount', 1)
+            ->assertJsonPath('data.rows.0.errorCode', 'CASH_CLOSE_DATE_LOCKED');
+
+        DB::table('cash_closes')->where('business_date', $this->businessDate)->delete();
+
+        $owner = $this->withRoleSession('owner');
+        $resumed = $owner->postJson('/api/v1/imports/vouchers', $payload, [
+            'Idempotency-Key' => $batchId,
+        ]);
+        $resumed->assertOk()
+            ->assertJsonPath('data.status', 'COMPLETED')
+            ->assertJsonPath('data.reconciliation.importedCount', 1)
+            ->assertJsonPath('data.reconciliation.quarantinedCount', 0)
+            ->assertJsonPath('data.reconciliation.pendingCount', 0)
+            ->assertJsonPath('data.reconciliation.balanced', true)
+            ->assertJsonPath('data.rows.0.status', 'IMPORTED');
+
+        self::assertSame(
+            1,
+            DB::table('audit_events')
+                ->where('event_type', 'VOUCHER_IMPORT_BATCH_RESUMED')
+                ->where('target_id', $resumed->json('data.batchRecordId'))
+                ->count(),
+            'Cross-operator resumption must be visible in the audit trail.',
+        );
+        self::assertSame(
+            1,
+            DB::table('vouchers')->where('source_legacy_id', 'manual-csv:'.$sourceId)->count(),
+        );
+    }
+
     public function test_legacy_historical_state_and_receipts_are_quarantined_not_discarded(): void
     {
         $manager = $this->withRoleSession('manager');
