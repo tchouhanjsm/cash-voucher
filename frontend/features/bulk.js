@@ -396,7 +396,7 @@ export function createBulk({ api, refresh, go }) {
       ) {
         duplicateCandidates.push({
           rowIndex: index,
-          clientId: 'import-' + sourceSystem + ':' + sourceRecordId,
+          clientId: 'bulk-' + sourceRecordId,
           date,
           vendor,
           vendorId: String(row.vendorId ?? '').trim() || null,
