@@ -199,7 +199,7 @@ function mapCashCloseRecord(close, requireCorrections = false) {
     typeof close.id !== 'string' ||
     !VOUCHER_ID_PATTERN.test(close.id) ||
     typeof close.date !== 'string' ||
-    !/^\\d{4}-\\d{2}-\\d{2}$/.test(close.date) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(close.date) ||
     !Array.isArray(close.includedVouchers) ||
     !Array.isArray(close.includedVoucherIds) ||
     !Number.isSafeInteger(close.includedVoucherCount) ||
@@ -1239,7 +1239,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       }
 
       case 'recordedMovementReport': {
-        const datePattern = /^\\d{4}-\\d{2}-\\d{2}$/;
+        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
         const from = typeof payload.from === 'string' ? payload.from : '';
         const to = typeof payload.to === 'string' ? payload.to : '';
         const type = payload.type ?? 'ALL';
@@ -1353,11 +1353,11 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const openingCash = payload.openingCash;
         const openingReason = payload.openingReason ?? '';
         if (
-          (date !== undefined && (typeof date !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date))) ||
+          (date !== undefined && (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date))) ||
           (openingCash !== undefined &&
             openingCash !== '' &&
             (typeof openingCash !== 'string' ||
-              !/^(?:0|[1-9][0-9]{0,7})(?:\\.[0-9]{1,2})?$/.test(openingCash) ||
+              !/^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(openingCash) ||
               Number(openingCash) > 10_000_000)) ||
           typeof openingReason !== 'string' ||
           openingReason.length > 200
@@ -1386,10 +1386,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const requestId = typeof payload.requestId === 'string' ? payload.requestId.trim() : '';
         const validAmount = (value) =>
           typeof value === 'string' &&
-          /^(?:0|[1-9][0-9]{0,7})(?:\\.[0-9]{1,2})?$/.test(value) &&
+          /^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(value) &&
           Number(value) <= 10_000_000;
         if (
-          !/^\\d{4}-\\d{2}-\\d{2}$/.test(date) ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
           !validAmount(countedCash) ||
           (openingCash !== '' && !validAmount(openingCash)) ||
           openingCash === null ||
