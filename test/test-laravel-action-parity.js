@@ -177,6 +177,10 @@ assert.ok(
   createVoucherContract.laravelRequestFields.includes('rows[].sourceRowNumber'),
   'createVouchers must document the original source-row number passed to the Laravel import ledger',
 );
+assert.ok(
+  createVoucherContract.laravelResponseFields.includes('rows[].rowNumber'),
+  'createVouchers must document the original source-row number returned in reconciliation',
+);
 
 for (const field of [
   'sourceSystem',
