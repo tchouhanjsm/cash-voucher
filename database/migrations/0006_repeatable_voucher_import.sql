@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS voucher_import_rows (
     batch_id CHAR(36) NOT NULL,
     source_record_id VARCHAR(100) NOT NULL,
     source_legacy_id VARCHAR(128) NOT NULL,
-    row_number INT UNSIGNED NOT NULL,
+    source_row_number INT UNSIGNED NOT NULL,
     row_sha256 CHAR(64) NOT NULL,
     voucher_type VARCHAR(12) NULL,
     source_amount_paise BIGINT UNSIGNED NULL,
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS voucher_import_rows (
     updated_at_utc DATETIME(6) NOT NULL,
     UNIQUE KEY uq_voucher_import_batch_record (batch_id, source_record_id),
     KEY ix_voucher_import_legacy_hash (source_legacy_id, row_sha256),
-    KEY ix_voucher_import_batch_status (batch_id, status, row_number),
+    KEY ix_voucher_import_batch_status (batch_id, status, source_row_number),
     KEY ix_voucher_import_voucher (voucher_id),
     CONSTRAINT fk_voucher_import_row_batch FOREIGN KEY (batch_id) REFERENCES voucher_import_batches (id),
     CONSTRAINT fk_voucher_import_row_voucher FOREIGN KEY (voucher_id) REFERENCES vouchers (id)
