@@ -85,6 +85,36 @@ final class AuditApiTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_voucher_history_filters_structured_events_by_source_event_category(): void
+    {
+        $owner = $this->withRoleSession('owner');
+        $voucherId = $this->insertVoucherFixture($this->userId, 'Filtered History Supplier', 25000);
+        $this->insertAuditFixture('VOUCHER_CREATED', 'voucher', $voucherId, [
+            'vendor' => 'Filtered History Supplier',
+        ]);
+        $this->insertAuditFixture('VOUCHER_UPDATED', 'voucher', $voucherId, [
+            'vendor' => 'Updated History Supplier',
+        ]);
+
+        $created = $owner->getJson('/api/v1/vouchers/'.$voucherId.'/history?eventCategory=CREATED');
+        $created->assertOk()
+            ->assertJsonPath('data.source', 'laravel-sql-audit-events')
+            ->assertJsonPath('data.eventCategory', 'CREATED')
+            ->assertJsonPath('data.count', 1)
+            ->assertJsonPath('data.items.0.eventType', 'VOUCHER_CREATED')
+            ->assertJsonPath('data.items.0.targetId', $voucherId);
+
+        $updated = $owner->getJson('/api/v1/vouchers/'.$voucherId.'/history?eventCategory=UPDATED');
+        $updated->assertOk()
+            ->assertJsonPath('data.eventCategory', 'UPDATED')
+            ->assertJsonPath('data.count', 1)
+            ->assertJsonPath('data.items.0.eventType', 'VOUCHER_UPDATED');
+
+        $owner->getJson('/api/v1/vouchers/'.$voucherId.'/history?eventCategory=INVALID')
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'VALIDATION_FAILED');
+    }
+
     private function insertAuditFixture(string $eventType, string $targetType, string $targetId, array $after): void
     {
         DB::connection()->getPdo()->prepare(
