@@ -37,7 +37,7 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/health/ready', function () {
         try {
             $latest = DB::table('schema_migrations')->orderByDesc('version')->value('version');
-            if ($latest !== '0005') {
+            if ($latest !== '0006') {
                 throw new \RuntimeException('Expected schema baseline 0005 was not found.');
             }
         } catch (\Throwable $exception) {
@@ -48,7 +48,7 @@ Route::prefix('v1')->group(function (): void {
         return ApiResponse::success([
             'status' => 'ready',
             'database' => 'reachable',
-            'schemaVersion' => '0005',
+            'schemaVersion' => '0006',
             'rolloutState' => 'isolated-shadow',
         ], (string) request()->attributes->get('request_id'));
     });
@@ -70,7 +70,7 @@ Route::prefix('v1')->group(function (): void {
                 'bootstrap:read',
                 'vouchers:list',
                 'vouchers:duplicate-check',
-                'vouchers:create',
+                'vouchers:create',\n                'imports:vouchers:create-and-reconcile',
                 'vouchers:update',
                 'vouchers:cancel',
                 'vouchers:approve',
@@ -109,7 +109,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/cash-closes', [CashCloseController::class, 'create']);
         Route::post('/cash-closes/{closeId}/corrections', [CashCloseController::class, 'recordCorrection']);
         Route::post('/vouchers/duplicate-check', [VoucherController::class, 'duplicateCheck']);
-        Route::post('/vouchers', [VoucherController::class, 'store']);
+        Route::post('/vouchers', [VoucherController::class, 'store']);\n        Route::post('/imports/vouchers', [VoucherImportController::class, 'store']);
         Route::patch('/vouchers/{voucherId}', [VoucherController::class, 'update']);
         Route::post('/vouchers/{voucherId}/cancel', [VoucherController::class, 'cancel']);
         Route::post('/vouchers/{voucherId}/approval', [VoucherController::class, 'approve']);
