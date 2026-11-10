@@ -114,7 +114,7 @@ final class VoucherImportApiTest extends TestCase
                 'sourceSystem' => 'apps-script-vouchers',
                 'sourceReceipts' => 'drive-file-id-001,drive-file-id-002',
             ]),
-        ]);
+        ], 'apps-script-vouchers');
 
         $response = $manager->postJson('/api/v1/imports/vouchers', $payload, [
             'Idempotency-Key' => $batchId,
