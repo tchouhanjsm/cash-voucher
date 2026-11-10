@@ -1650,7 +1650,9 @@ export function createRegister({ api, go }) {
         }
         const duplicate = page.items.find((event) => seenEventIds.has(event.id));
         if (duplicate) {
-          throw new Error('A repeated audit event was returned across pages. Stop and inspect the audit cursor.');
+          throw new Error(
+            'A repeated audit event was returned across pages. Stop and inspect the audit cursor.',
+          );
         }
         page.items.forEach((event) => {
           seenEventIds.add(event.id);
@@ -1664,8 +1666,12 @@ export function createRegister({ api, go }) {
         older.hidden = !hasMore || loadedEvents.length >= MAX_EXPORT_EVENTS;
         status.className = 'muted voucher-history-status';
         status.textContent =
-          'Loaded ' + loadedEvents.length + ' structured event(s) from Laravel SQL audit storage. ' +
-          (hasMore ? 'More matching events remain; load older events to extend this export.' : 'No further matching events remain.') +
+          'Loaded ' +
+          loadedEvents.length +
+          ' structured event(s) from Laravel SQL audit storage. ' +
+          (hasMore
+            ? 'More matching events remain; load older events to extend this export.'
+            : 'No further matching events remain.') +
           ' Legacy spreadsheet rows without a stable voucher ID are outside this source and are not counted.';
       } catch (error) {
         status.className = 'error voucher-history-status';
@@ -1690,11 +1696,7 @@ export function createRegister({ api, go }) {
           exportedAt,
         );
         const timestamp = exportedAt.replace(/[:.]/g, '-');
-        download(
-          'voucher-structured-audit-' + timestamp + '.csv',
-          csv,
-          'text/csv;charset=utf-8',
-        );
+        download('voucher-structured-audit-' + timestamp + '.csv', csv, 'text/csv;charset=utf-8');
         toast('Structured audit export downloaded with source-coverage metadata.', 'ok');
       } catch (error) {
         fail(error);
