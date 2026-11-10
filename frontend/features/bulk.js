@@ -450,46 +450,67 @@ export function createBulk({ api, refresh, go }) {
     panel.setAttribute('aria-live', 'polite');
 
     const title = document.createElement('h2');
-    title.textContent =
-      summary.pending || summary.quarantined || summary.unbalanced
-        ? 'Import requires reconciliation'
-        : 'Import batch reconciled';
+    if (summary.mode === 'apps-script') {
+      const noun = type === 'RECEIPT' ? 'cash receipts' : 'payments';
+      title.textContent = '✔ Imported ' + summary.imported + ' ' + noun;
+    } else {
+      title.textContent =
+        summary.pending || summary.quarantined || summary.unbalanced
+          ? 'Import requires reconciliation'
+          : 'Import batch reconciled';
+    }
     panel.appendChild(title);
 
     const counts = document.createElement('p');
-    counts.textContent =
-      summary.imported +
-      ' imported · ' +
-      summary.replayed +
-      ' replayed · ' +
-      summary.quarantined +
-      ' quarantined · ' +
-      summary.pending +
-      ' pending';
+    if (summary.mode === 'apps-script') {
+      counts.textContent =
+        summary.replayed +
+        ' row(s) safely skipped because the same ClientID was already saved.';
+    } else {
+      counts.textContent =
+        summary.imported +
+        ' imported · ' +
+        summary.replayed +
+        ' replayed · ' +
+        summary.quarantined +
+        ' quarantined · ' +
+        summary.pending +
+        ' pending';
+    }
     panel.appendChild(counts);
 
-    const totals = document.createElement('p');
-    totals.className = 'muted';
-    totals.textContent =
-      'Source total ₹' +
-      (summary.sourceTotalPaise / 100).toFixed(2) +
-      ' · imported ₹' +
-      (summary.importedTotalPaise / 100).toFixed(2) +
-      ' · quarantined ₹' +
-      (summary.quarantinedTotalPaise / 100).toFixed(2) +
-      ' · pending ₹' +
-      (summary.pendingTotalPaise / 100).toFixed(2) +
-      ' · variance ₹' +
-      (summary.variancePaise / 100).toFixed(2);
-    panel.appendChild(totals);
+    if (summary.mode === 'apps-script' && summary.pendingApprovalCount > 0) {
+      const pending = document.createElement('p');
+      pending.textContent =
+        summary.pendingApprovalCount +
+        ' payment(s) need owner/manager approval. They are excluded from approved totals and Daily Cash Close until approved by someone other than the creator.';
+      panel.appendChild(pending);
+    }
 
-    const batch = document.createElement('p');
-    batch.className = 'muted';
-    batch.textContent =
-      'Batch ID: ' +
-      summary.batchIds.join(', ') +
-      '. Re-submit the same file with the same SourceIDs to resume uncertain rows safely.';
-    panel.appendChild(batch);
+    if (summary.mode !== 'apps-script') {
+      const totals = document.createElement('p');
+      totals.className = 'muted';
+      totals.textContent =
+        'Source total ₹' +
+        (summary.sourceTotalPaise / 100).toFixed(2) +
+        ' · imported ₹' +
+        (summary.importedTotalPaise / 100).toFixed(2) +
+        ' · quarantined ₹' +
+        (summary.quarantinedTotalPaise / 100).toFixed(2) +
+        ' · pending ₹' +
+        (summary.pendingTotalPaise / 100).toFixed(2) +
+        ' · variance ₹' +
+        (summary.variancePaise / 100).toFixed(2);
+      panel.appendChild(totals);
+
+      const batch = document.createElement('p');
+      batch.className = 'muted';
+      batch.textContent =
+        'Batch ID: ' +
+        summary.batchIds.join(', ') +
+        '. Re-submit the same file with the same SourceIDs to resume uncertain rows safely.';
+      panel.appendChild(batch);
+    }
 
     if (summary.quarantinedRows.length || summary.pendingRows.length) {
       const heading = document.createElement('h3');
@@ -549,8 +570,10 @@ export function createBulk({ api, refresh, go }) {
     if (!ready.length) return;
 
     const summary = {
+      mode: null,
       imported: 0,
       replayed: 0,
+      pendingApprovalCount: 0,
       quarantined: 0,
       pending: 0,
       sourceTotalPaise: 0,
@@ -594,40 +617,89 @@ export function createBulk({ api, refresh, go }) {
             sourceSystem,
             entries: chunk,
           });
-          const reconciliation = data.reconciliation;
-          summary.batchIds.push(data.batchId);
-          summary.imported += reconciliation.importedCount;
-          summary.replayed += reconciliation.replayedCount;
-          summary.quarantined += reconciliation.quarantinedCount;
-          summary.pending += reconciliation.pendingCount;
-          summary.sourceTotalPaise += reconciliation.sourceTotalPaise;
-          summary.importedTotalPaise += reconciliation.importedTotalPaise;
-          summary.quarantinedTotalPaise += reconciliation.quarantinedTotalPaise;
-          summary.pendingTotalPaise += reconciliation.pendingTotalPaise;
-          summary.variancePaise += reconciliation.variancePaise;
-          summary.unbalanced =
-            summary.unbalanced ||
-            reconciliation.balanced !== true ||
-            reconciliation.unpricedCount > 0;
+          const isShadowResult =
+            data &&
+            typeof data === 'object' &&
+            data.reconciliation &&
+            Array.isArray(data.rows) &&
+            Array.isArray(data.created);
+          const isAppsScriptResult =
+            data &&
+            typeof data === 'object' &&
+            Array.isArray(data.created) &&
+            Number.isSafeInteger(data.skipped) &&
+            data.skipped >= 0 &&
+            data.skipped <= data.created.length;
+          const mode = isShadowResult ? 'laravel-shadow' : isAppsScriptResult ? 'apps-script' : null;
+          if (!mode || (summary.mode !== null && summary.mode !== mode)) {
+            throw new Error(
+              'The bulk import response does not match the active transport. No success was assumed; retry the same SourceIDs after checking the server.',
+            );
+          }
+          summary.mode = mode;
 
-          data.created.forEach((created) => {
-            if (!S.vouchers.find((voucher) => voucher.id === created.id)) {
-              S.vouchers.push(created);
+          if (mode === 'laravel-shadow') {
+            const reconciliation = data.reconciliation;
+            if (
+              data.rows.length !== chunkRows.length ||
+              data.created.length !== reconciliation.importedCount + reconciliation.replayedCount ||
+              !Number.isSafeInteger(reconciliation.rowCount) ||
+              reconciliation.rowCount !== chunkRows.length ||
+              !Number.isSafeInteger(reconciliation.variancePaise) ||
+              typeof reconciliation.balanced !== 'boolean'
+            ) {
+              throw new Error(
+                'The Laravel import response failed reconciliation checks. Retry the same SourceIDs; do not create a new import.',
+              );
             }
-          });
-          data.rows.forEach((row) => {
-            if (row.status === 'QUARANTINED') summary.quarantinedRows.push(row);
-            if (row.status === 'PENDING') summary.pendingRows.push(row);
-          });
+            summary.batchIds.push(data.batchId);
+            summary.imported += reconciliation.importedCount;
+            summary.replayed += reconciliation.replayedCount;
+            summary.quarantined += reconciliation.quarantinedCount;
+            summary.pending += reconciliation.pendingCount;
+            summary.sourceTotalPaise += reconciliation.sourceTotalPaise;
+            summary.importedTotalPaise += reconciliation.importedTotalPaise;
+            summary.quarantinedTotalPaise += reconciliation.quarantinedTotalPaise;
+            summary.pendingTotalPaise += reconciliation.pendingTotalPaise;
+            summary.variancePaise += reconciliation.variancePaise;
+            summary.unbalanced =
+              summary.unbalanced ||
+              reconciliation.balanced !== true ||
+              reconciliation.unpricedCount > 0;
 
-          $('#bprog').textContent =
-            'Processed ' +
-            Math.min(index + chunkRows.length, ready.length) +
-            ' of ' +
-            ready.length +
-            ' rows; reconciliation status: ' +
-            data.status +
-            '.';
+            data.rows.forEach((row) => {
+              if (row.status === 'QUARANTINED') summary.quarantinedRows.push(row);
+              if (row.status === 'PENDING') summary.pendingRows.push(row);
+            });
+            $('#bprog').textContent =
+              'Processed ' +
+              Math.min(index + chunkRows.length, ready.length) +
+              ' of ' +
+              ready.length +
+              ' rows; reconciliation status: ' +
+              data.status +
+              '.';
+          } else {
+            if (data.created.length !== chunkRows.length) {
+              throw new Error(
+                'The Apps Script import response did not confirm every submitted row. Retry using the same SourceIDs.',
+              );
+            }
+            summary.imported += data.created.length - data.skipped;
+            summary.replayed += data.skipped;
+            data.created.forEach((created) => {
+              if (created.approvalStatus === 'PENDING') summary.pendingApprovalCount++;
+              if (!S.vouchers.find((voucher) => voucher.id === created.id)) {
+                S.vouchers.push(created);
+              }
+            });
+            $('#bprog').textContent =
+              'Imported or safely replayed ' +
+              Math.min(index + chunkRows.length, ready.length) +
+              ' of ' +
+              ready.length +
+              ' rows…';
+          }
         }
 
         await refresh(true);
