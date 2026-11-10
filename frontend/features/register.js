@@ -14,7 +14,7 @@ import {
   S,
 } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
-import { createAuditReconciliationCsv } from '../core/audit-export.js';
+import { createStructuredVoucherAuditCsv } from '../core/audit-export.js';
 import {
   addDays,
   compress,
