@@ -171,6 +171,12 @@ function mapDailyOperations(preview) {
 }
 
 
+function isCalendarDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(value + 'T00:00:00.000Z');
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 function mapCashCloseVoucher(item, label = 'cash-close voucher') {
   if (!item || typeof item !== 'object' || Array.isArray(item)) {
     throw failure('The Laravel cash-close API returned an invalid voucher.', 'API_RESPONSE_INVALID');
@@ -1239,7 +1245,6 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       }
 
       case 'recordedMovementReport': {
-        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
         const from = typeof payload.from === 'string' ? payload.from : '';
         const to = typeof payload.to === 'string' ? payload.to : '';
         const type = payload.type ?? 'ALL';
@@ -1248,8 +1253,8 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const offset = payload.offset ?? 0;
         const limit = payload.limit ?? 200;
         if (
-          !datePattern.test(from) ||
-          !datePattern.test(to) ||
+          !isCalendarDate(from) ||
+          !isCalendarDate(to) ||
           from > to ||
           !['ALL', 'PAYMENT', 'RECEIPT'].includes(type) ||
           !['ALL', 'ACTIVE', 'CANCELLED'].includes(status) ||
@@ -1353,7 +1358,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const openingCash = payload.openingCash;
         const openingReason = payload.openingReason ?? '';
         if (
-          (date !== undefined && (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date))) ||
+          (date !== undefined && !isCalendarDate(date)) ||
           (openingCash !== undefined &&
             openingCash !== '' &&
             (typeof openingCash !== 'string' ||
@@ -1389,7 +1394,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           /^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(value) &&
           Number(value) <= 10_000_000;
         if (
-          !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+          !isCalendarDate(date) ||
           !validAmount(countedCash) ||
           (openingCash !== '' && !validAmount(openingCash)) ||
           openingCash === null ||
@@ -2067,7 +2072,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           const vendorId = entry?.vendorId ?? null;
 
           if (
-            !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+            !isCalendarDate(date) ||
             !vendor ||
             vendor.length > 200 ||
             !/^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(amount) ||
