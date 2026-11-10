@@ -417,7 +417,7 @@ final class VoucherImportService
 
         $sourceLegacyId = $row['sourceLegacyId'];
         $prior = $pdo->prepare(
-            "SELECT row_sha256, voucher_id
+            "SELECT row_sha256, voucher_id, imported_amount_paise
              FROM voucher_import_rows
              WHERE source_legacy_id = :source_id
                AND batch_id <> :batch_id
@@ -429,7 +429,20 @@ final class VoucherImportService
         $priorRow = $prior->fetch(PDO::FETCH_ASSOC);
         if (is_array($priorRow)) {
             if (hash_equals((string) $priorRow['row_sha256'], $row['rowHash'])) {
-                $this->markReplayed($pdo, $rowId, (string) $priorRow['voucher_id']);
+                $importedAmountPaise = $priorRow['imported_amount_paise'] === null
+                    ? $this->voucherAmountPaise($pdo, (string) $priorRow['voucher_id'])
+                    : (int) $priorRow['imported_amount_paise'];
+                if ($importedAmountPaise === null) {
+                    $this->quarantine(
+                        $pdo,
+                        $rowId,
+                        'IMPORTED_VOUCHER_AMOUNT_UNAVAILABLE',
+                        'The previously imported voucher no longer has a verifiable amount. Reconcile the voucher ledger before replaying this source ID.',
+                    );
+
+                    return;
+                }
+                $this->markReplayed($pdo, $rowId, (string) $priorRow['voucher_id'], $importedAmountPaise);
 
                 return;
             }
@@ -462,15 +475,23 @@ final class VoucherImportService
                 $idempotencyKey,
             );
             $status = $result['replayed'] ? 'REPLAYED' : 'IMPORTED';
+            $importedAmountPaise = $result['data']['amountPaise'] ?? null;
+            if (! is_int($importedAmountPaise) || $importedAmountPaise < 1) {
+                throw new \\RuntimeException(
+                    'The voucher write completed without a verifiable persisted paise amount.',
+                );
+            }
             $update = $pdo->prepare(
                 'UPDATE voucher_import_rows
                  SET status = :status, voucher_id = :voucher_id,
+                     imported_amount_paise = :imported_amount,
                      error_code = NULL, error_message = NULL, updated_at_utc = UTC_TIMESTAMP(6)
                  WHERE id = :id'
             );
             $update->execute([
                 'status' => $status,
                 'voucher_id' => $result['data']['id'],
+                'imported_amount' => $importedAmountPaise,
                 'id' => $rowId,
             ]);
         } catch (ApiException $exception) {
@@ -492,15 +513,33 @@ final class VoucherImportService
         }
     }
 
-    private function markReplayed(PDO $pdo, string $rowId, string $voucherId): void
-    {
+    private function markReplayed(
+        PDO $pdo,
+        string $rowId,
+        string $voucherId,
+        int $importedAmountPaise,
+    ): void {
         $update = $pdo->prepare(
             "UPDATE voucher_import_rows
              SET status = 'REPLAYED', voucher_id = :voucher_id,
+                 imported_amount_paise = :imported_amount,
                  error_code = NULL, error_message = NULL, updated_at_utc = UTC_TIMESTAMP(6)
              WHERE id = :id"
         );
-        $update->execute(['voucher_id' => $voucherId, 'id' => $rowId]);
+        $update->execute([
+            'voucher_id' => $voucherId,
+            'imported_amount' => $importedAmountPaise,
+            'id' => $rowId,
+        ]);
+    }
+
+    private function voucherAmountPaise(PDO $pdo, string $voucherId): ?int
+    {
+        $query = $pdo->prepare('SELECT amount_paise FROM vouchers WHERE id = :id LIMIT 1');
+        $query->execute(['id' => $voucherId]);
+        $amount = $query->fetchColumn();
+
+        return $amount === false ? null : (int) $amount;
     }
 
     /**
@@ -569,7 +608,7 @@ final class VoucherImportService
             && (string) $existing['status'] === 'ACTIVE';
 
         if ($matches) {
-            $this->markReplayed($pdo, $rowId, (string) $existing['id']);
+            $this->markReplayed($pdo, $rowId, (string) $existing['id'], (int) $existing['amount_paise']);
 
             return true;
         }
@@ -612,7 +651,7 @@ final class VoucherImportService
     ): array {
         $rowsQuery = $pdo->prepare(
             'SELECT source_row_number, source_record_id, status, voucher_id,
-                    source_amount_paise, error_code, error_message
+                    source_amount_paise, imported_amount_paise, error_code, error_message
              FROM voucher_import_rows
              WHERE batch_id = :batch_id
              ORDER BY source_row_number ASC'
@@ -638,12 +677,35 @@ final class VoucherImportService
                 $unpricedCount++;
             }
             $status = (string) $row['status'];
-            if ($status === 'IMPORTED') {
-                $importedCount++;
-                $importedTotal += $amount;
-            } elseif ($status === 'REPLAYED') {
-                $replayedCount++;
-                $importedTotal += $amount;
+            $importedAmountPaise = $row['imported_amount_paise'] === null
+                ? null
+                : (int) $row['imported_amount_paise'];
+            if (in_array($status, ['IMPORTED', 'REPLAYED'], true)) {
+                if ($status === 'IMPORTED') {
+                    $importedCount++;
+                } else {
+                    $replayedCount++;
+                }
+                if ($importedAmountPaise === null && $row['voucher_id'] !== null) {
+                    $importedAmountPaise = $this->voucherAmountPaise($pdo, (string) $row['voucher_id']);
+                    if ($importedAmountPaise !== null) {
+                        $repair = $pdo->prepare(
+                            'UPDATE voucher_import_rows
+                             SET imported_amount_paise = :amount, updated_at_utc = UTC_TIMESTAMP(6)
+                             WHERE voucher_id = :voucher_id AND imported_amount_paise IS NULL'
+                        );
+                        $repair->execute([
+                            'amount' => $importedAmountPaise,
+                            'voucher_id' => $row['voucher_id'],
+                        ]);
+                    }
+                }
+                if ($importedAmountPaise === null || $importedAmountPaise < 1) {
+                    $unpricedCount++;
+                    $importedAmountPaise = null;
+                } else {
+                    $importedTotal += $importedAmountPaise;
+                }
             } elseif ($status === 'QUARANTINED') {
                 $quarantinedCount++;
                 $quarantinedTotal += $amount;
@@ -658,6 +720,7 @@ final class VoucherImportService
                 'status' => $status,
                 'voucherId' => $row['voucher_id'] === null ? null : (string) $row['voucher_id'],
                 'sourceAmountPaise' => $row['source_amount_paise'] === null ? null : (int) $row['source_amount_paise'],
+                'importedAmountPaise' => $importedAmountPaise,
                 'errorCode' => $row['error_code'] === null ? null : (string) $row['error_code'],
                 'errorMessage' => $row['error_message'] === null ? null : (string) $row['error_message'],
             ];
@@ -672,7 +735,11 @@ final class VoucherImportService
         $variance = $sourceTotal - $importedTotal - $quarantinedTotal - $pendingTotal;
         $status = $pendingCount > 0
             ? 'PROCESSING'
-            : ($quarantinedCount > 0 || $unpricedCount > 0 ? 'RECONCILIATION_REQUIRED' : 'COMPLETED');
+            : (
+                $quarantinedCount > 0 || $unpricedCount > 0 || $variance !== 0
+                    ? 'RECONCILIATION_REQUIRED'
+                    : 'COMPLETED'
+            );
 
         $pdo->beginTransaction();
         try {
