@@ -181,6 +181,10 @@ assert.ok(
   createVoucherContract.laravelResponseFields.includes('rows[].rowNumber'),
   'createVouchers must document the original source-row number returned in reconciliation',
 );
+assert.ok(
+  createVoucherContract.laravelResponseFields.includes('rows[].importedAmountPaise'),
+  'createVouchers must document the independently persisted imported paise snapshot',
+);
 
 for (const field of [
   'sourceSystem',
