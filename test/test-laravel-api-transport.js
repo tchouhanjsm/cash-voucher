@@ -209,7 +209,7 @@ async function run() {
         },
       });
     }
-    if (String(url).endsWith('/reports/recorded-movements')) {
+    if (new URL(String(url)).pathname.endsWith('/reports/recorded-movements')) {
       const parsed = new URL(String(url));
       const offset = Number(parsed.searchParams.get('offset') || 0);
       const limit = Number(parsed.searchParams.get('limit') || 200);
@@ -289,7 +289,7 @@ async function run() {
         },
       });
     }
-    if (String(url).endsWith('/cash-closes/preview')) {
+    if (new URL(String(url)).pathname.endsWith('/cash-closes/preview')) {
       return jsonResponse({
         ok: true,
         data: {
