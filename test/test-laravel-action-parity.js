@@ -119,6 +119,17 @@ for (const action of ['saveUser', 'resetPassword', 'saveSettings']) {
   assert.equal(actionMap.actions[action].clientState, 'implemented');
   assert.equal(actionMap.actions[action].serverState, 'implemented');
 }
+
+for (const action of [
+  'recordedMovementReport',
+  'cashClosePreview',
+  'createCashClose',
+  'recordCashCloseCorrection',
+]) {
+  assert.equal(actionMap.actions[action].state, 'implemented', action + ' must be fully mapped');
+  assert.equal(actionMap.actions[action].clientState, 'implemented');
+  assert.equal(actionMap.actions[action].serverState, 'implemented');
+}
 assert.match(adapterSource, /stableIdempotencyKey\('user-save'/);
 assert.match(adapterSource, /stableIdempotencyKey\('user-reset'/);
 assert.match(adapterSource, /stableIdempotencyKey\('settings-save'/);
