@@ -288,6 +288,22 @@ final class VoucherImportApiTest extends TestCase
                 'Invalid source row positions must fail before an import batch is written.',
             );
         }
+        $duplicateBatchId = 'duplicate-source-row-'.bin2hex(random_bytes(5));
+        $first = $this->row('duplicate-row-source-a-'.bin2hex(random_bytes(3)));
+        $first['sourceRowNumber'] = 55;
+        $second = $this->row('duplicate-row-source-b-'.bin2hex(random_bytes(3)));
+        $second['sourceRowNumber'] = 55;
+        $manager->postJson(
+            '/api/v1/imports/vouchers',
+            $this->manifest($duplicateBatchId, [$first, $second]),
+            ['Idempotency-Key' => $duplicateBatchId],
+        )->assertUnprocessable()
+            ->assertJsonPath('error.code', 'IMPORT_ROW_NUMBER_DUPLICATE');
+        self::assertSame(
+            0,
+            DB::table('voucher_import_batches')->where('source_batch_id', $duplicateBatchId)->count(),
+            'Duplicate source row positions must be rejected before batch persistence.',
+        );
     }
 
     public function test_duplicate_source_ids_in_one_manifest_fail_before_batch_creation(): void
