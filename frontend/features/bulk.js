@@ -228,7 +228,7 @@ export function createBulk({ api, refresh, go }) {
       const errors = [];
       const warnings = [];
 
-      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(sourceRecordId))
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,54}$/.test(sourceRecordId))
         errors.push('missing or invalid SourceID');
       else if (seenSourceIds.has(sourceRecordId)) errors.push('duplicate SourceID in file');
       else seenSourceIds.add(sourceRecordId);
@@ -385,7 +385,7 @@ export function createBulk({ api, refresh, go }) {
         .toUpperCase();
       const cashImpact = requestedImpact || suggestCashImpact(rowType, category);
       if (
-        /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(sourceRecordId) &&
+        /^[A-Za-z0-9][A-Za-z0-9._:-]{0,54}$/.test(sourceRecordId) &&
         date &&
         vendor &&
         amount > 0 &&
