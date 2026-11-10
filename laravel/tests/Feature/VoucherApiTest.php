@@ -51,6 +51,9 @@ final class VoucherApiTest extends TestCase
         $legacyDefaultsId = $this->insertVoucherFixture($this->userId, 'Legacy Defaults Supplier', 8000);
         $unknownApprovalId = $this->insertVoucherFixture($this->userId, 'Unknown Approval Supplier', 9000);
         $malformedId = $this->insertVoucherFixture($otherUser, 'Malformed Hidden Supplier', 1000);
+        $malformedTypeId = $this->insertVoucherFixture($otherUser, 'Lowercase Type Supplier', 1500);
+        $malformedStatusId = $this->insertVoucherFixture($otherUser, 'Lowercase Status Supplier', 2000);
+        $lowercaseEnumId = $this->insertVoucherFixture($this->userId, 'Lowercase Enum Supplier', 7000);
 
         DB::table('vouchers')->where('id', $legacyDefaultsId)->update([
             'voucher_type' => 'PAYMENT',
@@ -65,6 +68,21 @@ final class VoucherApiTest extends TestCase
         ]);
         DB::table('vouchers')->where('id', $malformedId)->update([
             'voucher_type' => 'BROKEN',
+        ]);
+        DB::table('vouchers')->where('id', $malformedTypeId)->update([
+            'voucher_type' => 'payment',
+        ]);
+        DB::table('vouchers')->where('id', $malformedStatusId)->update([
+            'status' => 'active',
+        ]);
+        DB::table('vouchers')->where('id', $lowercaseEnumId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '507',
+            'category' => 'Other',
+            'notes' => 'Lowercase enum preservation',
+            'cash_impact' => 'cash_out',
+            'approval_status' => 'approved',
+            'payment_method' => 'cash',
         ]);
         DB::table('vouchers')->where('id', $paymentId)->update([
             'voucher_type' => 'PAYMENT',
@@ -115,14 +133,14 @@ final class VoucherApiTest extends TestCase
             'limit' => 2,
         ]));
         $all->assertOk()
-            ->assertJsonPath('data.totalCount', 6)
+            ->assertJsonPath('data.totalCount', 7)
             ->assertJsonPath('data.limit', 2)
             ->assertJsonPath('data.hasMore', true)
             ->assertJsonPath('data.totals.paid', '205.50')
             ->assertJsonPath('data.totals.received', '45.00')
-            ->assertJsonPath('data.totals.approvalExceptionCount', 2)
+            ->assertJsonPath('data.totals.approvalExceptionCount', 3)
             ->assertJsonPath('data.totals.invalidAmountCount', 1)
-            ->assertJsonPath('data.totals.malformedRecordCount', 1)
+            ->assertJsonPath('data.totals.malformedRecordCount', 3)
             ->assertJsonPath('data.totals.malformedFieldCount', 0);
 
         $visibleVendors = $all->json('data.facets.vendors');
@@ -131,16 +149,19 @@ final class VoucherApiTest extends TestCase
             'Acme Steel',
             'Cancelled Supplier',
             'Legacy Defaults Supplier',
+            'Lowercase Enum Supplier',
             'Pending Supplier',
             'Unknown Approval Supplier',
         ] as $vendor) {
             self::assertContains($vendor, $visibleVendors);
         }
-        self::assertNotContains(
-            'Malformed Hidden Supplier',
-            $visibleVendors,
-            'Malformed records must not pollute Register filter facets.',
-        );
+        foreach (['Malformed Hidden Supplier', 'Lowercase Type Supplier', 'Lowercase Status Supplier'] as $vendor) {
+            self::assertNotContains(
+                $vendor,
+                $visibleVendors,
+                'Malformed records must not pollute Register filter facets.',
+            );
+        }
         $visibleUsers = $all->json('data.facets.users');
         self::assertContains($managerEmail, $visibleUsers);
         self::assertContains($otherEmail, $visibleUsers);
@@ -154,7 +175,7 @@ final class VoucherApiTest extends TestCase
         ]));
         $exportPage->assertOk()
             ->assertJsonPath('data.limit', 200)
-            ->assertJsonPath('data.totalCount', 6)
+            ->assertJsonPath('data.totalCount', 7)
             ->assertJsonPath('data.hasMore', false);
 
         $searchByReceiptNumber = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
@@ -217,7 +238,9 @@ final class VoucherApiTest extends TestCase
             'to' => $this->businessDate,
         ]));
         $unfilteredPaymentMethod->assertOk()
-            ->assertJsonPath('data.totalCount', 0);
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $lowercaseEnumId)
+            ->assertJsonPath('data.items.0.approvalStatus', 'REVIEW_REQUIRED');
 
         $legacyDefaultState = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
             'vendor' => 'Legacy Defaults Supplier',
@@ -247,6 +270,51 @@ final class VoucherApiTest extends TestCase
             ->assertJsonPath('data.items.0.approvalStatus', 'REVIEW_REQUIRED')
             ->assertJsonPath('data.totals.paid', '0.00')
             ->assertJsonPath('data.totals.approvalExceptionCount', 1);
+
+        $lowercaseEnums = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Lowercase Enum Supplier',
+            'approval' => 'REVIEW_REQUIRED',
+            'paymentMethod' => 'UNRECOGNIZED',
+            'cashImpact' => 'UNCLASSIFIED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $lowercaseEnums->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $lowercaseEnumId)
+            ->assertJsonPath('data.items.0.approvalStatus', 'REVIEW_REQUIRED')
+            ->assertJsonPath('data.totals.paid', '0.00')
+            ->assertJsonPath('data.totals.approvalExceptionCount', 1);
+
+        $caseSensitiveVendor = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'acme steel',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $caseSensitiveVendor->assertOk()->assertJsonPath('data.totalCount', 0);
+
+        $caseSensitiveCategory = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'cat' => 'travel',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $caseSensitiveCategory->assertOk()->assertJsonPath('data.totalCount', 0);
+
+        $caseSensitivePaymentMethod = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Lowercase Enum Supplier',
+            'paymentMethod' => 'CASH',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $caseSensitivePaymentMethod->assertOk()->assertJsonPath('data.totalCount', 0);
+
+        $caseSensitiveApproval = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Lowercase Enum Supplier',
+            'approval' => 'APPROVED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $caseSensitiveApproval->assertOk()->assertJsonPath('data.totalCount', 0);
 
         $invalidFilter = $this->withLegacySession()->getJson('/api/v1/vouchers?approval=WAITING');
         $invalidFilter->assertUnprocessable()
