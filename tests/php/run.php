@@ -182,7 +182,7 @@ check(
     'the PHP foundation retains its explicit implemented-action boundary separately from Laravel-shadow parity'
 );
 check(
-    ($actionMap['actions']['login']['state'] ?? null) === 'implemented'
+    in_array('login', $foundationActions, true)
     && ($actionMap['actions']['logout']['state'] ?? null) === 'implemented'
     && ($actionMap['actions']['changePassword']['state'] ?? null) === 'implemented',
     'the three shipped legacy authentication actions are explicitly tracked as implemented'
