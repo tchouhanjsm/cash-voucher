@@ -269,6 +269,27 @@ final class VoucherImportApiTest extends TestCase
             ->assertJsonPath('error.code', 'IMPORT_BATCH_CONFLICT');
     }
 
+    public function test_invalid_original_source_row_numbers_fail_before_batch_creation(): void
+    {
+        $manager = $this->withRoleSession('manager');
+        foreach ([0, 1_000_001] as $sourceRowNumber) {
+            $batchId = 'invalid-source-row-'.bin2hex(random_bytes(5));
+            $row = $this->row('source-row-invalid-'.bin2hex(random_bytes(4)));
+            $row['sourceRowNumber'] = $sourceRowNumber;
+            $manager->postJson(
+                '/api/v1/imports/vouchers',
+                $this->manifest($batchId, [$row]),
+                ['Idempotency-Key' => $batchId],
+            )->assertUnprocessable();
+
+            self::assertSame(
+                0,
+                DB::table('voucher_import_batches')->where('source_batch_id', $batchId)->count(),
+                'Invalid source row positions must fail before an import batch is written.',
+            );
+        }
+    }
+
     public function test_duplicate_source_ids_in_one_manifest_fail_before_batch_creation(): void
     {
         $manager = $this->withRoleSession('manager');
