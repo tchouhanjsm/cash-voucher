@@ -2078,7 +2078,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
             );
           }
 
-          const mappedRows = result.rows.map((row, index) => {
+          const mappedRows = result.rows.map((row) => {
             if (
               !row ||
               typeof row !== 'object' ||
