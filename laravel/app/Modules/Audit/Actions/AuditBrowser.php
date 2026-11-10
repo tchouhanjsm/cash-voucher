@@ -23,7 +23,13 @@ final class AuditBrowser
     }
 
     /** @return array<string,mixed> */
-    public function voucherHistory(PDO $pdo, string $voucherId, mixed $limitInput, mixed $cursorInput): array
+    public function voucherHistory(
+        PDO $pdo,
+        string $voucherId,
+        mixed $limitInput,
+        mixed $cursorInput,
+        mixed $eventCategoryInput = 'ALL',
+    ): array
     {
         if (! $this->isUuid($voucherId)) {
             throw new ApiException(422, 'VOUCHER_ID_INVALID', 'The voucher identifier is invalid.');
@@ -40,15 +46,19 @@ final class AuditBrowser
 
         $limit = $this->limit($limitInput);
         $cursor = $this->decodeCursor($cursorInput);
+        $eventCategory = $this->eventCategory($eventCategoryInput);
         $page = $this->events(
             $pdo,
             'target_type = :target_type AND target_id = :target_id',
             ['target_type' => 'voucher', 'target_id' => $voucherId],
             $limit,
             $cursor,
+            $eventCategory,
         );
 
         return [
+            'source' => 'laravel-sql-audit-events',
+            'eventCategory' => $eventCategory,
             'voucher' => [
                 'id' => (string) $voucher['id'],
                 'voucherNo' => (string) $voucher['voucher_number'],
@@ -66,10 +76,30 @@ final class AuditBrowser
      * @param array{at:string,id:string}|null $cursor
      * @return array<string,mixed>
      */
-    private function events(PDO $pdo, string $where, array $baseParams, int $limit, ?array $cursor): array
+    private function events(
+        PDO $pdo,
+        string $where,
+        array $baseParams,
+        int $limit,
+        ?array $cursor,
+        string $eventCategory = 'ALL',
+    ): array
     {
         $conditions = $where === '' ? [] : [$where];
         $params = $baseParams;
+        $categoryCondition = match ($eventCategory) {
+            'CREATED' => "event_type LIKE '%CREATED'",
+            'UPDATED' => "event_type LIKE '%UPDATED'",
+            'CANCELLED' => "event_type LIKE '%CANCELLED'",
+            'APPROVED' => "event_type LIKE '%APPROVED'",
+            'REJECTED' => "event_type LIKE '%REJECTED'",
+            'RECEIPT_ATTACHED' => "event_type LIKE '%RECEIPT_ATTACHED'",
+            'OTHER' => "event_type NOT LIKE '%CREATED' AND event_type NOT LIKE '%UPDATED' AND event_type NOT LIKE '%CANCELLED' AND event_type NOT LIKE '%APPROVED' AND event_type NOT LIKE '%REJECTED' AND event_type NOT LIKE '%RECEIPT_ATTACHED'",
+            default => '',
+        };
+        if ($categoryCondition !== '') {
+            $conditions[] = $categoryCondition;
+        }
         if ($cursor !== null) {
             $conditions[] = '(occurred_at_utc < :cursor_at_before OR (occurred_at_utc = :cursor_at_equal AND id < :cursor_id))';
             $params['cursor_at_before'] = $cursor['at'];
@@ -164,6 +194,22 @@ final class AuditBrowser
         }
 
         return $result;
+    }
+
+    private function eventCategory(mixed $value): string
+    {
+        $category = $value === null || $value === '' ? 'ALL' : $value;
+        if (
+            ! is_string($category)
+            || ! in_array($category, [
+                'ALL', 'CREATED', 'UPDATED', 'CANCELLED',
+                'APPROVED', 'REJECTED', 'RECEIPT_ATTACHED', 'OTHER',
+            ], true)
+        ) {
+            throw new ApiException(422, 'AUDIT_FILTER_INVALID', 'The voucher-history event filter is invalid.');
+        }
+
+        return $category;
     }
 
     private function limit(mixed $value): int
