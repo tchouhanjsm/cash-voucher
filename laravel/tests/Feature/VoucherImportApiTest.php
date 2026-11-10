@@ -154,7 +154,10 @@ final class VoucherImportApiTest extends TestCase
             ->assertJsonPath('data.reconciliation.quarantinedCount', 1)
             ->assertJsonPath('data.rows.0.errorCode', 'CASH_CLOSE_DATE_LOCKED');
 
-        DB::table('cash_closes')->where('business_date', $this->businessDate)->delete();
+        $removeClose = $this->migrationPdo()->prepare(
+            'DELETE FROM cash_closes WHERE business_date = :business_date'
+        );
+        $removeClose->execute(['business_date' => $this->businessDate]);
 
         $owner = $this->withRoleSession('owner');
         $resumed = $owner->postJson('/api/v1/imports/vouchers', $payload, [
