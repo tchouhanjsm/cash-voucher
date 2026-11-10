@@ -39,7 +39,7 @@ function hasServerRoute(methods, routePath) {
 
 function hasAdapterAction(action) {
   const escaped = action.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp("case\\s+['\"]" + escaped + "['\"]\\s*:").test(adapterSource);
+  return new RegExp('case\\s+[\\'"]' + escaped + '[\\'"]\\s*:').test(adapterSource);
 }
 
 assert.equal(actionMap.schemaVersion, 2, 'action map v2 must declare split server/client coverage');
@@ -60,7 +60,11 @@ for (const [name, entry] of Object.entries(actionMap.actions)) {
       : entry.serverState !== 'planned' || entry.clientState !== 'planned'
         ? 'partial'
         : 'planned';
-  assert.equal(entry.state, expectedState, name + ' aggregate state must match server/client states');
+  assert.equal(
+    entry.state,
+    expectedState,
+    name + ' aggregate state must match server/client states',
+  );
 
   if (entry.serverState === 'implemented') {
     assert.ok(
@@ -76,7 +80,11 @@ for (const [name, entry] of Object.entries(actionMap.actions)) {
       name + ' claims client coverage but its adapter action is missing: ' + entry.adapterAction,
     );
   } else {
-    assert.equal(entry.adapterAction, null, name + ' must not name an unimplemented adapter action');
+    assert.equal(
+      entry.adapterAction,
+      null,
+      name + ' must not name an unimplemented adapter action',
+    );
   }
 
   if (entry.state === 'implemented') implemented++;
@@ -114,7 +122,10 @@ assert.equal(
   'daily operations preview must map to the registered cash-close preview route',
 );
 const shadowResources = actionMap.shadowResources || {};
-assert.ok(shadowResources.entrySuggestions, 'Laravel-only entry suggestions must be inventoried separately');
+assert.ok(
+  shadowResources.entrySuggestions,
+  'Laravel-only entry suggestions must be inventoried separately',
+);
 for (const [name, entry] of Object.entries(shadowResources)) {
   assert.ok(STATES.has(entry.serverState), name + ' shadow resource must declare serverState');
   assert.ok(STATES.has(entry.clientState), name + ' shadow resource must declare clientState');
@@ -125,20 +136,34 @@ for (const [name, entry] of Object.entries(shadowResources)) {
       : entry.serverState !== 'planned' || entry.clientState !== 'planned'
         ? 'partial'
         : 'planned';
-  assert.equal(entry.state, expectedState, name + ' shadow resource aggregate state must match coverage');
+  assert.equal(
+    entry.state,
+    expectedState,
+    name + ' shadow resource aggregate state must match coverage',
+  );
   if (entry.serverState === 'implemented') {
-    assert.ok(hasServerRoute(entry.method, entry.path), name + ' shadow resource route must exist');
+    assert.ok(
+      hasServerRoute(entry.method, entry.path),
+      name + ' shadow resource route must exist',
+    );
   }
   if (entry.clientState === 'implemented' || entry.clientState === 'partial') {
     assert.equal(typeof entry.adapterAction, 'string');
-    assert.ok(hasAdapterAction(entry.adapterAction), name + ' shadow resource adapter case must exist');
+    assert.ok(
+      hasAdapterAction(entry.adapterAction),
+      name + ' shadow resource adapter case must exist',
+    );
   } else {
     assert.equal(entry.adapterAction, null);
   }
 }
 
 for (const action of ['saveUser', 'resetPassword', 'saveSettings']) {
-  assert.equal(actionMap.actions[action].state, 'implemented', action + ' must be end-to-end mapped');
+  assert.equal(
+    actionMap.actions[action].state,
+    'implemented',
+    action + ' must be end-to-end mapped',
+  );
   assert.equal(actionMap.actions[action].clientState, 'implemented');
   assert.equal(actionMap.actions[action].serverState, 'implemented');
 }
@@ -156,7 +181,6 @@ for (const action of [
 assert.match(adapterSource, /stableIdempotencyKey\('user-save'/);
 assert.match(adapterSource, /stableIdempotencyKey\('user-reset'/);
 assert.match(adapterSource, /stableIdempotencyKey\('settings-save'/);
-
 
 console.log(
   'Laravel operation parity OK — ' +
