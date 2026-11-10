@@ -16,6 +16,8 @@ export function createCashClose({ api }) {
   let currentDate = businessDate();
   let pendingRequestId = '';
   let pendingRequestSignature = '';
+  let pendingCorrectionRequestId = '';
+  let pendingCorrectionSignature = '';
 
   function metric(label, value) {
     return (
@@ -783,12 +785,24 @@ export function createCashClose({ api }) {
       details: $('#cc-corr-details')?.value || '',
       reason: $('#cc-corr-reason')?.value || '',
     };
+    const signature = JSON.stringify(payload);
+    if (!pendingCorrectionRequestId || pendingCorrectionSignature !== signature) {
+      pendingCorrectionRequestId = uid();
+      pendingCorrectionSignature = signature;
+    }
+    payload.requestId = pendingCorrectionRequestId;
     await busy(button, async () => {
       try {
         await api('recordCashCloseCorrection', payload);
+        pendingCorrectionRequestId = '';
+        pendingCorrectionSignature = '';
         toast('Attributed correction note recorded; original close unchanged.', 'ok');
         await preview(data.date);
       } catch (error) {
+        if (error.code !== 'NET' && error.code !== 'BAD') {
+          pendingCorrectionRequestId = '';
+          pendingCorrectionSignature = '';
+        }
         fail(error);
       }
     });
