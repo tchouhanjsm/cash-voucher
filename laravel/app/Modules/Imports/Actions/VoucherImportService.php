@@ -477,7 +477,7 @@ final class VoucherImportService
             $status = $result['replayed'] ? 'REPLAYED' : 'IMPORTED';
             $importedAmountPaise = $result['data']['amountPaise'] ?? null;
             if (! is_int($importedAmountPaise) || $importedAmountPaise < 1) {
-                throw new \\RuntimeException(
+                throw new \RuntimeException(
                     'The voucher write completed without a verifiable persisted paise amount.',
                 );
             }
