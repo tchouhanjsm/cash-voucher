@@ -171,7 +171,10 @@ $mappedActions = array_keys($actionMap['actions'] ?? []);
 sort($registeredActions);
 sort($mappedActions);
 check($registeredActions === array_values(array_diff($mappedActions, ['login'])), 'every registered Apps Script action has a versioned API contract mapping');
-check(isset($actionMap['actions']['login']), 'the special public login action is mapped separately');
+check(
+    in_array('login', $actionMap['phpFoundation']['implementedActions'] ?? [], true),
+    'the special public login action remains explicitly mapped in the PHP foundation inventory'
+);
 $foundationActions = $actionMap['phpFoundation']['implementedActions'] ?? [];
 sort($foundationActions);
 check(
