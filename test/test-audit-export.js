@@ -3,7 +3,7 @@
 const assert = require('node:assert/strict');
 
 async function run() {
-  const { createAuditReconciliationCsv } = await import('../frontend/core/audit-export.js');
+  const { createAuditReconciliationCsv, createStructuredVoucherAuditCsv } = await import('../frontend/core/audit-export.js');
   const validScan = {
     eventCategory: 'ALL',
     scannedRows: 10,
@@ -145,8 +145,66 @@ async function run() {
     integrityFindings: { items: [], truncated: false },
   };
   assert.match(createAuditReconciliationCsv([emptyScan]), /"SCAN_SUMMARY"/);
+  const structuredVoucher = {
+    id: '22222222-2222-4222-8222-222222222222',
+    voucherNo: '81001',
+    date: '2026-11-10',
+    vendor: 'Structured Supplier',
+  };
+  const structuredEvents = [
+    {
+      id: '33333333-3333-4333-8333-333333333333',
+      actorUserId: '44444444-4444-4444-8444-444444444444',
+      actorEmail: 'owner@example.invalid',
+      eventType: 'VOUCHER_UPDATED',
+      targetType: 'voucher',
+      targetId: structuredVoucher.id,
+      before: { vendor: 'Old supplier', sessionToken: '[REDACTED]' },
+      after: { vendor: '=HYPERLINK("https://example.invalid","safe")' },
+      reason: 'Corrected vendor name',
+      occurredAtUtc: '2026-11-10 06:30:00.123456',
+    },
+  ];
+  const structuredCsv = createStructuredVoucherAuditCsv(
+    {
+      voucher: structuredVoucher,
+      eventCategory: 'ALL',
+      events: structuredEvents,
+      hasMore: true,
+    },
+    '2026-11-10T06:31:00.000Z',
+  );
+  assert.ok(structuredCsv.startsWith('\\uFEFF'));
+  assert.match(structuredCsv, /"sourceSystem","sourceScope","voucherId"/);
+  assert.match(structuredCsv, /"laravel-sql-audit_events","voucher_id"/);
+  assert.match(structuredCsv, /"COVERAGE"/);
+  assert.match(structuredCsv, /"not a point-in-time snapshot"/);
+  assert.match(structuredCsv, /"VOUCHER_UPDATED"/);
+  assert.match(structuredCsv, /"'=HYPERLINK/);
+  assert.doesNotMatch(structuredCsv, /sessionToken/);
+  assert.throws(
+    () =>
+      createStructuredVoucherAuditCsv(
+        {
+          voucher: structuredVoucher,
+          eventCategory: 'ALL',
+          events: [{ ...structuredEvents[0], targetId: '55555555-5555-4555-8555-555555555555' }],
+          hasMore: false,
+        },
+        '2026-11-10T06:31:00.000Z',
+      ),
+    /invalid or out-of-scope event/,
+  );
+  assert.throws(
+    () =>
+      createStructuredVoucherAuditCsv(
+        { voucher: structuredVoucher, eventCategory: 'ALL', events: structuredEvents, hasMore: 'unknown' },
+        '2026-11-10T06:31:00.000Z',
+      ),
+    /metadata does not match/,
+  );
   console.log(
-    'Audit reconciliation CSV contract OK — bounded ranges, safe cells, source-row integrity and redacted field scope.',
+    'Audit CSV contracts OK — legacy scan evidence and source-aware SQL events remain separate, bounded and spreadsheet-safe.',
   );
 }
 
