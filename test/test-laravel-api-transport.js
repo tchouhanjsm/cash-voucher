@@ -635,7 +635,7 @@ async function run() {
           createdBy: 'manager@example.test',
         };
         return {
-          rowNumber: index + 1,
+          rowNumber: row.sourceRowNumber,
           sourceRecordId: row.sourceRecordId,
           status: 'IMPORTED',
           voucherId: voucher.id,
@@ -1566,6 +1566,7 @@ async function run() {
   const bulkEntries = [
     {
       sourceRecordId: 'manual-source-001',
+      sourceRowNumber: 17,
       clientId: 'bulk-manual-source-001',
       date: '2026-11-09',
       type: 'PAYMENT',
@@ -1603,6 +1604,7 @@ async function run() {
   assert.match(importBody.batchId, /^voucher-import-batch-[a-f0-9]{64}$/);
   assert.equal(importBody.sourceSystem, 'manual-csv');
   assert.equal(importBody.rows[0].sourceRecordId, 'manual-source-001');
+  assert.equal(importBody.rows[0].sourceRowNumber, 17);
   assert.equal(importBody.rows[0].voucher.amount, '275.25');
   const repeatedBulkImport = await api('createVouchers', {
     bulk: true,
