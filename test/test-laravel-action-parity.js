@@ -173,6 +173,24 @@ for (const field of [
 }
 const createVoucherContract = actionMap.fieldContracts.createVouchers;
 for (const field of [
+  'sourceSystem',
+  'entries[].sourceRecordId',
+  'entries[].sourceStatus',
+  'entries[].sourceApprovalStatus',
+  'entries[].sourceVoucherNo',
+  'entries[].sourceReceipts',
+  'entries[].sourceVendorType',
+]) {
+  assert.ok(
+    createVoucherContract.legacyRequestFields.includes(field),
+    'createVouchers must inventory the Apps Script source-safety field ' + field,
+  );
+}
+assert.match(legacyRouteSource, /IMPORT_REQUIRES_RECONCILIATION/);
+assert.match(legacyRouteSource, /IMPORT_SOURCE_ID_REQUIRED/);
+assert.match(legacyRouteSource, /IMPORT_SOURCE_ID_DUPLICATE/);
+
+for (const field of [
   'entries[].vendorType',
   'entries[].receipts[]',
   'entries[].receipts[].mime',
