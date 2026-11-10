@@ -126,13 +126,15 @@ const { report, result } = runAudit();
 const exceptions = {
   'GHSA-mrhx-c7xc-m3w5': {
     packageName: 'zod',
-    reviewBy: '2026-11-09',
+    reviewBy: '2026-12-10',
     rationale:
-      'The current upstream @google/clasp 3.4.1 release declares zod ^3.25.76. ' +
-      'The advisory fix begins at zod 4.6.6, a major-version change outside that ' +
-      'declared range. This exact advisory is temporarily excepted for the local/CI ' +
-      'developer-tool chain only while compatibility is verified; zod is not shipped ' +
-      'in the static client artifact. Reassess Clasp/upstream compatibility by 2026-11-09.',
+      'Reviewed 2026-11-10: the latest published @google/clasp release remains 3.4.1 ' +
+      'and declares zod ^3.25.76. The advisory fix begins at zod 4.6.6, outside that ' +
+      'declared major-version range; the npm-suggested Clasp 2.5.0 downgrade is also ' +
+      'a major-version rollback. No forced Zod override or Clasp downgrade is accepted ' +
+      'without upstream compatibility verification. This exact GHSA remains time-bound ' +
+      'to the local/CI developer-tool chain only; Zod is not shipped in the static client. ' +
+      'Reassess by 2026-12-10 and remove as soon as a compatible patched Clasp release is verified.',
   },
 };
 
