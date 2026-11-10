@@ -211,15 +211,26 @@ final class VoucherImportService
             ]);
             $existing = $lookup->fetch(PDO::FETCH_ASSOC);
             if (is_array($existing)) {
-                if (
-                    ! hash_equals((string) $existing['request_sha256'], $requestHash)
-                    || ! hash_equals((string) $existing['created_by_user_id'], $actorId)
-                ) {
+                if (! hash_equals((string) $existing['request_sha256'], $requestHash)) {
                     throw new ApiException(
                         409,
                         'IMPORT_BATCH_CONFLICT',
-                        'This import batch ID is already associated with different source data or a different operator.',
+                        'This import batch ID is already associated with different source data.',
                     );
+                }
+                if (! hash_equals((string) $existing['created_by_user_id'], $actorId)) {
+                    AuditWriter::append($pdo, $actorId, $actorEmail, [
+                        'eventType' => 'VOUCHER_IMPORT_BATCH_RESUMED',
+                        'targetType' => 'voucher_import_batch',
+                        'targetId' => (string) $existing['id'],
+                        'reason' => 'An authorized operator resumed an immutable voucher import batch.',
+                        'after' => [
+                            'sourceSystem' => $sourceSystem,
+                            'sourceBatchId' => $sourceBatchId,
+                            'originalCreatorUserId' => (string) $existing['created_by_user_id'],
+                            'resumedByUserId' => $actorId,
+                        ],
+                    ]);
                 }
                 $pdo->commit();
 
@@ -395,13 +406,7 @@ final class VoucherImportService
         $priorRow = $prior->fetch(PDO::FETCH_ASSOC);
         if (is_array($priorRow)) {
             if (hash_equals((string) $priorRow['row_sha256'], $row['rowHash'])) {
-                $update = $pdo->prepare(
-                    "UPDATE voucher_import_rows
-                     SET status = 'REPLAYED', voucher_id = :voucher_id,
-                         error_code = NULL, error_message = NULL, updated_at_utc = UTC_TIMESTAMP(6)
-                     WHERE id = :id"
-                );
-                $update->execute(['voucher_id' => $priorRow['voucher_id'], 'id' => $rowId]);
+                $this->markReplayed($pdo, $rowId, (string) $priorRow['voucher_id']);
 
                 return;
             }
@@ -412,6 +417,13 @@ final class VoucherImportService
                 'This source record ID was previously imported with different financial content. Reconcile the source before retrying.',
             );
 
+            return;
+        }
+
+        // Recover the narrow crash window where the voucher transaction committed but
+        // the import-row status update did not. A stable source ID is not enough by itself:
+        // compare every persisted financial field before classifying the row as a replay.
+        if ($this->reconcileExistingSourceVoucher($pdo, $rowId, $sourceLegacyId, $voucher)) {
             return;
         }
 
@@ -442,6 +454,12 @@ final class VoucherImportService
             if ($exception->errorCode === 'IDEMPOTENCY_IN_PROGRESS') {
                 return;
             }
+            if (
+                $exception->errorCode === 'SOURCE_ID_CONFLICT'
+                && $this->reconcileExistingSourceVoucher($pdo, $rowId, $sourceLegacyId, $voucher)
+            ) {
+                return;
+            }
             $this->quarantine(
                 $pdo,
                 $rowId,
@@ -449,6 +467,98 @@ final class VoucherImportService
                 mb_substr($exception->getMessage(), 0, 300, 'UTF-8'),
             );
         }
+    }
+
+    private function markReplayed(PDO $pdo, string $rowId, string $voucherId): void
+    {
+        $update = $pdo->prepare(
+            "UPDATE voucher_import_rows
+             SET status = 'REPLAYED', voucher_id = :voucher_id,
+                 error_code = NULL, error_message = NULL, updated_at_utc = UTC_TIMESTAMP(6)
+             WHERE id = :id"
+        );
+        $update->execute(['voucher_id' => $voucherId, 'id' => $rowId]);
+    }
+
+    /**
+     * Reconcile an already-existing voucher against the immutable source row.
+     * Returns true when the existing record was either safely replayed or quarantined.
+     *
+     * @param array<string,mixed> $voucher
+     */
+    private function reconcileExistingSourceVoucher(
+        PDO $pdo,
+        string $rowId,
+        string $sourceLegacyId,
+        array $voucher,
+    ): bool {
+        $query = $pdo->prepare(
+            'SELECT id, voucher_type, business_date, vendor_name_snapshot, vendor_id,
+                    amount_paise, category, notes, status, cash_impact, payment_method
+             FROM vouchers
+             WHERE source_legacy_id = :source_id
+             LIMIT 1'
+        );
+        $query->execute(['source_id' => $sourceLegacyId]);
+        $existing = $query->fetch(PDO::FETCH_ASSOC);
+        if (! is_array($existing)) {
+            return false;
+        }
+
+        $amount = null;
+        try {
+            $amountInput = $voucher['amount'] ?? null;
+            if (! is_string($amountInput)) {
+                throw new \InvalidArgumentException('Amount must be a decimal string.');
+            }
+            $amount = Money::toPaise($amountInput);
+        } catch (\InvalidArgumentException) {
+            // Invalid input cannot match an already-committed financial record.
+        }
+
+        $vendor = trim((string) ($voucher['vendor'] ?? ''));
+        $storedVendor = trim((string) $existing['vendor_name_snapshot']);
+        $normalizeVendor = static function (string $value): string {
+            $normalized = preg_replace('/\s+/u', ' ', trim($value)) ?? trim($value);
+
+            return function_exists('mb_strtolower')
+                ? mb_strtolower($normalized, 'UTF-8')
+                : strtolower($normalized);
+        };
+        $requestedVendorId = (string) ($voucher['vendorId'] ?? '');
+        $vendorMatches = $requestedVendorId !== ''
+            ? hash_equals($requestedVendorId, (string) ($existing['vendor_id'] ?? ''))
+            : hash_equals($normalizeVendor($vendor), $normalizeVendor($storedVendor));
+        $category = trim((string) ($voucher['category'] ?? 'Other'));
+        $category = $category === '' ? 'Other' : $category;
+        $notes = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', (string) ($voucher['notes'] ?? '')) ?? '';
+        $notes = mb_substr(trim($notes), 0, 500, 'UTF-8');
+
+        $matches = $amount !== null
+            && $amount === (int) $existing['amount_paise']
+            && (string) ($voucher['date'] ?? '') === (string) $existing['business_date']
+            && (string) ($voucher['type'] ?? 'PAYMENT') === (string) $existing['voucher_type']
+            && $vendorMatches
+            && $category === (string) $existing['category']
+            && $notes === (string) $existing['notes']
+            && (string) ($voucher['cashImpact'] ?? '') === (string) $existing['cash_impact']
+            && (string) ($voucher['paymentMethod'] ?? '') === (string) $existing['payment_method']
+            && (string) $existing['status'] === 'ACTIVE';
+
+        if ($matches) {
+            $this->markReplayed($pdo, $rowId, (string) $existing['id']);
+
+            return true;
+        }
+
+        $this->quarantine(
+            $pdo,
+            $rowId,
+            'SOURCE_ID_CONFLICT',
+            'This source record ID already belongs to a voucher with different persisted financial fields. Reconcile the source before retrying.',
+        );
+
+        return true;
     }
 
     private function quarantine(PDO $pdo, string $rowId, string $code, string $message): void
