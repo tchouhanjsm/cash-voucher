@@ -1070,6 +1070,28 @@ async function run() {
   );
   assert.equal(requests.length, beforeUnsupported, 'unmapped actions must not reach any server');
 
+  const incompleteRegisterApi = createLaravelApi({
+    getUrl: () => 'https://cash-voucher.example/api/v1',
+    getOrigin: () => 'https://cash-voucher.example',
+    fetchImpl: async () =>
+      jsonResponse({
+        ok: true,
+        data: {
+          items: [],
+          offset: 0,
+          limit: 100,
+          totalCount: 0,
+          hasMore: false,
+          facets: { vendors: [], users: [] },
+        },
+      }),
+  });
+  await assert.rejects(
+    () => incompleteRegisterApi('registerPage'),
+    (error) => error.code === 'API_RESPONSE_INVALID',
+    'the adapter must reject missing Register totals instead of silently rendering zeros',
+  );
+
   const reloadRequests = [];
   const reloadedApi = createLaravelApi({
     getUrl: () => 'https://cash-voucher.example/api/v1',
