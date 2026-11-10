@@ -113,7 +113,30 @@ assert.equal(
   '/cash-closes/preview',
   'daily operations preview must map to the registered cash-close preview route',
 );
-assert.ok(actionMap.actions.entrySuggestions, 'new Laravel-shadow entry suggestions must be inventoried');
+const shadowResources = actionMap.shadowResources || {};
+assert.ok(shadowResources.entrySuggestions, 'Laravel-only entry suggestions must be inventoried separately');
+for (const [name, entry] of Object.entries(shadowResources)) {
+  assert.ok(STATES.has(entry.serverState), name + ' shadow resource must declare serverState');
+  assert.ok(STATES.has(entry.clientState), name + ' shadow resource must declare clientState');
+  assert.ok(STATES.has(entry.state), name + ' shadow resource must declare aggregate state');
+  const expectedState =
+    entry.serverState === 'implemented' && entry.clientState === 'implemented'
+      ? 'implemented'
+      : entry.serverState !== 'planned' || entry.clientState !== 'planned'
+        ? 'partial'
+        : 'planned';
+  assert.equal(entry.state, expectedState, name + ' shadow resource aggregate state must match coverage');
+  if (entry.serverState === 'implemented') {
+    assert.ok(hasServerRoute(entry.method, entry.path), name + ' shadow resource route must exist');
+  }
+  if (entry.clientState === 'implemented' || entry.clientState === 'partial') {
+    assert.equal(typeof entry.adapterAction, 'string');
+    assert.ok(hasAdapterAction(entry.adapterAction), name + ' shadow resource adapter case must exist');
+  } else {
+    assert.equal(entry.adapterAction, null);
+  }
+}
+
 for (const action of ['saveUser', 'resetPassword', 'saveSettings']) {
   assert.equal(actionMap.actions[action].state, 'implemented', action + ' must be end-to-end mapped');
   assert.equal(actionMap.actions[action].clientState, 'implemented');
