@@ -199,7 +199,6 @@ export function createBulk({ api, refresh, go }) {
   function checkRows(raw, duplicateResultsByIndex = new Map()) {
     const seen = new Set();
     const seenSourceIds = new Set();
-    const allowedCategories = type === 'RECEIPT' ? rcats() : categories();
     const output = [];
 
     raw.forEach((row, index) => {
@@ -225,6 +224,7 @@ export function createBulk({ api, refresh, go }) {
       if (!['PAYMENT', 'RECEIPT'].includes(rowType)) errors.push('bad transaction type');
       if (!['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod)) errors.push('bad payment method');
 
+      const allowedCategories = rowType === 'RECEIPT' ? rcats() : categories();
       let category = allowedCategories.find(
         (item) => item.toLowerCase() === categoryInput.toLowerCase(),
       );
@@ -273,7 +273,7 @@ export function createBulk({ api, refresh, go }) {
           typeof duplicateResult?.confirmationToken === 'string'
             ? duplicateResult.confirmationToken
             : '',
-        skip: duplicate,
+        skip: localDuplicate || serverDuplicate,
       });
     });
 
@@ -298,7 +298,7 @@ export function createBulk({ api, refresh, go }) {
           : 'payments';
 
     $('#bprev').innerHTML =
-      `<div class="card bulk-review-panel"><h2>2. Review</h2><p class="bulk-review-summary" role="status" aria-live="polite"><b>${ready.length}</b> ready · <b>${needImpact.length}</b> need cash-impact selection · <span class="${bad.length ? 'up' : ''}"><b>${bad.length}</b> with errors (skipped)</span> · <b>${duplicates.length}</b> possible duplicates ${duplicates.length ? '<label class="bulk-duplicate-option"><input type="checkbox" id="bdup"> import duplicates too</label>' : ''}</p>
+      `<div class="card bulk-review-panel"><h2>2. Review</h2><p class="bulk-review-summary" role="status" aria-live="polite"><b>${ready.length}</b> ready · <b>${needImpact.length}</b> need cash-impact selection · <span class="${bad.length ? 'up' : ''}"><b>${bad.length}</b> with errors (skipped)</span> · <b>${duplicates.length}</b> possible duplicates ${duplicates.length ? '<label class="bulk-duplicate-option"><input type="checkbox" id="bdup"> confirm server matches (same-file exact duplicates remain skipped)</label>' : ''}</p>
     <div class="table-wrap bulk-review-table" role="region" aria-label="Bulk import preview table" tabindex="0"><table><thead><tr><th>#</th><th>Date</th><th>Vendor</th><th class="r">Amount</th><th>Category</th><th>Cash impact (required)</th><th>Status</th></tr></thead><tbody>${rows
       .slice(0, 300)
       .map(
