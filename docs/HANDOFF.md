@@ -8,7 +8,6 @@
 - **Verification boundary:** this action-map milestone must pass the new parity regression plus the existing CI, Browser E2E and Autonomous Development Monitor on the exact PR head. Owner-local runtime, browser Network/Console, Laravel log, private-storage and backup/restore checks remain separate gates.
 - **Next implementation order:** wire voucher history and recorded-movement reports; then cash-close create/correction with online-only retry semantics. Design bulk import only after source-ID idempotency, conflict quarantine and reconciliation are tested.
 
-
 ## Current delivery focus — PR #280 novice-first workspace consolidation (9 November 2026)
 
 - **PR / branch:** [PR #280](https://github.com/tchouhanjsm/cash-voucher/pull/280), `feat/dashboard-admin-minimal-workspaces-20261108` → `client-main`, based on the merged Register search-first milestone.
