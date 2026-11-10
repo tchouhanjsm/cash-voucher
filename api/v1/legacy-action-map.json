@@ -27,7 +27,7 @@
       "path": "/vouchers",
       "access": "viewOwn-or-viewAll",
       "kind": "read",
-      "state": "implemented"
+      "state": "planned"
     },
     "checkVoucherDuplicates": {
       "method": "POST",
@@ -107,10 +107,7 @@
       "state": "planned"
     },
     "saveVendor": {
-      "method": [
-        "POST",
-        "PATCH"
-      ],
+      "method": ["POST", "PATCH"],
       "path": "/vendors[/{vendorId}]",
       "access": "vendors",
       "kind": "write",
@@ -131,10 +128,7 @@
       "state": "planned"
     },
     "saveUser": {
-      "method": [
-        "POST",
-        "PATCH"
-      ],
+      "method": ["POST", "PATCH"],
       "path": "/users[/{userId}]",
       "access": "users",
       "kind": "write",
