@@ -313,5 +313,5 @@ export function createStructuredVoucherAuditCsv(
     ]);
   });
 
-  return '\\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\\r\\n') + '\\r\\n';
+  return '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }
