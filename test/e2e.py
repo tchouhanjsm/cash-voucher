@@ -6563,8 +6563,8 @@ with sync_playwright() as p:
         'name': 'cash-voucher-import.csv',
         'mimeType': 'text/csv',
         'buffer': (
-            'Date,Vendor,Amount,Category,Notes\n'
-            f'{date_text},CSV File Vendor,33,Other,CSV file compatibility regression\n'
+            'SourceID,Date,Vendor,Amount,Category,Notes\n'
+            f'csv-file-row-0001,{date_text},CSV File Vendor,33,Other,CSV file compatibility regression\n'
         ).encode(),
     })
     page.click('[data-act=parse]')
@@ -6607,12 +6607,12 @@ with sync_playwright() as p:
     page.locator('#bf').set_input_files([])
 
     rows = (
-        'Date\tVendor\tAmount\tCategory\tNotes\n'
-        f'{date_text}\tRam Traders\t1250.50\tKitchen\tdup of staff entry\n'
-        f'{date_text}\tNew Vendor\t₹ 3,000\tFuel\t\n'
-        f'31/02/2026\t{xss_payload}\t10\t\t\n'
-        f'{date_text}\t\t50\t\t\n'
-        f'{date_text}\tBulk Imported Replacement Vendor\t40\tNonsense\t'
+        'SourceID\tDate\tVendor\tAmount\tCategory\tNotes\n'
+        f'bulk-row-0001\t{date_text}\tRam Traders\t1250.50\tKitchen\tdup of staff entry\n'
+        f'bulk-row-0002\t{date_text}\tNew Vendor\t₹ 3,000\tFuel\t\n'
+        f'bulk-row-0003\t31/02/2026\t{xss_payload}\t10\t\t\n'
+        f'bulk-row-0004\t{date_text}\t\t50\t\t\n'
+        f'bulk-row-0005\t{date_text}\tBulk Imported Replacement Vendor\t40\tNonsense\t'
     )
     page.fill('#bt', rows)
     page.click('[data-act=parse]')
@@ -6636,7 +6636,7 @@ with sync_playwright() as p:
 
     page.click('[data-act=import]')
     page.wait_for_selector('.ok-panel')
-    check('Imported 2 payments' in page.inner_text('#bprev'), 'payment import completion names payments')
+    check('2 imported · 0 replayed' in page.inner_text('#bprev'), 'payment import completion names payments')
     check(
         page.locator('#bprev .ok-panel').get_attribute('role') == 'status'
         and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite'
@@ -6652,8 +6652,8 @@ with sync_playwright() as p:
     page.wait_for_selector('#bt')
     page.fill(
         '#bt',
-        'Date\tVendor\tAmount\tCategory\tNotes\n'
-        f'{date_text}\tBulk Receipt Test\t25\tOther\treceipt completion wording',
+        'SourceID\tDate\tVendor\tAmount\tCategory\tNotes\n'
+        f'receipt-row-0001\t{date_text}\tBulk Receipt Test\t25\tOther\treceipt completion wording',
     )
     page.select_option('#bt2', 'RECEIPT')
     page.click('[data-act=parse]')
@@ -6670,9 +6670,9 @@ with sync_playwright() as p:
         'bulk import progress has an accessible status announcement',
     )
     page.click('[data-act=import]')
-    page.wait_for_function("document.querySelector('#bprev .ok-panel')?.innerText.includes('Imported 1 cash receipts')")
+    page.wait_for_function("document.querySelector('#bprev .ok-panel')?.innerText.includes('1 imported · 0 replayed')")
     check(
-        'Imported 1 cash receipts' in page.inner_text('#bprev')
+        '1 imported · 0 replayed' in page.inner_text('#bprev')
         and page.locator('#bprev .ok-panel').get_attribute('role') == 'status'
         and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite',
         'receipt import completion is accurate and announced',
