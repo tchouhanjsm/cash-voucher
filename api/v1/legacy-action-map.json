@@ -451,7 +451,16 @@
         "offset",
         "limit"
       ],
-      "legacyResponseFields": ["items[]", "totalCount", "hasMore", "offset", "limit", "totals", "facets", "diagnostics"],
+      "legacyResponseFields": [
+        "items[]",
+        "totalCount",
+        "hasMore",
+        "offset",
+        "limit",
+        "totals",
+        "facets",
+        "diagnostics"
+      ],
       "laravelRequestFields": [
         "q",
         "vendor",
@@ -468,12 +477,27 @@
         "offset",
         "limit"
       ],
-      "laravelResponseFields": ["items[]", "totalCount", "hasMore", "offset", "limit", "totals", "facets", "diagnostics"],
+      "laravelResponseFields": [
+        "items[]",
+        "totalCount",
+        "hasMore",
+        "offset",
+        "limit",
+        "totals",
+        "facets",
+        "diagnostics"
+      ],
       "notes": "Register filters are kept in legacy names at the browser boundary and validated/normalized by the Laravel request controller.",
       "coverage": "implemented"
     },
     "checkVoucherDuplicates": {
-      "legacyRequestFields": ["type", "entries[].index", "entries[].date", "entries[].vendor", "entries[].amount"],
+      "legacyRequestFields": [
+        "type",
+        "entries[].index",
+        "entries[].date",
+        "entries[].vendor",
+        "entries[].amount"
+      ],
       "legacyResponseFields": ["duplicateIndexes[]"],
       "laravelRequestFields": [
         "type",
@@ -542,9 +566,27 @@
     },
     "dashboardSummary": {
       "legacyRequestFields": ["from", "to"],
-      "legacyResponseFields": ["from", "to", "payments", "receipts", "totals", "daily", "categories", "paymentMethods"],
+      "legacyResponseFields": [
+        "from",
+        "to",
+        "payments",
+        "receipts",
+        "totals",
+        "daily",
+        "categories",
+        "paymentMethods"
+      ],
       "laravelRequestFields": ["from", "to"],
-      "laravelResponseFields": ["from", "to", "payments", "receipts", "totals", "daily", "categories", "paymentMethods"],
+      "laravelResponseFields": [
+        "from",
+        "to",
+        "payments",
+        "receipts",
+        "totals",
+        "daily",
+        "categories",
+        "paymentMethods"
+      ],
       "notes": "Read model summary; all monetary values are server-derived and represented in INR decimal strings at the API boundary.",
       "coverage": "implemented"
     },
@@ -592,7 +634,13 @@
         "entries[].sourceVoucherNo",
         "entries[].sourceReceipts"
       ],
-      "legacyResponseFields": ["created[]", "skipped", "created[].id", "created[].voucherNo", "created[].approvalStatus"],
+      "legacyResponseFields": [
+        "created[]",
+        "skipped",
+        "created[].id",
+        "created[].voucherNo",
+        "created[].approvalStatus"
+      ],
       "laravelRequestFields": [
         "sourceSystem",
         "batchId",
@@ -706,9 +754,21 @@
     },
     "addReceipt": {
       "legacyRequestFields": ["id", "receipt.mime", "receipt.data"],
-      "legacyResponseFields": ["receipts[]", "receipts[].id", "receipts[].mime", "receipts[].size", "receipts[].sha256"],
+      "legacyResponseFields": [
+        "receipts[]",
+        "receipts[].id",
+        "receipts[].mime",
+        "receipts[].size",
+        "receipts[].sha256"
+      ],
       "laravelRequestFields": ["voucherId", "receipt.mime", "receipt.data"],
-      "laravelResponseFields": ["receipts[]", "receipts[].id", "receipts[].mime", "receipts[].size", "receipts[].sha256"],
+      "laravelResponseFields": [
+        "receipts[]",
+        "receipts[].id",
+        "receipts[].mime",
+        "receipts[].size",
+        "receipts[].sha256"
+      ],
       "notes": "Private receipt bytes are validated and stored outside the public web root; idempotent attachment is a separate operation from voucher creation/import.",
       "coverage": "implemented"
     },
@@ -721,10 +781,40 @@
       "coverage": "implemented"
     },
     "saveVendor": {
-      "legacyRequestFields": ["id", "name", "company", "mobile", "defaultCategory", "defaultPaymentMethod"],
-      "legacyResponseFields": ["id", "name", "company", "mobile", "active", "defaultCategory", "defaultPaymentMethod"],
-      "laravelRequestFields": ["vendorId", "name", "company", "mobile", "defaultCategory", "defaultPaymentMethod"],
-      "laravelResponseFields": ["id", "name", "company", "mobile", "active", "defaultCategory", "defaultPaymentMethod"],
+      "legacyRequestFields": [
+        "id",
+        "name",
+        "company",
+        "mobile",
+        "defaultCategory",
+        "defaultPaymentMethod"
+      ],
+      "legacyResponseFields": [
+        "id",
+        "name",
+        "company",
+        "mobile",
+        "active",
+        "defaultCategory",
+        "defaultPaymentMethod"
+      ],
+      "laravelRequestFields": [
+        "vendorId",
+        "name",
+        "company",
+        "mobile",
+        "defaultCategory",
+        "defaultPaymentMethod"
+      ],
+      "laravelResponseFields": [
+        "id",
+        "name",
+        "company",
+        "mobile",
+        "active",
+        "defaultCategory",
+        "defaultPaymentMethod"
+      ],
       "notes": "Create and update are idempotent Laravel writes. Vendor identity claims prevent ambiguous normalized-name collisions.",
       "coverage": "implemented"
     },
@@ -1000,7 +1090,14 @@
       "coverage": "implemented"
     },
     "createCashClose": {
-      "legacyRequestFields": ["date", "openingCash", "openingReason", "countedCash", "varianceReason", "requestId"],
+      "legacyRequestFields": [
+        "date",
+        "openingCash",
+        "openingReason",
+        "countedCash",
+        "varianceReason",
+        "requestId"
+      ],
       "legacyResponseFields": [
         "close",
         "openingCash",
@@ -1011,7 +1108,13 @@
         "variance",
         "includedVoucherIds"
       ],
-      "laravelRequestFields": ["date", "openingCash", "openingReason", "countedCash", "varianceReason"],
+      "laravelRequestFields": [
+        "date",
+        "openingCash",
+        "openingReason",
+        "countedCash",
+        "varianceReason"
+      ],
       "laravelResponseFields": [
         "close",
         "openingCash",
