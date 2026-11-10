@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace CashVoucher\Api\Financial;
 
 use CashVoucher\Api\Support\ApiException;
+use InvalidArgumentException;
 use PDO;
 use RuntimeException;
-use InvalidArgumentException;
 
 final class VoucherNumberAllocator
 {
@@ -66,23 +66,8 @@ final class VoucherNumberAllocator
             "SELECT COALESCE(MAX(CAST(voucher_number AS UNSIGNED)), 0)
              FROM vouchers
              WHERE voucher_type = :voucher_type
-               AND voucher_number REGEXP '^[0-9]+        $advance = $this->pdo->prepare(
-            'UPDATE voucher_number_sequences
-             SET next_number = :next_number, updated_at_utc = UTC_TIMESTAMP(6)
-             WHERE voucher_type = :voucher_type'
-        );
-        $advance->execute([
-            'next_number' => $number + 1,
-            'voucher_type' => $voucherType,
-        ]);
-        if ($advance->rowCount() !== 1) {
-            throw new RuntimeException('The voucher number sequence could not be advanced.');
-        }
-
-        return (string) $number;
-    }
-}
-"
+               AND voucher_number <> ''
+               AND voucher_number NOT REGEXP '[^0-9]'"
         );
         $issued->execute(['voucher_type' => $voucherType]);
         $maxIssued = (int) $issued->fetchColumn();
