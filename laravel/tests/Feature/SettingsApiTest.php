@@ -204,32 +204,41 @@ final class SettingsApiTest extends TestCase
         $settingsBefore = $this->settingsSnapshot();
 
         $voucherId = $this->insertVoucherFixture($this->userId, 'Settings Sequence Vendor', 10000);
+        $originalVoucherNumber = (string) DB::table('vouchers')->where('id', $voucherId)->value('voucher_number');
         $alreadyIssuedNumber = $this->safeNextPaymentSequence + 10;
         DB::table('vouchers')->where('id', $voucherId)->update([
             'voucher_number' => (string) $alreadyIssuedNumber,
         ]);
 
-        $payload = $this->payload(['nextVoucherNo' => $alreadyIssuedNumber]);
-        $owner->putJson('/api/v1/settings', $payload, [
-            'Idempotency-Key' => 'settings-reuse-issued-number',
-        ])
-            ->assertStatus(422)
-            ->assertJsonPath('error.code', 'VOUCHER_SEQUENCE_INVALID');
+        try {
+            $payload = $this->payload(['nextVoucherNo' => $alreadyIssuedNumber]);
+            $owner->putJson('/api/v1/settings', $payload, [
+                'Idempotency-Key' => 'settings-reuse-issued-number',
+            ])
+                ->assertStatus(422)
+                ->assertJsonPath('error.code', 'VOUCHER_SEQUENCE_INVALID');
 
-        $backwards = $this->payload(['nextVoucherNo' => $this->currentPaymentSequence - 1]);
-        $owner->putJson('/api/v1/settings', $backwards, [
-            'Idempotency-Key' => 'settings-lower-sequence',
-        ])
-            ->assertStatus(422)
-            ->assertJsonPath('error.code', 'VOUCHER_SEQUENCE_INVALID');
+            $backwards = $this->payload(['nextVoucherNo' => $this->currentPaymentSequence - 1]);
+            $owner->putJson('/api/v1/settings', $backwards, [
+                'Idempotency-Key' => 'settings-lower-sequence',
+            ])
+                ->assertStatus(422)
+                ->assertJsonPath('error.code', 'VOUCHER_SEQUENCE_INVALID');
 
-        self::assertSame(
-            $this->currentPaymentSequence,
-            (int) DB::table('voucher_number_sequences')
-                ->where('voucher_type', 'PAYMENT')
-                ->value('next_number'),
-        );
-        self::assertSame($settingsBefore, $this->settingsSnapshot());
+            self::assertSame(
+                $this->currentPaymentSequence,
+                (int) DB::table('voucher_number_sequences')
+                    ->where('voucher_type', 'PAYMENT')
+                    ->value('next_number'),
+            );
+            self::assertSame($settingsBefore, $this->settingsSnapshot());
+        } finally {
+            // Do not leak this deliberately high numeric fixture into subsequent
+            // feature tests; the allocator must continue validating the real ledger.
+            DB::table('vouchers')->where('id', $voucherId)->update([
+                'voucher_number' => $originalVoucherNumber,
+            ]);
+        }
     }
 
     public function test_invalid_categories_and_opening_balance_fail_without_partial_updates(): void
