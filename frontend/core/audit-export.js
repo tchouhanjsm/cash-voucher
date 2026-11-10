@@ -272,7 +272,7 @@ export function createStructuredVoucherAuditCsv(
       typeof event.reason !== 'string' ||
       event.reason.length > 500 ||
       typeof event.occurredAtUtc !== 'string' ||
-      !/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?$/.test(event.occurredAtUtc) ||
+      !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?$/.test(event.occurredAtUtc) ||
       !isSnapshot(event.before) ||
       !isSnapshot(event.after)
     ) {
