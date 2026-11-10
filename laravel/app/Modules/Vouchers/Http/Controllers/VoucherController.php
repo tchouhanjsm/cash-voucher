@@ -78,9 +78,16 @@ final class VoucherController
             $visibilityScope->where('created_by_user_id', $principal['id']);
         }
 
+        $validStatusScope = static function ($builder): void {
+            $builder
+                ->whereIn('status', ['ACTIVE', 'CANCELLED'])
+                ->orWhereNull('status')
+                ->orWhere('status', '');
+        };
+
         $facetScope = (clone $visibilityScope)
             ->whereIn('voucher_type', ['PAYMENT', 'RECEIPT'])
-            ->whereIn('status', ['ACTIVE', 'CANCELLED']);
+            ->where($validStatusScope);
 
         $vendors = (clone $facetScope)
             ->whereNotNull('vendor_name_snapshot')
@@ -110,7 +117,12 @@ final class VoucherController
                     ->whereNull('id')
                     ->orWhere('id', '')
                     ->orWhereNotIn('voucher_type', ['PAYMENT', 'RECEIPT'])
-                    ->orWhereNotIn('status', ['ACTIVE', 'CANCELLED']);
+                    ->orWhere(function ($status): void {
+                        $status
+                            ->whereNotNull('status')
+                            ->where('status', '<>', '')
+                            ->whereNotIn('status', ['ACTIVE', 'CANCELLED']);
+                    });
             })
             ->count();
 
@@ -127,7 +139,7 @@ final class VoucherController
 
         $query = (clone $visibilityScope)
             ->whereIn('voucher_type', ['PAYMENT', 'RECEIPT'])
-            ->whereIn('status', ['ACTIVE', 'CANCELLED']);
+            ->where($validStatusScope);
 
         if ($from !== '') {
             $query->where('business_date', '>=', $from);
@@ -138,8 +150,12 @@ final class VoucherController
         if ($type !== '') {
             $query->where('voucher_type', $type);
         }
-        if ($status !== 'ALL') {
-            $query->where('status', $status);
+        if ($status === 'ACTIVE') {
+            $query->where(function ($builder): void {
+                $builder->where('status', 'ACTIVE')->orWhereNull('status')->orWhere('status', '');
+            });
+        } elseif ($status === 'CANCELLED') {
+            $query->where('status', 'CANCELLED');
         }
         if ($vendor !== '') {
             $query->where('vendor_name_snapshot', $vendor);
@@ -158,9 +174,25 @@ final class VoucherController
                         ->orWhere(function ($payment): void {
                             $payment
                                 ->where('voucher_type', 'PAYMENT')
-                                ->where('approval_status', 'NOT_REQUIRED');
+                                ->where(function ($status): void {
+                                    $status
+                                        ->where('approval_status', 'NOT_REQUIRED')
+                                        ->orWhereNull('approval_status')
+                                        ->orWhere('approval_status', '');
+                                });
                         });
                 });
+            } elseif ($approval === 'REVIEW_REQUIRED') {
+                $query
+                    ->where('voucher_type', 'PAYMENT')
+                    ->whereNotNull('approval_status')
+                    ->where('approval_status', '<>', '')
+                    ->whereNotIn('approval_status', [
+                        'NOT_REQUIRED',
+                        'PENDING',
+                        'APPROVED',
+                        'REJECTED',
+                    ]);
             } else {
                 $query
                     ->where('voucher_type', 'PAYMENT')
@@ -213,13 +245,20 @@ final class VoucherController
 
         // Register totals describe the entire filtered result set, not this page.
         // Invalid amounts remain visible for review but never enter financial sums.
-        $activeQuery = (clone $query)->where('status', 'ACTIVE');
+        $activeQuery = (clone $query)->where(function ($builder): void {
+            $builder->where('status', 'ACTIVE')->orWhereNull('status')->orWhere('status', '');
+        });
         $validAmountQuery = static function ($builder): void {
             $builder->whereBetween('amount_paise', [1, 1_000_000_000]);
         };
         $paidPaise = (clone $activeQuery)
             ->where('voucher_type', 'PAYMENT')
-            ->whereIn('approval_status', ['NOT_REQUIRED', 'APPROVED'])
+            ->where(function ($builder): void {
+                $builder
+                    ->whereIn('approval_status', ['NOT_REQUIRED', 'APPROVED'])
+                    ->orWhereNull('approval_status')
+                    ->orWhere('approval_status', '');
+            })
             ->where($validAmountQuery)
             ->sum('amount_paise');
         $receivedPaise = (clone $activeQuery)
@@ -228,6 +267,8 @@ final class VoucherController
             ->sum('amount_paise');
         $approvalExceptionCount = (clone $activeQuery)
             ->where('voucher_type', 'PAYMENT')
+            ->whereNotNull('approval_status')
+            ->where('approval_status', '<>', '')
             ->whereNotIn('approval_status', ['NOT_REQUIRED', 'APPROVED'])
             ->count();
         $invalidAmountCount = (clone $activeQuery)
@@ -265,6 +306,15 @@ final class VoucherController
 
         $items = $rows->map(function (object $row) use ($receiptIdsByVoucher): array {
             $paise = (int) $row->amount_paise;
+            $status = $row->status === null || $row->status === '' ? 'ACTIVE' : (string) $row->status;
+            $rawApproval = $row->approval_status === null ? '' : (string) $row->approval_status;
+            $approvalStatus = $row->voucher_type === 'RECEIPT'
+                ? 'NOT_REQUIRED'
+                : ($rawApproval === ''
+                    ? 'NOT_REQUIRED'
+                    : (in_array($rawApproval, ['NOT_REQUIRED', 'PENDING', 'APPROVED', 'REJECTED'], true)
+                        ? $rawApproval
+                        : 'REVIEW_REQUIRED'));
 
             return [
                 'id' => (string) $row->id,
@@ -278,9 +328,9 @@ final class VoucherController
                 'category' => (string) $row->category,
                 'notes' => (string) $row->notes,
                 'type' => (string) $row->voucher_type,
-                'status' => (string) $row->status,
+                'status' => $status,
                 'cashImpact' => (string) $row->cash_impact,
-                'approvalStatus' => (string) $row->approval_status,
+                'approvalStatus' => $approvalStatus,
                 'approvalReason' => (string) $row->approval_reason,
                 'paymentMethod' => (string) $row->payment_method,
                 'cancelReason' => (string) $row->cancel_reason,
