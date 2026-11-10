@@ -229,7 +229,83 @@ async function run() {
         },
       });
     }
-    if (String(url).endsWith('/users')) {
+    if (String(url).endsWith('/users') && options.method === 'POST') {
+      const body = JSON.parse(options.body);
+      return jsonResponse({
+        ok: true,
+        data: {
+          user: {
+            id: '88888888-8888-4888-8888-888888888888',
+            name: body.name,
+            email: body.email,
+            role: body.role,
+            active: true,
+            mustChangePassword: true,
+            createdAtUtc: '2026-11-10 10:00:00.000000',
+            updatedAtUtc: '2026-11-10 10:00:00.000000',
+            lastLoginAtUtc: null,
+          },
+          replayed: false,
+        },
+      }, 201);
+    }
+    if (String(url).endsWith('/users/88888888-8888-4888-8888-888888888888') && options.method === 'PATCH') {
+      const body = JSON.parse(options.body);
+      return jsonResponse({
+        ok: true,
+        data: {
+          user: {
+            id: '88888888-8888-4888-8888-888888888888',
+            name: body.name,
+            email: body.email,
+            role: body.role,
+            active: body.active,
+            mustChangePassword: false,
+            createdAtUtc: '2026-11-10 10:00:00.000000',
+            updatedAtUtc: '2026-11-10 10:01:00.000000',
+            lastLoginAtUtc: null,
+          },
+          replayed: false,
+        },
+      });
+    }
+    if (String(url).endsWith('/users/88888888-8888-4888-8888-888888888888/password-reset')) {
+      return jsonResponse({
+        ok: true,
+        data: {
+          user: {
+            id: '88888888-8888-4888-8888-888888888888',
+            name: 'New Property Staff',
+            email: 'new.staff@example.test',
+            role: 'staff',
+            active: true,
+            mustChangePassword: true,
+            createdAtUtc: '2026-11-10 10:00:00.000000',
+            updatedAtUtc: '2026-11-10 10:02:00.000000',
+            lastLoginAtUtc: null,
+          },
+          replayed: false,
+        },
+      });
+    }
+    if (String(url).endsWith('/settings') && options.method === 'PUT') {
+      const body = JSON.parse(options.body);
+      return jsonResponse({
+        ok: true,
+        data: {
+          settings: {
+            ...body,
+            openingBalance: '100.50',
+            timeZone: 'Asia/Kolkata',
+            currency: 'INR',
+            moneyStorageUnit: 'paise',
+            voucherNumberSequencesInitialized: true,
+          },
+          replayed: false,
+        },
+      });
+    }
+    if (String(url).endsWith('/users') && options.method === 'GET') {
       return jsonResponse({
         ok: true,
         data: {
@@ -614,6 +690,138 @@ async function run() {
 
   await api('auditLog', { beforeRow: 'opaque-cursor' });
   assert.match(requests[10].url, /cursor=opaque-cursor/);
+
+  const createdUserPayload = {
+    name: '  New Property Staff  ',
+    email: 'New.Staff@Example.Test',
+    role: 'staff',
+    password: 'Temporary-Password-2026',
+  };
+  const createdUser = await api('saveUser', createdUserPayload);
+  assert.equal(createdUser.id, '88888888-8888-4888-8888-888888888888');
+  assert.equal(createdUser.email, 'new.staff@example.test');
+  assert.equal(createdUser.mustChangePassword, true);
+  const createUserRequest = requests.at(-1);
+  assert.equal(createUserRequest.method, 'POST');
+  assert.ok(createUserRequest.url.endsWith('/users'));
+  assert.equal(createUserRequest.headers['X-CSRF-Token'], csrf);
+  assert.equal(createUserRequest.credentials, 'same-origin');
+  assert.deepEqual(JSON.parse(createUserRequest.body), {
+    name: 'New Property Staff',
+    email: 'new.staff@example.test',
+    role: 'staff',
+    temporaryPassword: 'Temporary-Password-2026',
+  });
+  assert.match(createUserRequest.headers['Idempotency-Key'], /^user-save-[a-f0-9]{64}$/);
+  assert.equal(createUserRequest.headers['Idempotency-Key'].includes('Temporary-Password-2026'), false);
+  await api('saveUser', createdUserPayload);
+  assert.equal(
+    requests.at(-1).headers['Idempotency-Key'],
+    createUserRequest.headers['Idempotency-Key'],
+    'replaying an unchanged user create must reuse its stable idempotency key',
+  );
+
+  const updateUserPayload = {
+    id: createdUser.id,
+    name: 'New Property Staff',
+    email: 'new.staff@example.test',
+    role: 'manager',
+    active: false,
+  };
+  const updatedUser = await api('saveUser', updateUserPayload);
+  assert.equal(updatedUser.role, 'manager');
+  assert.equal(updatedUser.active, false);
+  const updateUserRequest = requests.at(-1);
+  assert.equal(updateUserRequest.method, 'PATCH');
+  assert.ok(updateUserRequest.url.endsWith('/users/' + createdUser.id));
+  assert.equal(updateUserRequest.headers['X-CSRF-Token'], csrf);
+  assert.match(updateUserRequest.headers['Idempotency-Key'], /^user-save-[a-f0-9]{64}$/);
+  assert.deepEqual(JSON.parse(updateUserRequest.body), {
+    name: 'New Property Staff',
+    email: 'new.staff@example.test',
+    role: 'manager',
+    active: false,
+  });
+
+  const resetUser = await api('resetPassword', {
+    id: createdUser.id,
+    password: 'Replacement-Password-2026',
+  });
+  assert.equal(resetUser.mustChangePassword, true);
+  const resetUserRequest = requests.at(-1);
+  assert.ok(resetUserRequest.url.endsWith('/users/' + createdUser.id + '/password-reset'));
+  assert.equal(resetUserRequest.method, 'POST');
+  assert.equal(resetUserRequest.headers['X-CSRF-Token'], csrf);
+  assert.match(resetUserRequest.headers['Idempotency-Key'], /^user-reset-[a-f0-9]{64}$/);
+  assert.deepEqual(JSON.parse(resetUserRequest.body), {
+    temporaryPassword: 'Replacement-Password-2026',
+  });
+  assert.equal(
+    resetUserRequest.headers['Idempotency-Key'].includes('Replacement-Password-2026'),
+    false,
+  );
+
+  const settingsPayload = {
+    propertyName: '  Test Property  ',
+    propertyAddress: ' Fort Road ',
+    categories: ['Maintenance', '', 'Office'],
+    nextVoucherNo: '12',
+    nextReceiptNo: '',
+    openingBalance: '100.50',
+    receiptCategories: ['Room Revenue', ''],
+  };
+  const savedSettings = await api('saveSettings', settingsPayload);
+  assert.equal(savedSettings.propertyName, 'Test Property');
+  assert.deepEqual(savedSettings.categories, ['Maintenance', 'Office']);
+  assert.deepEqual(savedSettings.receiptCategories, ['Room Revenue']);
+  const settingsRequest = requests.at(-1);
+  assert.equal(settingsRequest.method, 'PUT');
+  assert.ok(settingsRequest.url.endsWith('/settings'));
+  assert.equal(settingsRequest.headers['X-CSRF-Token'], csrf);
+  assert.match(settingsRequest.headers['Idempotency-Key'], /^settings-save-[a-f0-9]{64}$/);
+  assert.deepEqual(JSON.parse(settingsRequest.body), {
+    propertyName: 'Test Property',
+    propertyAddress: 'Fort Road',
+    categories: ['Maintenance', 'Office'],
+    receiptCategories: ['Room Revenue'],
+    nextVoucherNo: '12',
+    nextReceiptNo: null,
+    openingBalance: '100.50',
+  });
+  await api('saveSettings', settingsPayload);
+  assert.equal(
+    requests.at(-1).headers['Idempotency-Key'],
+    settingsRequest.headers['Idempotency-Key'],
+    'an unchanged settings retry must reuse its stable idempotency key',
+  );
+
+  const beforeInvalidAdmin = requests.length;
+  await assert.rejects(
+    () => api('saveUser', { name: 'Bad Role', email: 'bad@example.test', role: 'admin', password: 'Temporary-Password-2026' }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  await assert.rejects(
+    () => api('resetPassword', { id: createdUser.id, password: 'short' }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  await assert.rejects(
+    () => api('saveSettings', {
+      propertyName: 'Invalid settings',
+      propertyAddress: '',
+      categories: [''],
+      receiptCategories: ['Other'],
+      nextVoucherNo: '',
+      nextReceiptNo: '',
+      openingBalance: '1e6',
+    }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  assert.equal(
+    requests.length,
+    beforeInvalidAdmin,
+    'invalid user and settings operations must be rejected before network access',
+  );
+
 
   const receiptUpload = await api('addReceipt', {
     id: '22222222-2222-4222-8222-222222222222',
