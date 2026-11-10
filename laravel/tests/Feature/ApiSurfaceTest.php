@@ -55,6 +55,7 @@ final class ApiSurfaceTest extends TestCase
             'settings:update',
             'audit:list',
             'audit:voucher-history',
+            'imports:vouchers:create-and-reconcile',
         ] as $resource) {
             self::assertContains($resource, $resources, 'Missing implemented resource: '.$resource);
         }
@@ -76,6 +77,7 @@ final class ApiSurfaceTest extends TestCase
             ['GET', 'api/v1/vouchers'],
             ['POST', 'api/v1/vouchers/duplicate-check'],
             ['POST', 'api/v1/vouchers'],
+            ['POST', 'api/v1/imports/vouchers'],
             ['PATCH', 'api/v1/vouchers/{voucherId}'],
             ['POST', 'api/v1/vouchers/{voucherId}/cancel'],
             ['POST', 'api/v1/vouchers/{voucherId}/approval'],
