@@ -13,12 +13,7 @@
     "POST /sessions/current/password",
     "POST /imports/vouchers (manager/owner; stable source ID; reconciliation and quarantine)"
   ],
-  "legacyRoleKeys": [
-    "staff",
-    "manager",
-    "owner",
-    "accountant"
-  ],
+  "legacyRoleKeys": ["staff", "manager", "owner", "accountant"],
   "businessActionsEnabled": false,
   "notes": [
     "The current Apps Script endpoint remains authoritative.",
