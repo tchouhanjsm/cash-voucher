@@ -883,6 +883,37 @@ ok(
 ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff still sees only own after bulk');
 ok(as(M, 'bootstrap').data.vouchers.length === 53, 'manager sees all');
 
+const replayBulkSource = {
+  bulk: true,
+  sourceSystem: 'manual-csv',
+  entries: [
+    {
+      sourceRecordId: 'bulk-replay-source-1',
+      clientId: 'bulk-bulk-replay-source-1',
+      date: today,
+      vendor: 'Bulk Replay Supplier',
+      amount: 175,
+      category: 'Other',
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+};
+const voucherCountBeforeBulkReplay = g.sheets.Vouchers.rows.length;
+const firstBulkReplay = as(M, 'createVouchers', replayBulkSource);
+const secondBulkReplay = as(M, 'createVouchers', replayBulkSource);
+ok(
+  firstBulkReplay.ok &&
+    secondBulkReplay.ok &&
+    firstBulkReplay.data.created[0].id === secondBulkReplay.data.created[0].id &&
+    secondBulkReplay.data.skipped === 1,
+  'Apps Script bulk retry with the same SourceID replays the original voucher',
+);
+ok(
+  g.sheets.Vouchers.rows.length === voucherCountBeforeBulkReplay + 1,
+  'Apps Script source-ID retry writes exactly one voucher row',
+);
+
 // Owner-approved high-value payment approval policy: inclusive INR 10,000 threshold.
 const approvalDate = '2020-02-01';
 const approvalReportBefore = as(T, 'recordedMovementReport', {
