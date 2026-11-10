@@ -198,22 +198,20 @@
       "path": "/users[/{userId}]",
       "access": "users",
       "kind": "write",
-      "state": "partial",
+      "state": "implemented",
       "serverState": "implemented",
-      "clientState": "planned",
-      "adapterAction": null,
-      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
+      "clientState": "implemented",
+      "adapterAction": "saveUser"
     },
     "resetPassword": {
       "method": "POST",
       "path": "/users/{userId}/password-reset",
       "access": "users",
       "kind": "write",
-      "state": "partial",
+      "state": "implemented",
       "serverState": "implemented",
-      "clientState": "planned",
-      "adapterAction": null,
-      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
+      "clientState": "implemented",
+      "adapterAction": "resetPassword"
     },
     "changePassword": {
       "method": "POST",
@@ -230,11 +228,10 @@
       "path": "/settings",
       "access": "settings",
       "kind": "write",
-      "state": "partial",
+      "state": "implemented",
       "serverState": "implemented",
-      "clientState": "planned",
-      "adapterAction": null,
-      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
+      "clientState": "implemented",
+      "adapterAction": "saveSettings"
     },
     "auditLog": {
       "method": "GET",
