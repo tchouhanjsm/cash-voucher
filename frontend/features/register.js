@@ -1520,6 +1520,573 @@ export function createRegister({ api, go }) {
       return;
     }
 
+    const loading = document.createElement('p');
+    loading.className = 'muted';
+    loading.textContent = 'Loading voucher history…';
+    dialog(voucher ? 'Voucher history for ' + voucherNo(voucher) : 'Voucher history', loading, null);
+
+    api('voucherHistory', {
+      id: voucherId,
+      beforeRow: null,
+      cursor: null,
+      limit: 50,
+      eventCategory: 'ALL',
+    })
+      .then((page) => {
+        closeModal();
+        if (page?.source === 'laravel-sql-audit-events') {
+          historyStructured(voucherId, page);
+        } else {
+          historyLegacy(voucherId, page);
+        }
+      })
+      .catch((error) => {
+        closeModal();
+        fail(error);
+      });
+  }
+
+  function historyLegacy(id, initialPage) {
+    const voucherId = typeof id === 'string' ? id.trim() : '';
+    const voucher = voucherRows().find((item) => item.id === voucherId);
+    if (!voucherId || voucherId.length > 100 || !can('audit')) {
+      fail(new Error('Voucher history is unavailable for this account. Refresh and retry.'));
+      return;
+    }
+
+    const body = document.createElement('div');
+    body.className = 'voucher-history';
+    const note = document.createElement('p');
+    note.className = 'muted voucher-history-intro';
+    note.textContent =
+      'Structured events are matched by stable voucher ID. Some legacy audit entries lack a reliable ID and cannot be linked safely. This is an operational view, not a tamper-evident ledger.';
+    const filterLabel = document.createElement('label');
+    filterLabel.className = 'voucher-history-filter';
+    filterLabel.append('Event type ');
+    const filter = document.createElement('select');
+    filter.id = 'voucherHistoryEventCategory';
+    filter.setAttribute('aria-label', 'Filter voucher history by event type');
+    [
+      ['ALL', 'All events'],
+      ['CREATED', 'Created'],
+      ['UPDATED', 'Updated'],
+      ['CANCELLED', 'Cancelled'],
+      ['APPROVED', 'Payment approved'],
+      ['REJECTED', 'Payment rejected'],
+      ['RECEIPT_ATTACHED', 'Receipt attached'],
+      ['OTHER', 'Other structured events'],
+    ].forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      filter.appendChild(option);
+    });
+    filterLabel.appendChild(filter);
+    const status = document.createElement('p');
+    status.className = 'muted voucher-history-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    status.textContent = 'Loading voucher history…';
+    const exportEvidence = document.createElement('button');
+    exportEvidence.type = 'button';
+    exportEvidence.className = 'btn sm voucher-history-export';
+    exportEvidence.textContent = 'Export review CSV';
+    exportEvidence.disabled = true;
+    exportEvidence.setAttribute(
+      'aria-label',
+      'Export loaded voucher audit coverage and integrity findings as CSV',
+    );
+    const findingsPanel = document.createElement('section');
+    findingsPanel.className = 'voucher-history-findings';
+    findingsPanel.hidden = true;
+    findingsPanel.setAttribute('aria-label', 'Audit integrity findings to reconcile');
+    const findingsHeading = document.createElement('h3');
+    findingsHeading.textContent = 'Integrity findings to reconcile';
+    const findingsList = document.createElement('ul');
+    findingsList.className = 'voucher-history-finding-list';
+    const findingsGuidance = document.createElement('p');
+    findingsGuidance.textContent =
+      'Inspect each referenced AuditLog row against the source voucher, approval or receipt record. Preserve the original rows; document corrections separately and escalate unknown event types or malformed payloads to an owner/admin before relying on this history as complete.';
+    findingsPanel.append(findingsHeading, findingsList, findingsGuidance);
+    const list = document.createElement('div');
+    list.className = 'voucher-history-list';
+    const older = document.createElement('button');
+    older.type = 'button';
+    older.className = 'btn voucher-history-older';
+    older.textContent = 'Load older events';
+    older.hidden = true;
+    body.append(note, filterLabel, status, exportEvidence, findingsPanel, list, older);
+
+    let suppliedFirstPage = initialPage;
+    let beforeRow = null;
+    let loading = false;
+    let eventCategory = 'ALL';
+    let loadedEventCount = 0;
+    const loadedAuditScans = [];
+    const maxAuditExportScans = 100;
+    const seenEventRows = new Map();
+    const repeatedEventRowsAcrossPages = new Map();
+    const observedIntegrityFindings = new Map();
+    let integrityFindingsTruncated = false;
+    const findingLabels = {
+      DUPLICATE_EVENT_ID: 'Duplicate event ID',
+      MISSING_EVENT_ID: 'Missing event ID',
+      UNKNOWN_EVENT_TYPE: 'Unrecognized event type',
+      MALFORMED_CHANGES: 'Malformed change payload',
+      TRUNCATED_CHANGES: 'Change list capped at 30 entries',
+    };
+    const renderIntegrityFindings = (pageFindings) => {
+      pageFindings.items.forEach((finding) => {
+        const key =
+          finding.code + ':' + finding.auditRow + ':' + String(finding.relatedAuditRow || '');
+        if (observedIntegrityFindings.has(key)) return;
+        if (observedIntegrityFindings.size >= 50) {
+          integrityFindingsTruncated = true;
+          return;
+        }
+        observedIntegrityFindings.set(key, finding);
+      });
+      integrityFindingsTruncated = integrityFindingsTruncated || pageFindings.truncated;
+      findingsList.replaceChildren();
+      observedIntegrityFindings.forEach((finding) => {
+        const item = document.createElement('li');
+        let label = findingLabels[finding.code] + ' — AuditLog row #' + finding.auditRow;
+        if (finding.relatedAuditRow !== null) {
+          label += ' (same event ID also appears at AuditLog row #' + finding.relatedAuditRow + ')';
+        }
+        if (finding.eventType) label += ' · ' + finding.eventType;
+        if (finding.eventId) label += ' · Event ID ' + finding.eventId;
+        item.textContent = label;
+        findingsList.appendChild(item);
+      });
+      if (integrityFindingsTruncated) {
+        const noteItem = document.createElement('li');
+        noteItem.textContent =
+          'Additional findings were omitted by the sample limit. Continue through older ranges and record follow-up for each scan.';
+        findingsList.appendChild(noteItem);
+      }
+      findingsPanel.hidden = observedIntegrityFindings.size === 0 && !integrityFindingsTruncated;
+    };
+    const isValidPage = (page, requestedBeforeRow) => {
+      if (
+        !isRecord(page) ||
+        page.eventCategory !== eventCategory ||
+        !isRecord(page.scanDiagnostics) ||
+        ![
+          'recognizedRows',
+          'unstructuredRows',
+          'unsupportedRows',
+          'duplicateEventRows',
+          'missingEventIdRows',
+          'unknownEventTypeRows',
+          'malformedChangeRows',
+          'truncatedChangeRows',
+        ].every(
+          (field) =>
+            Number.isSafeInteger(page.scanDiagnostics[field]) &&
+            page.scanDiagnostics[field] >= 0 &&
+            page.scanDiagnostics[field] <= 500,
+        ) ||
+        page.scanDiagnostics.recognizedRows +
+          page.scanDiagnostics.unstructuredRows +
+          page.scanDiagnostics.unsupportedRows !==
+          page.scannedRows ||
+        !isRecord(page.integrityFindings) ||
+        !Array.isArray(page.integrityFindings.items) ||
+        page.integrityFindings.items.length > 25 ||
+        typeof page.integrityFindings.truncated !== 'boolean' ||
+        !page.integrityFindings.items.every(
+          (finding) =>
+            isRecord(finding) &&
+            Object.prototype.hasOwnProperty.call(findingLabels, finding.code) &&
+            Number.isSafeInteger(finding.auditRow) &&
+            isRecord(page.scanRange) &&
+            finding.auditRow >= page.scanRange.firstRow &&
+            finding.auditRow <= page.scanRange.lastRow &&
+            (finding.relatedAuditRow === null ||
+              (Number.isSafeInteger(finding.relatedAuditRow) &&
+                finding.relatedAuditRow >= page.scanRange.firstRow &&
+                finding.relatedAuditRow <= page.scanRange.lastRow)) &&
+            typeof finding.eventId === 'string' &&
+            finding.eventId.length <= 100 &&
+            typeof finding.eventType === 'string' &&
+            finding.eventType.length <= 100,
+        ) ||
+        !(
+          page.scanRange === null ||
+          (isRecord(page.scanRange) &&
+            Number.isSafeInteger(page.scanRange.firstRow) &&
+            page.scanRange.firstRow >= 2 &&
+            Number.isSafeInteger(page.scanRange.lastRow) &&
+            page.scanRange.lastRow >= page.scanRange.firstRow &&
+            page.scanRange.lastRow - page.scanRange.firstRow + 1 === page.scannedRows &&
+            typeof page.scanRange.hasOlderPage === 'boolean')
+        ) ||
+        !Array.isArray(page.rows) ||
+        page.rows.length > 50 ||
+        !Number.isSafeInteger(page.scannedRows) ||
+        page.scannedRows < 0 ||
+        page.scannedRows > 500 ||
+        !(
+          page.nextBeforeRow === null ||
+          (Number.isSafeInteger(page.nextBeforeRow) && page.nextBeforeRow >= 2)
+        ) ||
+        (page.scannedRows === 0) !== (page.scanRange === null) ||
+        (page.scanRange !== null &&
+          page.scanRange.hasOlderPage !== (page.nextBeforeRow !== null)) ||
+        (page.scanRange !== null &&
+          page.nextBeforeRow !== null &&
+          (page.nextBeforeRow < page.scanRange.firstRow ||
+            page.nextBeforeRow > page.scanRange.lastRow)) ||
+        (requestedBeforeRow !== null &&
+          requestedBeforeRow !== undefined &&
+          page.nextBeforeRow !== null &&
+          page.nextBeforeRow >= requestedBeforeRow) ||
+        (requestedBeforeRow !== null &&
+          requestedBeforeRow !== undefined &&
+          page.scanRange !== null &&
+          page.scanRange.lastRow >= requestedBeforeRow)
+      ) {
+        return false;
+      }
+      if (
+        page.auditHealth !== undefined &&
+        (!isRecord(page.auditHealth) ||
+          !['NO_KNOWN_FAILURE', 'DEGRADED', 'MONITORING_UNAVAILABLE'].includes(
+            page.auditHealth.status,
+          ))
+      ) {
+        return false;
+      }
+      return page.rows.every(
+        (event, index) =>
+          isRecord(event) &&
+          Number.isSafeInteger(event.auditRow) &&
+          page.scanRange !== null &&
+          event.auditRow >= page.scanRange.firstRow &&
+          event.auditRow <= page.scanRange.lastRow &&
+          (index === 0 || page.rows[index - 1].auditRow > event.auditRow) &&
+          ['time', 'user', 'action', 'target', 'eventId', 'eventType', 'summary', 'reason'].every(
+            (field) => typeof event[field] === 'string' && event[field].length <= 500,
+          ) &&
+          Array.isArray(event.changes) &&
+          event.changes.length <= 30 &&
+          event.changes.every(
+            (change) =>
+              isRecord(change) &&
+              typeof change.field === 'string' &&
+              change.field.length <= 100 &&
+              typeof change.before === 'string' &&
+              change.before.length <= 300 &&
+              typeof change.after === 'string' &&
+              change.after.length <= 300,
+          ),
+      );
+    };
+
+    const appendEvents = (events) => {
+      const eventRowsFromEarlierPages = new Map(seenEventRows);
+      const repeatedOnThisPage = new Map();
+      events.forEach((event) => {
+        if (event.eventId) {
+          if (eventRowsFromEarlierPages.has(event.eventId)) {
+            repeatedOnThisPage.set(event.eventId, {
+              firstRow: eventRowsFromEarlierPages.get(event.eventId),
+              repeatedRow: event.auditRow,
+              eventType: event.eventType,
+            });
+          } else if (!seenEventRows.has(event.eventId)) {
+            seenEventRows.set(event.eventId, event.auditRow);
+          }
+        }
+        const card = document.createElement('article');
+        card.className = 'voucher-history-event';
+        const title = document.createElement('h3');
+        title.textContent = event.summary || event.eventType || event.action || 'Audit event';
+        const metadata = document.createElement('p');
+        metadata.className = 'voucher-history-meta muted';
+        metadata.textContent = [
+          event.time,
+          event.user,
+          event.action,
+          event.eventType,
+          'AuditLog row #' + event.auditRow,
+        ]
+          .filter(Boolean)
+          .join(' · ');
+        card.append(title, metadata);
+        if (event.reason) {
+          const reason = document.createElement('p');
+          reason.className = 'voucher-history-reason';
+          reason.textContent = 'Reason: ' + event.reason;
+          card.appendChild(reason);
+        }
+        if (event.changes.length) {
+          const changes = document.createElement('ul');
+          changes.className = 'voucher-history-changes';
+          event.changes.forEach((change) => {
+            const item = document.createElement('li');
+            item.textContent = change.field + ': ' + change.before + ' → ' + change.after;
+            changes.appendChild(item);
+          });
+          card.appendChild(changes);
+        }
+        list.appendChild(card);
+        loadedEventCount++;
+      });
+      repeatedOnThisPage.forEach((rowReferences, eventId) =>
+        repeatedEventRowsAcrossPages.set(eventId, rowReferences),
+      );
+      const rowReferences = Array.from(repeatedEventRowsAcrossPages.entries())
+        .slice(0, 3)
+        .map(
+          ([eventId, rows]) =>
+            eventId + ': AuditLog rows #' + rows.firstRow + ' and #' + rows.repeatedRow,
+        );
+      const findings = Array.from(repeatedOnThisPage.entries()).map(([eventId, rows]) => ({
+        code: 'DUPLICATE_EVENT_ID',
+        auditRow: rows.repeatedRow,
+        relatedAuditRow: rows.firstRow,
+        eventId: eventId,
+        eventType: rows.eventType || '',
+      }));
+      return {
+        count: repeatedEventRowsAcrossPages.size,
+        rowReferences: rowReferences,
+        findings: findings,
+      };
+    };
+
+    const loadPage = async (append) => {
+      if (loading) return;
+      loading = true;
+      older.disabled = true;
+      filter.disabled = true;
+      older.textContent = 'Loading older events…';
+      try {
+        const requestedBeforeRow = beforeRow;
+        const page = !append && suppliedFirstPage
+          ? suppliedFirstPage
+          : await api('voucherHistory', {
+              id: voucherId,
+              beforeRow: requestedBeforeRow,
+              eventCategory,
+            });
+        suppliedFirstPage = null;
+        if (!isValidPage(page, requestedBeforeRow)) {
+          throw new Error('The server returned invalid voucher-history data.');
+        }
+        if (!append) {
+          list.replaceChildren();
+          loadedAuditScans.length = 0;
+        }
+        if (loadedAuditScans.length >= maxAuditExportScans) {
+          throw new Error(
+            'This review reached the 100-range export limit. Export the loaded evidence before starting a new review.',
+          );
+        }
+        const repeatedAcrossPages = appendEvents(page.rows);
+        const exportFindingCandidates = [
+          ...page.integrityFindings.items,
+          ...repeatedAcrossPages.findings,
+        ];
+        const exportFindingSamples = exportFindingCandidates.slice(0, 25).map((finding) => ({
+          code: finding.code,
+          auditRow: finding.auditRow,
+          relatedAuditRow: finding.relatedAuditRow,
+          eventId: finding.eventId,
+          eventType: finding.eventType,
+        }));
+        const exportFindingsTruncated =
+          page.integrityFindings.truncated || exportFindingCandidates.length > 25;
+        loadedAuditScans.push({
+          eventCategory: page.eventCategory,
+          scannedRows: page.scannedRows,
+          scanRange: page.scanRange
+            ? {
+                firstRow: page.scanRange.firstRow,
+                lastRow: page.scanRange.lastRow,
+                hasOlderPage: page.scanRange.hasOlderPage,
+              }
+            : null,
+          scanDiagnostics: { ...page.scanDiagnostics },
+          integrityFindings: {
+            items: exportFindingSamples,
+            truncated: exportFindingsTruncated,
+          },
+        });
+        exportEvidence.disabled = false;
+        renderIntegrityFindings({
+          items: exportFindingCandidates,
+          truncated: page.integrityFindings.truncated || exportFindingCandidates.length > 50,
+        });
+        beforeRow = page.nextBeforeRow;
+        older.hidden = beforeRow === null;
+        status.className = 'muted voucher-history-status';
+        if (page.auditHealth && page.auditHealth.status !== 'NO_KNOWN_FAILURE') {
+          status.className = 'error voucher-history-status';
+          status.textContent =
+            'Audit monitoring is ' +
+            page.auditHealth.status.replace(/_/g, ' ').toLowerCase() +
+            '. This view cannot prove that every audit event was saved.';
+        } else if (page.rows.length) {
+          const categoryLabel =
+            filter.options[filter.selectedIndex]?.textContent || 'selected event type';
+          status.textContent =
+            'Loaded ' +
+            loadedEventCount +
+            ' structured event(s) matching ' +
+            categoryLabel.toLowerCase() +
+            '. This page scanned ' +
+            page.scannedRows +
+            ' audit row(s).';
+        } else if (beforeRow !== null && loadedEventCount === 0) {
+          status.textContent =
+            'No matching ' +
+            (
+              filter.options[filter.selectedIndex]?.textContent || 'selected event type'
+            ).toLowerCase() +
+            ' events were found for this voucher in the ' +
+            page.scannedRows +
+            ' most recently scanned audit row(s). Load older events to continue.';
+        } else if (beforeRow !== null) {
+          status.textContent =
+            'No additional matching events were found in the older audit range. Load older events to continue.';
+        } else if (loadedEventCount === 0) {
+          status.textContent =
+            'No structured events could be linked to this voucher. Legacy audit rows may not contain a stable voucher ID.';
+        } else {
+          status.textContent = 'Reached the oldest available audit rows.';
+        }
+        if (page.scanRange) {
+          status.textContent +=
+            ' Searched AuditLog rows ' +
+            page.scanRange.firstRow +
+            '–' +
+            page.scanRange.lastRow +
+            '. ' +
+            (page.scanRange.hasOlderPage
+              ? 'Older rows remain available.'
+              : 'No older rows remain.');
+        } else if (page.scannedRows === 0) {
+          status.textContent += ' No AuditLog rows were available to search.';
+        }
+        const scanDiagnostics = page.scanDiagnostics;
+        status.textContent +=
+          ' Coverage diagnostics: ' +
+          scanDiagnostics.recognizedRows +
+          ' recognized audit envelope(s), ' +
+          scanDiagnostics.unstructuredRows +
+          ' unstructured row(s), ' +
+          scanDiagnostics.unsupportedRows +
+          ' unsupported row(s).';
+        if (scanDiagnostics.unstructuredRows || scanDiagnostics.unsupportedRows) {
+          status.textContent +=
+            ' Unstructured and unsupported rows were not used to link events to this voucher.';
+        }
+        status.textContent +=
+          ' Integrity diagnostics: ' +
+          scanDiagnostics.missingEventIdRows +
+          ' missing event ID(s), ' +
+          scanDiagnostics.unknownEventTypeRows +
+          ' unrecognized event type(s), ' +
+          scanDiagnostics.malformedChangeRows +
+          ' malformed change payload(s), ' +
+          scanDiagnostics.truncatedChangeRows +
+          ' change list(s) capped at 30 entries.';
+        if (
+          scanDiagnostics.missingEventIdRows ||
+          scanDiagnostics.unknownEventTypeRows ||
+          scanDiagnostics.malformedChangeRows ||
+          scanDiagnostics.truncatedChangeRows
+        ) {
+          status.textContent +=
+            ' Missing IDs prevent duplicate checks for those rows; unrecognized and malformed payloads need review before relying on completeness.';
+          status.className = 'error voucher-history-status';
+        }
+        if (scanDiagnostics.duplicateEventRows) {
+          status.textContent +=
+            ' Repeated event identifiers found: ' +
+            scanDiagnostics.duplicateEventRows +
+            ' duplicate row(s) in this scan. The rows remain visible; review the audit log before relying on completeness.';
+          status.className = 'error voucher-history-status';
+        }
+        if (beforeRow !== null && loadedAuditScans.length >= maxAuditExportScans) {
+          status.textContent +=
+            ' The review reached the 100-range export limit. Export current evidence before restarting with another filter.';
+        }
+        if (repeatedAcrossPages.count) {
+          status.textContent +=
+            ' Repeated event identifiers across loaded pages: ' +
+            repeatedAcrossPages.count +
+            ' unique event ID(s). Rows remain visible; review the audit log before relying on completeness.';
+          if (repeatedAcrossPages.rowReferences.length) {
+            status.textContent +=
+              ' Row references: ' + repeatedAcrossPages.rowReferences.join('; ') + '.';
+          }
+          status.className = 'error voucher-history-status';
+        }
+      } catch (error) {
+        status.className = 'error voucher-history-status';
+        status.textContent =
+          error && typeof error.message === 'string'
+            ? error.message.slice(0, 300)
+            : 'Voucher history could not be loaded. Check the connection and retry.';
+      } finally {
+        loading = false;
+        older.disabled = beforeRow === null || loadedAuditScans.length >= maxAuditExportScans;
+        filter.disabled = false;
+        older.textContent = 'Load older events';
+        older.hidden = beforeRow === null;
+      }
+    };
+
+    exportEvidence.addEventListener('click', () => {
+      try {
+        const exportedAt = new Date().toISOString();
+        const csv = createAuditReconciliationCsv(loadedAuditScans, exportedAt);
+        const timestamp = exportedAt.replace(/[:.]/g, '-');
+        download(
+          'voucher-audit-reconciliation-' + timestamp + '.csv',
+          csv,
+          'text/csv;charset=utf-8',
+        );
+        toast('Audit reconciliation evidence exported.', 'ok');
+      } catch (error) {
+        fail(error);
+      }
+    });
+    filter.addEventListener('change', () => {
+      if (loading) return;
+      eventCategory = filter.value;
+      beforeRow = null;
+      loadedEventCount = 0;
+      loadedAuditScans.length = 0;
+      exportEvidence.disabled = true;
+      seenEventRows.clear();
+      repeatedEventRowsAcrossPages.clear();
+      observedIntegrityFindings.clear();
+      integrityFindingsTruncated = false;
+      findingsList.replaceChildren();
+      findingsPanel.hidden = true;
+      list.replaceChildren();
+      status.className = 'muted voucher-history-status';
+      status.textContent = 'Loading voucher history…';
+      loadPage(false);
+    });
+    older.addEventListener('click', () => loadPage(true));
+    dialog(voucher ? 'Voucher history for ' + voucherNo(voucher) : 'Voucher history', body, null);
+    loadPage(false);
+  }
+
+  function historyStructured(id, initialPage) {
+    const voucherId = typeof id === 'string' ? id.trim() : '';
+    const voucher = voucherRows().find((item) => item.id === voucherId);
+    if (!voucherId || voucherId.length > 100 || !can('audit')) {
+      fail(new Error('Voucher history is unavailable for this account. Refresh and retry.'));
+      return;
+    }
+
     const body = document.createElement('div');
     body.className = 'voucher-history';
     const note = document.createElement('p');
@@ -1576,6 +2143,7 @@ export function createRegister({ api, go }) {
 
     const MAX_EXPORT_EVENTS = 1000;
     let cursor = null;
+    let suppliedFirstPage = initialPage;
     let loading = false;
     let hasMore = false;
     let loadedVoucher = null;
@@ -1634,12 +2202,15 @@ export function createRegister({ api, go }) {
       filter.disabled = true;
       older.textContent = 'Loading older events…';
       try {
-        const page = await api('voucherHistory', {
-          id: voucherId,
-          cursor: append ? cursor : null,
-          limit: Math.min(100, MAX_EXPORT_EVENTS - loadedEvents.length),
-          eventCategory,
-        });
+        const page = !append && suppliedFirstPage
+          ? suppliedFirstPage
+          : await api('voucherHistory', {
+              id: voucherId,
+              cursor: append ? cursor : null,
+              limit: Math.min(100, MAX_EXPORT_EVENTS - loadedEvents.length),
+              eventCategory,
+            });
+        suppliedFirstPage = null;
         if (!page || page.source !== 'laravel-sql-audit-events' || page.voucher?.id !== voucherId) {
           throw new Error('The server returned voucher history from an unexpected source.');
         }
