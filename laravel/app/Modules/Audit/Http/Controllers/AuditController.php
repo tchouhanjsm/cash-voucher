@@ -38,6 +38,7 @@ final class AuditController
             $voucherId,
             $request->query('limit'),
             $request->query('cursor'),
+            $request->query('eventCategory', 'ALL'),
         );
 
         return ApiResponse::success($result, (string) $request->attributes->get('request_id'));
