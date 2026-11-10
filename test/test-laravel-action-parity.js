@@ -173,6 +173,11 @@ for (const field of [
   );
 }
 const createVoucherContract = actionMap.fieldContracts.createVouchers;
+assert.ok(
+  createVoucherContract.laravelRequestFields.includes('rows[].sourceRowNumber'),
+  'createVouchers must document the original source-row number passed to the Laravel import ledger',
+);
+
 for (const field of [
   'sourceSystem',
   'entries[].sourceRecordId',
