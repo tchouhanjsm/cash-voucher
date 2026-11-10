@@ -1,16 +1,6 @@
 {
   "schemaVersion": 2,
   "actions": {
-    "login": {
-      "method": "POST",
-      "path": "/sessions",
-      "access": "public",
-      "kind": "authentication",
-      "state": "implemented",
-      "serverState": "implemented",
-      "clientState": "implemented",
-      "adapterAction": "login"
-    },
     "logout": {
       "method": "POST",
       "path": "/sessions/current/logout",
@@ -422,63 +412,698 @@
     }
   },
   "fieldContracts": {
-    "createVouchers": {
-      "requiredEntryFields": [
-        "sourceRecordId",
-        "date",
+    "logout": {
+      "legacyRequestFields": [
+        "token"
+      ],
+      "legacyResponseFields": [
+        "signedOut"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [
+        "signedOut"
+      ],
+      "notes": "Laravel uses the HttpOnly session cookie and CSRF contract; it intentionally does not accept a legacy bearer token.",
+      "coverage": "implemented"
+    },
+    "bootstrap": {
+      "legacyRequestFields": [],
+      "legacyResponseFields": [
+        "property",
+        "me",
+        "categories",
+        "receiptCategories",
+        "vendors",
+        "users",
+        "vouchers",
+        "capabilities"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [
+        "property",
+        "me",
+        "categories",
+        "receiptCategories",
+        "vendors",
+        "users",
+        "vouchers",
+        "capabilities"
+      ],
+      "notes": "Read-only bootstrap payload. Verify any newly added fields against the bootstrap controller and UI mapper before expanding this inventory.",
+      "coverage": "implemented"
+    },
+    "registerPage": {
+      "legacyRequestFields": [
+        "q",
         "vendor",
-        "amount",
+        "cat",
+        "user",
+        "from",
+        "to",
         "type",
-        "cashImpact",
-        "clientId"
-      ],
-      "optionalEntryFields": [
-        "vendorId",
-        "category",
-        "notes",
+        "status",
+        "approval",
         "paymentMethod",
-        "duplicateConfirmationToken",
-        "sourceStatus",
-        "sourceApprovalStatus",
-        "sourceVoucherNo",
-        "sourceReceipts",
-        "sourceVendorType"
+        "cashImpact",
+        "amountValidity",
+        "offset",
+        "limit"
       ],
-      "responseFields": [
+      "legacyResponseFields": [
+        "items[]",
+        "totalCount",
+        "hasMore",
+        "offset",
+        "limit",
+        "totals",
+        "facets",
+        "diagnostics"
+      ],
+      "laravelRequestFields": [
+        "q",
+        "vendor",
+        "cat",
+        "user",
+        "from",
+        "to",
+        "type",
+        "status",
+        "approval",
+        "paymentMethod",
+        "cashImpact",
+        "amountValidity",
+        "offset",
+        "limit"
+      ],
+      "laravelResponseFields": [
+        "items[]",
+        "totalCount",
+        "hasMore",
+        "offset",
+        "limit",
+        "totals",
+        "facets",
+        "diagnostics"
+      ],
+      "notes": "Register filters are kept in legacy names at the browser boundary and validated/normalized by the Laravel request controller.",
+      "coverage": "implemented"
+    },
+    "checkVoucherDuplicates": {
+      "legacyRequestFields": [
+        "type",
+        "entries[].index",
+        "entries[].date",
+        "entries[].vendor",
+        "entries[].amount"
+      ],
+      "legacyResponseFields": [
+        "duplicateIndexes[]"
+      ],
+      "laravelRequestFields": [
+        "type",
+        "entries[].clientId",
+        "entries[].date",
+        "entries[].vendor",
+        "entries[].vendorId",
+        "entries[].amount",
+        "entries[].type",
+        "entries[].cashImpact",
+        "entries[].paymentMethod",
+        "entries[].category",
+        "entries[].notes"
+      ],
+      "laravelResponseFields": [
+        "results[].index",
+        "results[].clientId",
+        "results[].duplicateCount",
+        "results[].hiddenCount",
+        "results[].confirmationToken"
+      ],
+      "notes": "Compatibility duplicate-review action shares the authenticated voucher duplicate-check endpoint. The adapter derives legacy duplicate indexes from structured per-entry results.",
+      "coverage": "implemented"
+    },
+    "checkPaymentDuplicates": {
+      "legacyRequestFields": [
+        "entries[].clientId",
+        "entries[].date",
+        "entries[].vendor",
+        "entries[].vendorId",
+        "entries[].amount",
+        "entries[].type",
+        "entries[].cashImpact",
+        "entries[].paymentMethod",
+        "entries[].category",
+        "entries[].notes"
+      ],
+      "legacyResponseFields": [
+        "results[].index",
+        "results[].clientId",
+        "results[].duplicateCount",
+        "results[].hiddenCount",
+        "results[].confirmationToken"
+      ],
+      "laravelRequestFields": [
+        "entries[].clientId",
+        "entries[].date",
+        "entries[].vendor",
+        "entries[].vendorId",
+        "entries[].amount",
+        "entries[].type",
+        "entries[].cashImpact",
+        "entries[].paymentMethod",
+        "entries[].category",
+        "entries[].notes"
+      ],
+      "laravelResponseFields": [
+        "results[].index",
+        "results[].clientId",
+        "results[].duplicateCount",
+        "results[].hiddenCount",
+        "results[].confirmationToken"
+      ],
+      "notes": "Duplicate candidates are advisory; the server rechecks and requires a valid confirmation token at create time.",
+      "coverage": "implemented"
+    },
+    "dashboardSummary": {
+      "legacyRequestFields": [
+        "from",
+        "to"
+      ],
+      "legacyResponseFields": [
+        "from",
+        "to",
+        "payments",
+        "receipts",
+        "totals",
+        "daily",
+        "categories",
+        "paymentMethods"
+      ],
+      "laravelRequestFields": [
+        "from",
+        "to"
+      ],
+      "laravelResponseFields": [
+        "from",
+        "to",
+        "payments",
+        "receipts",
+        "totals",
+        "daily",
+        "categories",
+        "paymentMethods"
+      ],
+      "notes": "Read model summary; all monetary values are server-derived and represented in INR decimal strings at the API boundary.",
+      "coverage": "implemented"
+    },
+    "dailyOperationsSummary": {
+      "legacyRequestFields": [],
+      "legacyResponseFields": [
+        "date",
+        "openingCash",
+        "cashInTotal",
+        "cashOutTotal",
+        "expectedCash",
+        "closed",
+        "openingCashRequired"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [
+        "date",
+        "openingCash",
+        "cashInTotal",
+        "cashOutTotal",
+        "expectedCash",
+        "closed",
+        "openingCashRequired"
+      ],
+      "notes": "Legacy daily operations summary maps to the authenticated cash-close preview read model.",
+      "coverage": "implemented"
+    },
+    "createVouchers": {
+      "legacyRequestFields": [
+        "bulk",
+        "entries[].sourceRecordId",
+        "entries[].date",
+        "entries[].vendor",
+        "entries[].vendorId",
+        "entries[].amount",
+        "entries[].category",
+        "entries[].notes",
+        "entries[].type",
+        "entries[].cashImpact",
+        "entries[].paymentMethod",
+        "entries[].clientId",
+        "entries[].duplicateConfirmationToken",
+        "entries[].sourceStatus",
+        "entries[].sourceApprovalStatus",
+        "entries[].sourceVoucherNo",
+        "entries[].sourceReceipts"
+      ],
+      "legacyResponseFields": [
+        "created[]",
+        "skipped",
+        "created[].id",
+        "created[].voucherNo",
+        "created[].approvalStatus"
+      ],
+      "laravelRequestFields": [
+        "sourceSystem",
+        "batchId",
+        "rows[].sourceRecordId",
+        "rows[].voucher.date",
+        "rows[].voucher.vendor",
+        "rows[].voucher.vendorId",
+        "rows[].voucher.amount",
+        "rows[].voucher.category",
+        "rows[].voucher.notes",
+        "rows[].voucher.type",
+        "rows[].voucher.cashImpact",
+        "rows[].voucher.paymentMethod",
+        "rows[].voucher.duplicateConfirmationToken",
+        "rows[].voucher.sourceStatus",
+        "rows[].voucher.sourceApprovalStatus",
+        "rows[].voucher.sourceVoucherNo",
+        "rows[].voucher.sourceReceipts"
+      ],
+      "laravelResponseFields": [
         "batchId",
         "status",
-        "rows",
+        "created[]",
+        "rows[]",
+        "rows[].sourceRecordId",
+        "rows[].status",
+        "rows[].voucherId",
+        "rows[].errorCode",
+        "rows[].errorMessage",
         "reconciliation.rowCount",
         "reconciliation.importedCount",
         "reconciliation.replayedCount",
         "reconciliation.quarantinedCount",
         "reconciliation.pendingCount",
+        "reconciliation.sourceTotalPaise",
+        "reconciliation.importedTotalPaise",
+        "reconciliation.quarantinedTotalPaise",
+        "reconciliation.pendingTotalPaise",
         "reconciliation.variancePaise",
         "reconciliation.balanced"
       ],
-      "guarantees": [
-        "stable source ID",
-        "stable batch retry identity",
-        "source row hash",
-        "unique source_legacy_id",
-        "transactional voucher plus audit event",
-        "explicit quarantine",
-        "paise-based reconciliation"
-      ],
-      "notes": "Per-row outcomes preserve source identifiers. Rows with non-importable historical state are never flattened into the active-entry payload."
+      "notes": "Single entries use the voucher create route; bounded bulk batches use /imports/vouchers. Stable source IDs and row hashes drive replay, conflicts are quarantined, and totals reconcile in paise. Historical status, approval, voucher-number and receipt values are not discarded; they quarantine for specialist migration.",
+      "coverage": "implemented"
     },
-    "voucherHistory": {
-      "requestFields": [
+    "updateVoucher": {
+      "legacyRequestFields": [
         "id",
-        "cursor",
-        "limit",
-        "eventCategory"
+        "fields",
+        "reason"
       ],
-      "responseFields": [
-        "source",
-        "voucher",
+      "legacyResponseFields": [
+        "id",
+        "voucherNo",
+        "date",
+        "vendor",
+        "amount",
+        "category",
+        "notes",
+        "type",
+        "status",
+        "cashImpact",
+        "paymentMethod"
+      ],
+      "laravelRequestFields": [
+        "voucherId",
+        "date",
+        "vendor",
+        "vendorId",
+        "amount",
+        "category",
+        "notes",
+        "cashImpact",
+        "paymentMethod",
+        "reason"
+      ],
+      "laravelResponseFields": [
+        "id",
+        "voucherNo",
+        "date",
+        "vendor",
+        "amount",
+        "category",
+        "notes",
+        "type",
+        "status",
+        "cashImpact",
+        "paymentMethod"
+      ],
+      "notes": "The adapter expands the legacy fields object into the Laravel PATCH contract and preserves the audit reason. Only supported fields are forwarded.",
+      "coverage": "implemented"
+    },
+    "cancelVoucher": {
+      "legacyRequestFields": [
+        "id",
+        "reason"
+      ],
+      "legacyResponseFields": [
+        "id",
+        "status",
+        "cancelReason"
+      ],
+      "laravelRequestFields": [
+        "voucherId",
+        "reason"
+      ],
+      "laravelResponseFields": [
+        "id",
+        "status",
+        "cancelReason"
+      ],
+      "notes": "Cancellation is a server-authoritative online-only lifecycle mutation.",
+      "coverage": "implemented"
+    },
+    "approveVoucher": {
+      "legacyRequestFields": [
+        "id"
+      ],
+      "legacyResponseFields": [
+        "id",
+        "approvalStatus",
+        "approvedBy",
+        "approvedAt"
+      ],
+      "laravelRequestFields": [
+        "voucherId"
+      ],
+      "laravelResponseFields": [
+        "id",
+        "approvalStatus",
+        "approvedBy",
+        "approvedAt"
+      ],
+      "notes": "Approval eligibility and creator separation are enforced by Laravel; client cannot set approval state.",
+      "coverage": "implemented"
+    },
+    "rejectVoucher": {
+      "legacyRequestFields": [
+        "id",
+        "reason"
+      ],
+      "legacyResponseFields": [
+        "id",
+        "approvalStatus",
+        "approvalReason"
+      ],
+      "laravelRequestFields": [
+        "voucherId",
+        "reason"
+      ],
+      "laravelResponseFields": [
+        "id",
+        "approvalStatus",
+        "approvalReason"
+      ],
+      "notes": "Rejection reason is required and recorded as an append-only decision.",
+      "coverage": "implemented"
+    },
+    "addReceipt": {
+      "legacyRequestFields": [
+        "id",
+        "receipt.mime",
+        "receipt.data"
+      ],
+      "legacyResponseFields": [
+        "receipts[]",
+        "receipts[].id",
+        "receipts[].mime",
+        "receipts[].size",
+        "receipts[].sha256"
+      ],
+      "laravelRequestFields": [
+        "voucherId",
+        "receipt.mime",
+        "receipt.data"
+      ],
+      "laravelResponseFields": [
+        "receipts[]",
+        "receipts[].id",
+        "receipts[].mime",
+        "receipts[].size",
+        "receipts[].sha256"
+      ],
+      "notes": "Private receipt bytes are validated and stored outside the public web root; idempotent attachment is a separate operation from voucher creation/import.",
+      "coverage": "implemented"
+    },
+    "getReceipt": {
+      "legacyRequestFields": [
+        "id",
+        "fileId"
+      ],
+      "legacyResponseFields": [
+        "dataUrl",
+        "mime",
+        "filename"
+      ],
+      "laravelRequestFields": [
+        "receiptId"
+      ],
+      "laravelResponseFields": [
+        "dataUrl",
+        "mime",
+        "filename"
+      ],
+      "notes": "The browser maps the legacy fileId to a server-issued private receipt ID; retrieval requires voucher access and private storage authorization.",
+      "coverage": "implemented"
+    },
+    "saveVendor": {
+      "legacyRequestFields": [
+        "id",
+        "name",
+        "company",
+        "mobile",
+        "defaultCategory",
+        "defaultPaymentMethod"
+      ],
+      "legacyResponseFields": [
+        "id",
+        "name",
+        "company",
+        "mobile",
+        "active",
+        "defaultCategory",
+        "defaultPaymentMethod"
+      ],
+      "laravelRequestFields": [
+        "vendorId",
+        "name",
+        "company",
+        "mobile",
+        "defaultCategory",
+        "defaultPaymentMethod"
+      ],
+      "laravelResponseFields": [
+        "id",
+        "name",
+        "company",
+        "mobile",
+        "active",
+        "defaultCategory",
+        "defaultPaymentMethod"
+      ],
+      "notes": "Create and update are idempotent Laravel writes. Vendor identity claims prevent ambiguous normalized-name collisions.",
+      "coverage": "implemented"
+    },
+    "toggleVendor": {
+      "legacyRequestFields": [
+        "id",
+        "active"
+      ],
+      "legacyResponseFields": [
+        "id",
+        "active"
+      ],
+      "laravelRequestFields": [
+        "vendorId",
+        "active"
+      ],
+      "laravelResponseFields": [
+        "id",
+        "active"
+      ],
+      "notes": "Active-state changes are server-authoritative and do not delete historical voucher snapshots.",
+      "coverage": "implemented"
+    },
+    "listUsers": {
+      "legacyRequestFields": [],
+      "legacyResponseFields": [
+        "users[]",
+        "users[].id",
+        "users[].name",
+        "users[].email",
+        "users[].role",
+        "users[].active",
+        "users[].mustChangePassword"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [
+        "users[]",
+        "users[].id",
+        "users[].name",
+        "users[].email",
+        "users[].role",
+        "users[].active",
+        "users[].mustChangePassword"
+      ],
+      "notes": "User list is owner-authorized and omits password hashes, secrets and session material.",
+      "coverage": "implemented"
+    },
+    "saveUser": {
+      "legacyRequestFields": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "password",
+        "active"
+      ],
+      "legacyResponseFields": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "active",
+        "mustChangePassword"
+      ],
+      "laravelRequestFields": [
+        "userId",
+        "name",
+        "email",
+        "role",
+        "temporaryPassword",
+        "active"
+      ],
+      "laravelResponseFields": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "active",
+        "mustChangePassword"
+      ],
+      "notes": "Legacy password input is normalized to temporaryPassword in the request body. Retry identities do not contain the secret itself.",
+      "coverage": "implemented"
+    },
+    "resetPassword": {
+      "legacyRequestFields": [
+        "id",
+        "password"
+      ],
+      "legacyResponseFields": [
+        "id",
+        "mustChangePassword"
+      ],
+      "laravelRequestFields": [
+        "userId",
+        "temporaryPassword"
+      ],
+      "laravelResponseFields": [
+        "id",
+        "mustChangePassword"
+      ],
+      "notes": "Temporary password is never copied into idempotency headers or logs; target account is forced to change it.",
+      "coverage": "implemented"
+    },
+    "changePassword": {
+      "legacyRequestFields": [
+        "oldPassword",
+        "newPassword",
+        "token"
+      ],
+      "legacyResponseFields": [
+        "changed",
+        "sessionRevoked",
+        "requiresSignIn"
+      ],
+      "laravelRequestFields": [
+        "oldPassword",
+        "newPassword"
+      ],
+      "laravelResponseFields": [
+        "changed",
+        "sessionRevoked",
+        "requiresSignIn"
+      ],
+      "notes": "Cookie-backed Laravel session replaces the legacy token field; successful changes revoke active sessions.",
+      "coverage": "implemented"
+    },
+    "saveSettings": {
+      "legacyRequestFields": [
+        "propertyName",
+        "propertyAddress",
+        "categories",
+        "receiptCategories",
+        "nextVoucherNo",
+        "nextReceiptNo",
+        "openingBalance"
+      ],
+      "legacyResponseFields": [
+        "settings.propertyName",
+        "settings.propertyAddress",
+        "settings.categories",
+        "settings.receiptCategories",
+        "settings.nextVoucherNo",
+        "settings.nextReceiptNo",
+        "settings.openingBalance"
+      ],
+      "laravelRequestFields": [
+        "propertyName",
+        "propertyAddress",
+        "categories",
+        "receiptCategories",
+        "nextVoucherNo",
+        "nextReceiptNo",
+        "openingBalance"
+      ],
+      "laravelResponseFields": [
+        "settings.propertyName",
+        "settings.propertyAddress",
+        "settings.categories",
+        "settings.receiptCategories",
+        "settings.nextVoucherNo",
+        "settings.nextReceiptNo",
+        "settings.openingBalance"
+      ],
+      "notes": "Settings writes are owner-authorized, validated and idempotent; sequence changes remain constrained by reconciliation/number-series rules.",
+      "coverage": "implemented"
+    },
+    "auditLog": {
+      "legacyRequestFields": [
+        "beforeRow"
+      ],
+      "legacyResponseFields": [
+        "rows[]",
+        "rows[].auditRow",
+        "rows[].time",
+        "rows[].user",
+        "rows[].action",
+        "rows[].target",
+        "rows[].eventId",
+        "rows[].eventType",
+        "rows[].changes[]",
+        "nextBeforeRow",
+        "scanRange",
+        "scanDiagnostics",
+        "integrityFindings",
+        "auditHealth"
+      ],
+      "laravelRequestFields": [
+        "cursor",
+        "limit"
+      ],
+      "laravelResponseFields": [
+        "items[]",
         "items[].id",
+        "items[].actorEmail",
         "items[].eventType",
+        "items[].targetType",
         "items[].targetId",
         "items[].before",
         "items[].after",
@@ -487,37 +1112,311 @@
         "nextCursor",
         "hasMore"
       ],
-      "exportFields": [
-        "sourceSystem",
-        "sourceScope",
-        "coverageStatement",
-        "eventId",
-        "occurredAtUtc",
-        "actorEmail",
-        "eventType",
-        "targetId",
-        "beforeJson",
-        "afterJson"
-      ],
-      "notes": "The structured SQL export does not fabricate spreadsheet row numbers or claim historical spreadsheet coverage."
+      "notes": "SQL keyset cursor is deliberately not presented as a spreadsheet row number. Global SQL audit view is separate from source-row scan coverage diagnostics.",
+      "coverage": "implemented"
     },
-    "checkVoucherDuplicates": {
-      "requestFields": [
-        "entries[].clientId",
-        "entries[].date",
-        "entries[].vendor",
-        "entries[].amount",
-        "entries[].type",
-        "entries[].cashImpact",
-        "entries[].paymentMethod"
+    "voucherHistory": {
+      "legacyRequestFields": [
+        "id",
+        "beforeRow",
+        "eventCategory"
       ],
-      "responseFields": [
-        "results[].index",
-        "results[].clientId",
-        "results[].duplicateCount",
-        "results[].hiddenCount",
-        "results[].confirmationToken"
-      ]
+      "legacyResponseFields": [
+        "rows[]",
+        "nextBeforeRow",
+        "scanRange",
+        "scanDiagnostics",
+        "integrityFindings",
+        "auditHealth"
+      ],
+      "laravelRequestFields": [
+        "voucherId",
+        "cursor",
+        "limit",
+        "eventCategory"
+      ],
+      "laravelResponseFields": [
+        "source",
+        "voucher",
+        "items[]",
+        "items[].id",
+        "items[].actorEmail",
+        "items[].eventType",
+        "items[].before",
+        "items[].after",
+        "items[].reason",
+        "items[].occurredAtUtc",
+        "nextCursor",
+        "hasMore"
+      ],
+      "notes": "SQL event pages are source-labelled and exports carry explicit non-snapshot coverage metadata; legacy spreadsheet audit rows lacking stable voucher IDs are excluded rather than assigned synthetic IDs or row numbers.",
+      "coverage": "implemented"
+    },
+    "backupStatus": {
+      "legacyRequestFields": [],
+      "legacyResponseFields": [
+        "lastSuccess",
+        "lastAttempt",
+        "lastError",
+        "backupAge",
+        "status"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [],
+      "notes": "No complete Laravel backup-status endpoint and browser mapping exists; remains Apps Script-only and planned.",
+      "coverage": "planned"
+    },
+    "backupIntegrityReport": {
+      "legacyRequestFields": [],
+      "legacyResponseFields": [
+        "status",
+        "manifest",
+        "files",
+        "checksums",
+        "findings",
+        "coverage"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [],
+      "notes": "No complete Laravel backup-integrity endpoint and browser mapping exists; remains Apps Script-only and planned.",
+      "coverage": "planned"
+    },
+    "deploymentReadiness": {
+      "legacyRequestFields": [],
+      "legacyResponseFields": [
+        "ready",
+        "checks",
+        "blockers",
+        "warnings"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [],
+      "notes": "No complete Laravel deployment-readiness endpoint and browser mapping exists; remains Apps Script-only and planned.",
+      "coverage": "planned"
+    },
+    "onboardingState": {
+      "legacyRequestFields": [
+        "environment"
+      ],
+      "legacyResponseFields": [
+        "environment",
+        "steps",
+        "checks",
+        "status"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [],
+      "notes": "Onboarding remains Apps Script-only. Environment and deployment identity controls must be ported before this route is mapped.",
+      "coverage": "planned"
+    },
+    "onboardingConfirm": {
+      "legacyRequestFields": [
+        "evidence",
+        "status",
+        "stepId"
+      ],
+      "legacyResponseFields": [
+        "environment",
+        "steps",
+        "checks",
+        "status"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [],
+      "notes": "Owner evidence/step confirmation remains Apps Script-only and planned.",
+      "coverage": "planned"
+    },
+    "onboardingAdvance": {
+      "legacyRequestFields": [],
+      "legacyResponseFields": [
+        "environment",
+        "steps",
+        "checks",
+        "status"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [],
+      "notes": "Onboarding progression remains Apps Script-only and planned.",
+      "coverage": "planned"
+    },
+    "dataQualityReport": {
+      "legacyRequestFields": [],
+      "legacyResponseFields": [
+        "generatedAt",
+        "rowCounts",
+        "findings",
+        "totals",
+        "coverage"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [],
+      "notes": "No complete Laravel data-quality report endpoint and browser mapping exists; remain Apps Script-only and planned.",
+      "coverage": "planned"
+    },
+    "recordedMovementReport": {
+      "legacyRequestFields": [
+        "from",
+        "to",
+        "type",
+        "status",
+        "paymentMethod"
+      ],
+      "legacyResponseFields": [
+        "generatedAt",
+        "count",
+        "totalCount",
+        "paymentTotal",
+        "receiptTotal",
+        "items[]",
+        "byPaymentMethod"
+      ],
+      "laravelRequestFields": [
+        "from",
+        "to",
+        "type",
+        "status",
+        "paymentMethod",
+        "offset",
+        "limit"
+      ],
+      "laravelResponseFields": [
+        "generatedAt",
+        "count",
+        "totalCount",
+        "paymentTotal",
+        "receiptTotal",
+        "items[]",
+        "byPaymentMethod",
+        "offset",
+        "limit",
+        "hasMore"
+      ],
+      "notes": "Laravel report pagination is bounded and rejects duplicate IDs, unstable totals or incomplete result sets; totals remain server-calculated.",
+      "coverage": "implemented"
+    },
+    "cashClosePreview": {
+      "legacyRequestFields": [
+        "date",
+        "openingCash",
+        "openingReason"
+      ],
+      "legacyResponseFields": [
+        "date",
+        "openingCash",
+        "cashInTotal",
+        "cashOutTotal",
+        "expectedCash",
+        "includedVouchers",
+        "includedVoucherIds",
+        "closed",
+        "openingCashRequired"
+      ],
+      "laravelRequestFields": [
+        "date",
+        "openingCash",
+        "openingReason"
+      ],
+      "laravelResponseFields": [
+        "date",
+        "openingCash",
+        "cashInTotal",
+        "cashOutTotal",
+        "expectedCash",
+        "includedVouchers",
+        "includedVoucherIds",
+        "closed",
+        "openingCashRequired"
+      ],
+      "notes": "Preview is advisory; server recomputes all financial totals at close creation.",
+      "coverage": "implemented"
+    },
+    "createCashClose": {
+      "legacyRequestFields": [
+        "date",
+        "openingCash",
+        "openingReason",
+        "countedCash",
+        "varianceReason",
+        "requestId"
+      ],
+      "legacyResponseFields": [
+        "close",
+        "openingCash",
+        "cashInTotal",
+        "cashOutTotal",
+        "expectedCash",
+        "countedCash",
+        "variance",
+        "includedVoucherIds"
+      ],
+      "laravelRequestFields": [
+        "date",
+        "openingCash",
+        "openingReason",
+        "countedCash",
+        "varianceReason"
+      ],
+      "laravelResponseFields": [
+        "close",
+        "openingCash",
+        "cashInTotal",
+        "cashOutTotal",
+        "expectedCash",
+        "countedCash",
+        "variance",
+        "includedVoucherIds"
+      ],
+      "notes": "Stable idempotency replaces caller-provided requestId as the primary retry key; lifecycle remains online-only.",
+      "coverage": "implemented"
+    },
+    "recordCashCloseCorrection": {
+      "legacyRequestFields": [
+        "closeId",
+        "type",
+        "details",
+        "reason",
+        "voucherId"
+      ],
+      "legacyResponseFields": [
+        "corrections[]",
+        "corrections[].id",
+        "corrections[].type",
+        "corrections[].details",
+        "corrections[].reason"
+      ],
+      "laravelRequestFields": [
+        "closeId",
+        "type",
+        "details",
+        "reason",
+        "voucherId"
+      ],
+      "laravelResponseFields": [
+        "corrections[]",
+        "corrections[].id",
+        "corrections[].type",
+        "corrections[].details",
+        "corrections[].reason"
+      ],
+      "notes": "Corrections append a new immutable correction event; original close snapshots are not rewritten.",
+      "coverage": "implemented"
+    },
+    "reportIssue": {
+      "legacyRequestFields": [
+        "category",
+        "context",
+        "environment",
+        "message",
+        "subject"
+      ],
+      "legacyResponseFields": [
+        "submitted",
+        "ticketId"
+      ],
+      "laravelRequestFields": [],
+      "laravelResponseFields": [],
+      "notes": "No Laravel support-issue endpoint/browser mapping exists; remains Apps Script-only and planned.",
+      "coverage": "planned"
     }
   }
 }
