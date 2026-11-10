@@ -311,7 +311,12 @@ export function createBulk({ api, refresh, go }) {
 
   function toggleDuplicates(checked) {
     rows.forEach((row) => {
-      if (row.dup) row.skip = !checked;
+      if (row.serverDup) {
+        row.duplicateConfirmed = checked;
+        row.skip = !checked;
+      } else if (row.localDup) {
+        row.skip = true;
+      }
     });
     drawPreview();
 
@@ -405,31 +410,64 @@ export function createBulk({ api, refresh, go }) {
     drawPreview();
   }
 
-  function renderImportResult(done, pendingApprovalIds, skipped) {
+  function renderImportResult(summary) {
     const panel = document.createElement('div');
-    panel.className = 'card ok-panel';
+    panel.className = 'card ok-panel bulk-import-result';
     panel.setAttribute('role', 'status');
     panel.setAttribute('aria-live', 'polite');
 
     const title = document.createElement('h2');
     title.textContent =
-      '✔ Imported ' + done + ' ' + (type === 'RECEIPT' ? 'cash receipts' : 'payments');
+      summary.pending || summary.quarantined || summary.unbalanced
+        ? 'Import requires reconciliation'
+        : 'Import batch reconciled';
     panel.appendChild(title);
 
-    if (pendingApprovalIds.size) {
-      const pending = document.createElement('p');
-      pending.setAttribute('role', 'status');
-      pending.textContent =
-        pendingApprovalIds.size +
-        ' payment(s) need owner/manager approval. They are excluded from approved totals and Daily Cash Close until approved by someone other than the creator.';
-      panel.appendChild(pending);
+    const counts = document.createElement('p');
+    counts.textContent =
+      summary.imported + ' imported · ' + summary.replayed + ' replayed · ' +
+      summary.quarantined + ' quarantined · ' + summary.pending + ' pending';
+    panel.appendChild(counts);
+
+    const totals = document.createElement('p');
+    totals.className = 'muted';
+    totals.textContent =
+      'Source total ₹' + (summary.sourceTotalPaise / 100).toFixed(2) +
+      ' · imported ₹' + (summary.importedTotalPaise / 100).toFixed(2) +
+      ' · quarantined ₹' + (summary.quarantinedTotalPaise / 100).toFixed(2) +
+      ' · pending ₹' + (summary.pendingTotalPaise / 100).toFixed(2) +
+      ' · variance ₹' + (summary.variancePaise / 100).toFixed(2);
+    panel.appendChild(totals);
+
+    const batch = document.createElement('p');
+    batch.className = 'muted';
+    batch.textContent =
+      'Batch ID: ' + summary.batchIds.join(', ') +
+      '. Re-submit the same file with the same SourceIDs to resume uncertain rows safely.';
+    panel.appendChild(batch);
+
+    if (summary.quarantinedRows.length || summary.pendingRows.length) {
+      const heading = document.createElement('h3');
+      heading.textContent = 'Rows requiring review';
+      panel.appendChild(heading);
+      const list = document.createElement('ul');
+      summary.quarantinedRows.concat(summary.pendingRows).forEach((row) => {
+        const item = document.createElement('li');
+        item.textContent =
+          'Row ' + row.rowNumber + ' · SourceID ' + row.sourceRecordId + ' · ' + row.status +
+          (row.errorCode ? ' · ' + row.errorCode : '') +
+          (row.errorMessage ? ' — ' + row.errorMessage : '');
+        list.appendChild(item);
+      });
+      panel.appendChild(list);
     }
 
-    if (skipped) {
-      const skippedMessage = document.createElement('p');
-      skippedMessage.className = 'muted';
-      skippedMessage.textContent = skipped + ' already existed and were skipped.';
-      panel.appendChild(skippedMessage);
+    if (summary.unbalanced) {
+      const warning = document.createElement('p');
+      warning.className = 'error';
+      warning.textContent =
+        'Financial reconciliation did not balance or a source amount could not be verified. Do not treat this import as complete.';
+      panel.appendChild(warning);
     }
 
     const actions = document.createElement('div');
@@ -446,7 +484,6 @@ export function createBulk({ api, refresh, go }) {
     importMore.textContent = 'Import more';
     actions.append(openRegister, importMore);
     panel.appendChild(actions);
-
     $('#bprev').replaceChildren(panel);
   }
 
@@ -461,49 +498,88 @@ export function createBulk({ api, refresh, go }) {
     }
     if (!ready.length) return;
 
-    let done = 0;
-    let skipped = 0;
-    const pendingApprovalIds = new Set();
+    const summary = {
+      imported: 0,
+      replayed: 0,
+      quarantined: 0,
+      pending: 0,
+      sourceTotalPaise: 0,
+      importedTotalPaise: 0,
+      quarantinedTotalPaise: 0,
+      pendingTotalPaise: 0,
+      variancePaise: 0,
+      batchIds: [],
+      quarantinedRows: [],
+      pendingRows: [],
+      unbalanced: false,
+    };
 
     await busy(button, async () => {
       try {
         for (let index = 0; index < ready.length; index += 100) {
-          const chunk = ready.slice(index, index + 100).map((row) => ({
-            clientId: (row.cid ||= uid()),
-            type,
+          const chunkRows = ready.slice(index, index + 100);
+          const chunk = chunkRows.map((row) => ({
+            sourceRecordId: row.sourceRecordId,
+            clientId: row.cid,
+            type: row.type,
             date: row.date,
             vendor: row.vendor,
-            amount: row.amount,
+            vendorId: row.vendorId || null,
+            amount: row.amount.toFixed(2),
             category: row.category,
-            cashImpact: row.cashImpact,
             notes: row.notes,
+            cashImpact: row.cashImpact,
+            paymentMethod: row.paymentMethod,
+            duplicateConfirmationToken: row.duplicateConfirmed
+              ? row.duplicateConfirmationToken
+              : '',
+            sourceStatus: row.sourceStatus,
+            sourceApprovalStatus: row.sourceApprovalStatus,
+            sourceVoucherNo: row.sourceVoucherNo,
+            sourceReceipts: row.sourceReceipts,
           }));
           const data = await api('createVouchers', {
             bulk: true,
+            sourceSystem,
             entries: chunk,
           });
-
-          done += data.created.length - data.skipped;
-          skipped += data.skipped;
+          const reconciliation = data.reconciliation;
+          summary.batchIds.push(data.batchId);
+          summary.imported += reconciliation.importedCount;
+          summary.replayed += reconciliation.replayedCount;
+          summary.quarantined += reconciliation.quarantinedCount;
+          summary.pending += reconciliation.pendingCount;
+          summary.sourceTotalPaise += reconciliation.sourceTotalPaise;
+          summary.importedTotalPaise += reconciliation.importedTotalPaise;
+          summary.quarantinedTotalPaise += reconciliation.quarantinedTotalPaise;
+          summary.pendingTotalPaise += reconciliation.pendingTotalPaise;
+          summary.variancePaise += reconciliation.variancePaise;
+          summary.unbalanced =
+            summary.unbalanced ||
+            reconciliation.balanced !== true ||
+            reconciliation.unpricedCount > 0;
 
           data.created.forEach((created) => {
-            if (created.approvalStatus === 'PENDING' && typeof created.id === 'string') {
-              pendingApprovalIds.add(created.id);
-            }
             if (!S.vouchers.find((voucher) => voucher.id === created.id)) {
               S.vouchers.push(created);
             }
           });
+          data.rows.forEach((row) => {
+            if (row.status === 'QUARANTINED') summary.quarantinedRows.push(row);
+            if (row.status === 'PENDING') summary.pendingRows.push(row);
+          });
 
           $('#bprog').textContent =
-            `Imported ${Math.min(index + 100, ready.length)} of ${ready.length}…`;
+            'Processed ' + Math.min(index + chunkRows.length, ready.length) +
+            ' of ' + ready.length + ' rows; reconciliation status: ' + data.status + '.';
         }
 
-        renderImportResult(done, pendingApprovalIds, skipped);
+        await refresh(true);
+        renderImportResult(summary);
       } catch (error) {
         fail(error);
         $('#bprog').textContent =
-          `Stopped after ${done} rows. Fix the problem and run "Check data" again — already imported rows will be skipped as duplicates.`;
+          'Import stopped before confirmation. Keep the same SourceIDs and retry the same file; completed rows will replay and unresolved rows will remain visible for reconciliation.';
         await refresh(true);
       }
     });
