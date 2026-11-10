@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace CashVoucher\Api\Financial;
 
+use CashVoucher\Api\Support\ApiException;
 use PDO;
 use RuntimeException;
 use InvalidArgumentException;
@@ -54,6 +55,43 @@ final class VoucherNumberAllocator
         $number = (int) $next;
         if ($number < 1 || $number >= 9_223_372_036_854_775_000) {
             throw new RuntimeException('The voucher number sequence is exhausted.');
+        }
+
+        // A previously issued/imported numeric voucher number may be above the
+        // current sequence. Never skip/reuse numbers automatically: the Owner
+        // must reconcile the series from the source ledger before writes resume.
+        // This check runs after the per-type sequence lock, serializing normal
+        // allocator writes while keeping the sequence itself server-authoritative.
+        $issued = $this->pdo->prepare(
+            "SELECT COALESCE(MAX(CAST(voucher_number AS UNSIGNED)), 0)
+             FROM vouchers
+             WHERE voucher_type = :voucher_type
+               AND voucher_number REGEXP '^[0-9]+        $advance = $this->pdo->prepare(
+            'UPDATE voucher_number_sequences
+             SET next_number = :next_number, updated_at_utc = UTC_TIMESTAMP(6)
+             WHERE voucher_type = :voucher_type'
+        );
+        $advance->execute([
+            'next_number' => $number + 1,
+            'voucher_type' => $voucherType,
+        ]);
+        if ($advance->rowCount() !== 1) {
+            throw new RuntimeException('The voucher number sequence could not be advanced.');
+        }
+
+        return (string) $number;
+    }
+}
+"
+        );
+        $issued->execute(['voucher_type' => $voucherType]);
+        $maxIssued = (int) $issued->fetchColumn();
+        if ($number <= $maxIssued) {
+            throw new ApiException(
+                503,
+                'VOUCHER_SEQUENCE_RECONCILIATION_REQUIRED',
+                'The voucher number sequence is not above every issued numeric voucher number. An Owner must reconcile the series before more vouchers can be created.',
+            );
         }
 
         $advance = $this->pdo->prepare(
