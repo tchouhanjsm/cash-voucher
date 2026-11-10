@@ -62,6 +62,20 @@ export function createRegister({ api, go }) {
       ? String(value)
       : '';
 
+  function voucherMutationKey(action) {
+    const cryptoApi = globalThis.crypto;
+    if (!cryptoApi || typeof cryptoApi.getRandomValues !== 'function') {
+      throw new Error('Secure voucher retry identifiers are unavailable in this browser.');
+    }
+    const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
+    return (
+      'voucher-' +
+      action +
+      '-' +
+      Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+    );
+  }
+
   function voucherRows() {
     return Array.isArray(pageRows) ? pageRows.filter(isRecord) : [];
   }
@@ -1117,6 +1131,7 @@ export function createRegister({ api, go }) {
     reason.rows = 3;
     body.appendChild(labeledControl('Correction reason (required)', reason));
 
+    const idempotencyKey = voucherMutationKey('edit');
     dialog(
       'Classify physical cash · ' + voucherNo(voucher),
       body,
@@ -1125,6 +1140,7 @@ export function createRegister({ api, go }) {
           id,
           reason: reason.value,
           fields: { cashImpact: movement.value },
+          idempotencyKey,
         });
         Object.assign(voucher, updated);
         closeModal();
@@ -1239,6 +1255,7 @@ export function createRegister({ api, go }) {
     reason.rows = 3;
     body.appendChild(labeledControl('Correction reason (required)', reason));
 
+    const idempotencyKey = voucherMutationKey('edit');
     dialog('Edit #' + voucherNo(voucher), body, async () => {
       const fields = {
         date: $('#ed').value,
@@ -1256,6 +1273,7 @@ export function createRegister({ api, go }) {
         id,
         reason: $('#er').value,
         fields,
+        idempotencyKey,
       });
 
       Object.assign(voucher, updated);
@@ -1281,11 +1299,15 @@ export function createRegister({ api, go }) {
     reason.maxLength = 200;
     body.append(summary, labeledControl('Reason (required)', reason));
 
+    const idempotencyKey = voucherMutationKey('cancel');
     dialog(
       `Cancel #${voucherNo(voucher)}?`,
       body,
       async () => {
-        Object.assign(voucher, await api('cancelVoucher', { id, reason: $('#cr').value }));
+        Object.assign(
+          voucher,
+          await api('cancelVoucher', { id, reason: $('#cr').value, idempotencyKey }),
+        );
         closeModal();
         toast('Voucher cancelled.', 'ok');
         go(S.view);
@@ -1412,26 +1434,79 @@ export function createRegister({ api, go }) {
     const add = $('#radd', form);
 
     if (add) {
-      add.onchange = async () => {
-        if (!add.files?.length) return;
+      let pendingUpload = null;
+      const uploadStatus = document.createElement('p');
+      uploadStatus.className = 'muted receipt-upload-status';
+      uploadStatus.setAttribute('role', 'status');
+      uploadStatus.setAttribute('aria-live', 'polite');
+      add.closest('label')?.after(uploadStatus);
 
+      const uploadReceipt = async () => {
+        if (!pendingUpload || add.disabled) return;
         add.disabled = true;
+        uploadStatus.className = 'muted receipt-upload-status';
+        uploadStatus.textContent =
+          'Uploading privately… Keep this window open until the result is confirmed.';
         try {
-          const receipt = await compress(add.files[0]);
           Object.assign(
             voucher,
             await api('addReceipt', {
               id,
-              receipt: { mime: receipt.mime, data: receipt.data },
+              receipt: { mime: pendingUpload.receipt.mime, data: pendingUpload.receipt.data },
+              idempotencyKey: pendingUpload.idempotencyKey,
+              existingReceiptIds: receiptState.ids,
             }),
           );
-          toast('Receipt added.', 'ok');
+          uploadStatus.textContent = 'Receipt attached and verified.';
+          toast('Receipt added securely.', 'ok');
+          pendingUpload = null;
           closeModal();
           receipts(id);
         } catch (error) {
+          uploadStatus.className = 'error receipt-upload-status';
+          uploadStatus.textContent =
+            'The server has not confirmed this upload. Do not upload a different copy. Retry the same receipt to safely confirm the result.';
+          if (pendingUpload) {
+            pendingUpload.retryButton.hidden = false;
+            pendingUpload.retryButton.disabled = false;
+          }
           fail(error);
         } finally {
           if (add.isConnected) add.disabled = false;
+        }
+      };
+
+      add.onchange = async () => {
+        if (!add.files?.length) return;
+        if (pendingUpload) {
+          uploadStatus.textContent =
+            'A receipt upload is awaiting confirmation. Retry that upload before selecting another image.';
+          return;
+        }
+        try {
+          const receipt = await compress(add.files[0]);
+          const retryButton = document.createElement('button');
+          retryButton.type = 'button';
+          retryButton.className = 'btn sm';
+          retryButton.textContent = 'Retry same receipt';
+          retryButton.hidden = true;
+          retryButton.addEventListener('click', uploadReceipt);
+          uploadStatus.after(retryButton);
+          if (!globalThis.crypto?.getRandomValues)
+            throw new Error('Secure retry identifiers are unavailable in this browser.');
+          const keyBytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+          pendingUpload = {
+            receipt,
+            retryButton,
+            idempotencyKey:
+              'receipt-' +
+              Array.from(keyBytes, (byte) => byte.toString(16).padStart(2, '0')).join(''),
+          };
+          await uploadReceipt();
+        } catch (error) {
+          uploadStatus.className = 'error receipt-upload-status';
+          uploadStatus.textContent = error.message || 'The receipt could not be prepared.';
+          fail(error);
         }
       };
     }
@@ -2001,11 +2076,12 @@ export function createRegister({ api, go }) {
     note.textContent =
       'Approval makes this payment eligible for approved totals and daily cash close. The creator cannot approve their own voucher.';
     body.appendChild(note);
+    const idempotencyKey = voucherMutationKey('approve');
     dialog(
       `Approve payment ${voucherNo(voucher)}?`,
       body,
       async () => {
-        Object.assign(voucher, await api('approveVoucher', { id }));
+        Object.assign(voucher, await api('approveVoucher', { id, idempotencyKey }));
         closeModal();
         toast('Payment approved.', 'ok');
         go(S.view);
@@ -2046,11 +2122,15 @@ export function createRegister({ api, go }) {
     reason.maxLength = 200;
     reason.rows = 3;
     body.appendChild(labeledControl('Rejection reason (required)', reason));
+    const idempotencyKey = voucherMutationKey('reject');
     dialog(
       `Reject payment ${voucherNo(voucher)}?`,
       body,
       async () => {
-        Object.assign(voucher, await api('rejectVoucher', { id, reason: $('#apr-reason').value }));
+        Object.assign(
+          voucher,
+          await api('rejectVoucher', { id, reason: $('#apr-reason').value, idempotencyKey }),
+        );
         closeModal();
         toast(
           'Payment rejected. It remains visible and blocks cash close until cancelled or otherwise resolved.',

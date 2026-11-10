@@ -220,6 +220,281 @@ function mapAuditPage(page) {
   };
 }
 
+const VOUCHER_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeVoucherId(payload) {
+  const id = typeof payload.id === 'string' ? payload.id.trim() : '';
+  if (!VOUCHER_ID_PATTERN.test(id)) {
+    throw failure(
+      'The voucher reference is invalid. Refresh the Register and retry.',
+      'PAYLOAD_INVALID',
+    );
+  }
+  return id;
+}
+
+function normalizeMutationReason(value, label) {
+  const reason = typeof value === 'string' ? value.trim() : '';
+  if (reason.length < 3 || reason.length > 200) {
+    throw failure('Enter a ' + label + ' of 3 to 200 characters.', 'PAYLOAD_INVALID');
+  }
+  return reason;
+}
+
+function normalizeUpdateFields(value) {
+  const allowed = new Set([
+    'date',
+    'vendor',
+    'amount',
+    'category',
+    'notes',
+    'paymentMethod',
+    'cashImpact',
+  ]);
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    Object.keys(value).length < 1 ||
+    Object.keys(value).some((field) => !allowed.has(field))
+  ) {
+    throw failure('Choose at least one supported voucher field to update.', 'PAYLOAD_INVALID');
+  }
+
+  const fields = {};
+  for (const [field, raw] of Object.entries(value)) {
+    switch (field) {
+      case 'date':
+        if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+          throw failure('The voucher date is invalid.', 'PAYLOAD_INVALID');
+        }
+        fields.date = raw;
+        break;
+      case 'vendor': {
+        const vendor = typeof raw === 'string' ? raw.trim() : '';
+        if (!vendor || vendor.length > 200) {
+          throw failure('Enter a payee name of up to 200 characters.', 'PAYLOAD_INVALID');
+        }
+        fields.vendor = vendor;
+        break;
+      }
+      case 'amount': {
+        const amountText =
+          typeof raw === 'number' || typeof raw === 'string' ? String(raw).trim() : '';
+        const amountNumber = Number(amountText);
+        const amountPaise = Math.round(amountNumber * 100);
+        if (
+          !/^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(amountText) ||
+          !Number.isFinite(amountNumber) ||
+          amountNumber <= 0 ||
+          amountNumber > 10000000 ||
+          Math.abs(amountNumber * 100 - amountPaise) > 0.000001 ||
+          !Number.isSafeInteger(amountPaise)
+        ) {
+          throw failure(
+            'Enter a valid positive amount with up to two decimal places.',
+            'PAYLOAD_INVALID',
+          );
+        }
+        fields.amount = (amountPaise / 100).toFixed(2);
+        break;
+      }
+      case 'category':
+        if (typeof raw !== 'string' || !raw.trim() || raw.trim().length > 80) {
+          throw failure('Choose a valid category.', 'PAYLOAD_INVALID');
+        }
+        fields.category = raw.trim();
+        break;
+      case 'notes':
+        if (typeof raw !== 'string' || raw.length > 500) {
+          throw failure('The note must be 500 characters or fewer.', 'PAYLOAD_INVALID');
+        }
+        fields.notes = raw;
+        break;
+      case 'paymentMethod':
+        if (!['CASH', 'UPI', 'BANK_TRANSFER'].includes(raw)) {
+          throw failure('Choose a supported payment method.', 'PAYLOAD_INVALID');
+        }
+        fields.paymentMethod = raw;
+        break;
+      case 'cashImpact':
+        if (!['CASH_IN', 'CASH_OUT', 'NO_CASH'].includes(raw)) {
+          throw failure('Choose the physical cash movement.', 'PAYLOAD_INVALID');
+        }
+        fields.cashImpact = raw;
+        break;
+      default:
+        throw failure('The voucher contains an unsupported field.', 'PAYLOAD_INVALID');
+    }
+  }
+  return fields;
+}
+
+function createMutationIdempotencyKey(namespace) {
+  const cryptoApi = globalThis.crypto;
+  if (!cryptoApi || typeof cryptoApi.getRandomValues !== 'function') {
+    throw failure(
+      'Secure voucher retry identifiers are unavailable in this browser.',
+      'CRYPTO_UNAVAILABLE',
+    );
+  }
+  const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
+  return namespace + '-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function resolveMutationIdempotencyKey(payload, action) {
+  if (payload.idempotencyKey === undefined) {
+    return createMutationIdempotencyKey('voucher-' + action);
+  }
+  if (
+    typeof payload.idempotencyKey !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(payload.idempotencyKey)
+  ) {
+    throw failure('The voucher operation retry key is invalid.', 'PAYLOAD_INVALID');
+  }
+  return payload.idempotencyKey;
+}
+
+function mapVoucherMutation(result, expectedId) {
+  const voucher = result?.voucher;
+  const voucherNo = Number(voucher?.voucherNo);
+  if (
+    !voucher ||
+    typeof voucher !== 'object' ||
+    Array.isArray(voucher) ||
+    voucher.id !== expectedId ||
+    !Number.isSafeInteger(voucherNo) ||
+    voucherNo < 1 ||
+    typeof voucher.date !== 'string' ||
+    typeof voucher.vendor !== 'string' ||
+    !['PAYMENT', 'RECEIPT'].includes(voucher.type) ||
+    !['ACTIVE', 'CANCELLED'].includes(voucher.status) ||
+    !['NOT_REQUIRED', 'PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].includes(
+      voucher.approvalStatus,
+    )
+  ) {
+    throw failure(
+      'The server may have applied this voucher change, but its confirmation was incomplete. Refresh the Register before retrying.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+
+  return {
+    ...voucher,
+    no: voucherNo,
+    voucherNo,
+    amount: rupeesToNumber(voucher.amount, 'updated voucher amount'),
+  };
+}
+
+function mapRegisterPage(page) {
+  if (
+    !page ||
+    typeof page !== 'object' ||
+    Array.isArray(page) ||
+    !Array.isArray(page.items) ||
+    !Number.isSafeInteger(page.offset) ||
+    page.offset < 0 ||
+    !Number.isSafeInteger(page.limit) ||
+    page.limit < 1 ||
+    page.limit > 200 ||
+    !Number.isSafeInteger(page.totalCount) ||
+    page.totalCount < 0 ||
+    typeof page.hasMore !== 'boolean' ||
+    !page.totals ||
+    typeof page.totals !== 'object' ||
+    Array.isArray(page.totals) ||
+    !page.facets ||
+    typeof page.facets !== 'object' ||
+    Array.isArray(page.facets) ||
+    !Array.isArray(page.facets.vendors) ||
+    !Array.isArray(page.facets.users)
+  ) {
+    throw failure(
+      'The Laravel Register response is incomplete or invalid.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+
+  const counters = [
+    'approvalExceptionCount',
+    'invalidAmountCount',
+    'malformedRecordCount',
+    'malformedFieldCount',
+  ];
+  const totals = {
+    paid: rupeesToNumber(page.totals.paid, 'Register paid total'),
+    received: rupeesToNumber(page.totals.received, 'Register received total'),
+  };
+  for (const field of counters) {
+    if (!Number.isSafeInteger(page.totals[field]) || page.totals[field] < 0) {
+      throw failure(
+        'The Laravel Register totals are incomplete or invalid.',
+        'API_RESPONSE_INVALID',
+      );
+    }
+    totals[field] = page.totals[field];
+  }
+
+  const items = page.items.map((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw failure(
+        'The Laravel Register contains an invalid voucher row.',
+        'API_RESPONSE_INVALID',
+      );
+    }
+    const voucherNo = Number(item.voucherNo);
+    if (
+      !Number.isSafeInteger(voucherNo) ||
+      voucherNo < 1 ||
+      typeof item.id !== 'string' ||
+      !item.id
+    ) {
+      throw failure(
+        'The Laravel Register contains an invalid voucher reference.',
+        'API_RESPONSE_INVALID',
+      );
+    }
+
+    return {
+      ...item,
+      no: voucherNo,
+      voucherNo,
+      amount:
+        item.amount === null || item.amount === undefined
+          ? null
+          : rupeesToNumber(item.amount, 'voucher amount'),
+      createdAt: typeof item.createdAt === 'string' ? item.createdAt : '',
+      updatedBy: typeof item.updatedBy === 'string' ? item.updatedBy : '',
+      updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : '',
+      receipts: Array.isArray(item.receipts) ? item.receipts : [],
+      cancelReason: typeof item.cancelReason === 'string' ? item.cancelReason : '',
+      approvedBy: typeof item.approvedBy === 'string' ? item.approvedBy : '',
+      approvedAt: typeof item.approvedAt === 'string' ? item.approvedAt : '',
+      approvalReason: typeof item.approvalReason === 'string' ? item.approvalReason : '',
+    };
+  });
+
+  const facets = {};
+  for (const field of ['vendors', 'users']) {
+    if (
+      page.facets[field].some((value) => typeof value !== 'string') ||
+      new Set(page.facets[field]).size !== page.facets[field].length
+    ) {
+      throw failure('The Laravel Register filter options are invalid.', 'API_RESPONSE_INVALID');
+    }
+    facets[field] = page.facets[field];
+  }
+
+  return {
+    ...page,
+    items,
+    totals,
+    facets,
+  };
+}
+
 function assertSameOriginBase(raw, origin) {
   if (typeof raw !== 'string' || !raw.trim()) {
     throw failure('Laravel API URL is not configured.', 'NOURL');
@@ -358,6 +633,80 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     return envelope.data;
   }
 
+  async function requestImage(route) {
+    if (typeof send !== 'function')
+      throw failure('Fetch is unavailable in this browser.', 'NOFETCH');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 70000);
+    let response;
+    try {
+      response = await send(makeUrl(route), {
+        method: 'GET',
+        mode: 'same-origin',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        redirect: 'error',
+        headers: { Accept: 'image/jpeg, image/png, image/webp' },
+        signal: controller.signal,
+      });
+    } catch {
+      throw failure(
+        'No connection to the Laravel server. Check the same-origin API URL and try again.',
+        'NET',
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!response.ok) {
+      let message = 'The receipt could not be loaded. Retry the download.';
+      let code = response.status === 401 ? 'SESSION' : 'RECEIPT_READ_FAILED';
+      try {
+        const envelope = await response.json();
+        if (typeof envelope?.error?.message === 'string') message = envelope.error.message;
+        if (typeof envelope?.error?.code === 'string')
+          code = normalizeCode(envelope.error.code, response.status);
+      } catch {}
+      throw failure(message, code);
+    }
+    const mime = response.headers?.get?.('Content-Type')?.split(';')[0]?.trim().toLowerCase();
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mime)) {
+      throw failure(
+        'The server returned an unsupported receipt image type.',
+        'RECEIPT_MIME_INVALID',
+      );
+    }
+    const declaredLength = response.headers?.get?.('Content-Length');
+    if (declaredLength && (!/^\d+$/.test(declaredLength) || Number(declaredLength) > 1600000)) {
+      throw failure('The receipt image is larger than the allowed limit.', 'RECEIPT_SIZE_INVALID');
+    }
+    let bytes;
+    try {
+      bytes = new Uint8Array(await response.arrayBuffer());
+    } catch {
+      throw failure(
+        'The receipt image could not be read. Retry the download.',
+        'RECEIPT_READ_FAILED',
+      );
+    }
+    if (
+      !bytes.length ||
+      bytes.length > 1600000 ||
+      (declaredLength && bytes.length !== Number(declaredLength))
+    ) {
+      throw failure(
+        'The receipt image is incomplete or larger than the allowed limit.',
+        'RECEIPT_SIZE_INVALID',
+      );
+    }
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(
+        ...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)),
+      );
+    }
+    return 'data:' + mime + ';base64,' + btoa(binary);
+  }
+
   async function refreshCsrf() {
     if (csrfToken) return csrfToken;
     if (csrfRefresh) return csrfRefresh;
@@ -382,7 +731,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     }
   }
 
-  function createIdempotencyKey() {
+  function createIdempotencyKey(namespace = 'vendor') {
     const cryptoApi = globalThis.crypto;
     if (!cryptoApi || typeof cryptoApi.getRandomValues !== 'function') {
       throw failure(
@@ -391,7 +740,124 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       );
     }
     const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
-    return 'vendor-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return (
+      namespace + '-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+    );
+  }
+
+  async function stableIdempotencyKey(namespace, identity) {
+    const cryptoApi = globalThis.crypto;
+    if (
+      !cryptoApi?.subtle ||
+      typeof cryptoApi.subtle.digest !== 'function' ||
+      typeof TextEncoder !== 'function'
+    ) {
+      throw failure(
+        'Secure retry identifiers are unavailable in this browser. Update the browser before saving.',
+        'CRYPTO_UNAVAILABLE',
+      );
+    }
+
+    let digest;
+    try {
+      digest = await cryptoApi.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(namespace + ':' + identity),
+      );
+    } catch {
+      throw failure('A secure retry identifier could not be prepared.', 'CRYPTO_UNAVAILABLE');
+    }
+
+    const hex = Array.from(new Uint8Array(digest), (byte) =>
+      byte.toString(16).padStart(2, '0'),
+    ).join('');
+    return namespace + '-' + hex;
+  }
+
+  function normalizeCreateEntry(entry, index) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw failure('Entry ' + (index + 1) + ' contains invalid details.', 'PAYLOAD_INVALID');
+    }
+
+    const clientId = typeof entry.clientId === 'string' ? entry.clientId.trim() : '';
+    const date = typeof entry.date === 'string' ? entry.date : '';
+    const vendor = typeof entry.vendor === 'string' ? entry.vendor.trim() : '';
+    const type = entry.type || 'PAYMENT';
+    const cashImpact = entry.cashImpact || '';
+    const paymentMethod = entry.paymentMethod ?? '';
+    const category =
+      entry.category === undefined || entry.category === '' ? 'Other' : entry.category;
+    const notes = entry.notes === undefined || entry.notes === null ? '' : entry.notes;
+    const vendorId =
+      entry.vendorId === undefined || entry.vendorId === null || entry.vendorId === ''
+        ? null
+        : entry.vendorId;
+    const amountNumber =
+      typeof entry.amount === 'number' || typeof entry.amount === 'string'
+        ? Number(entry.amount)
+        : NaN;
+    const amountPaise = Math.round(amountNumber * 100);
+    const receipts = entry.receipts === undefined || entry.receipts === null ? [] : entry.receipts;
+
+    if (
+      !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(clientId) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !vendor ||
+      vendor.length > 200 ||
+      !Number.isFinite(amountNumber) ||
+      amountNumber <= 0 ||
+      Math.abs(amountNumber * 100 - amountPaise) > 0.000001 ||
+      !Number.isSafeInteger(amountPaise) ||
+      amountPaise > 1000000000 ||
+      !['PAYMENT', 'RECEIPT'].includes(type) ||
+      !['CASH_IN', 'CASH_OUT', 'NO_CASH'].includes(cashImpact) ||
+      !['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod) ||
+      typeof category !== 'string' ||
+      category.trim().length > 80 ||
+      typeof notes !== 'string' ||
+      notes.length > 500 ||
+      (vendorId !== null &&
+        (typeof vendorId !== 'string' ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            vendorId,
+          ))) ||
+      !Array.isArray(receipts) ||
+      receipts.length > 3 ||
+      receipts.some(
+        (receipt) =>
+          !receipt ||
+          typeof receipt !== 'object' ||
+          !['image/jpeg', 'image/png', 'image/webp'].includes(receipt.mime) ||
+          typeof receipt.data !== 'string' ||
+          !receipt.data.length ||
+          receipt.data.length > 2200000,
+      ) ||
+      (entry.duplicateConfirmationToken !== undefined &&
+        (typeof entry.duplicateConfirmationToken !== 'string' ||
+          entry.duplicateConfirmationToken.length > 2048))
+    ) {
+      throw failure(
+        'Entry ' +
+          (index + 1) +
+          ' is incomplete or invalid. Check its date, payee, amount and receipt images.',
+        'PAYLOAD_INVALID',
+      );
+    }
+
+    return {
+      clientId,
+      date,
+      type,
+      vendor,
+      vendorId,
+      amount: (amountPaise / 100).toFixed(2),
+      category: category.trim() || 'Other',
+      notes,
+      cashImpact,
+      paymentMethod,
+      duplicateConfirmationToken: entry.duplicateConfirmationToken || '',
+      receipts,
+    };
   }
 
   async function mutate(route, body = {}, options = {}) {
@@ -401,7 +867,9 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       body,
       headers: {
         'X-CSRF-Token': csrf,
-        ...(options.idempotency ? { 'Idempotency-Key': createIdempotencyKey() } : {}),
+        ...(options.idempotency
+          ? { 'Idempotency-Key': options.idempotencyKey || createIdempotencyKey() }
+          : {}),
       },
     });
   }
@@ -481,69 +949,191 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         return mapAuditPage(page);
       }
 
-      case 'registerPage': {
-        const unsupported = [
-          ['q', payload.q],
-          ['vendor', payload.vendor],
-          ['cat', payload.cat],
-          ['user', payload.user],
-          ['approval', payload.approval && payload.approval !== 'ALL' ? payload.approval : ''],
-          [
-            'paymentMethod',
-            payload.paymentMethod && payload.paymentMethod !== 'ALL' ? payload.paymentMethod : '',
-          ],
-          [
-            'cashImpact',
-            payload.cashImpact && payload.cashImpact !== 'ALL' ? payload.cashImpact : '',
-          ],
-          [
-            'amountValidity',
-            payload.amountValidity && payload.amountValidity !== 'ALL'
-              ? payload.amountValidity
-              : '',
-          ],
-        ].filter(([, value]) => value !== undefined && value !== null && value !== '');
-        if (unsupported.length) {
+      case 'createVouchers': {
+        if (payload.bulk) {
           throw failure(
-            'The selected register filters are not yet supported by the Laravel shadow API. Clear the unsupported filters to continue.',
+            'Bulk import is not yet supported by the Laravel shadow API. No entries were submitted.',
             'API_ACTION_UNSUPPORTED',
           );
         }
+        if (
+          !Array.isArray(payload.entries) ||
+          payload.entries.length < 1 ||
+          payload.entries.length > 25
+        ) {
+          throw failure('Save between 1 and 25 entries at a time.', 'PAYLOAD_INVALID');
+        }
 
+        const entries = payload.entries.map(normalizeCreateEntry);
+        const clientIds = new Set();
+        for (const entry of entries) {
+          if (clientIds.has(entry.clientId)) {
+            throw failure('Each entry must have a different transaction ID.', 'PAYLOAD_INVALID');
+          }
+          clientIds.add(entry.clientId);
+        }
+
+        // Prepare every retry identity before the first write. The same client ID and
+        // receipt bytes therefore produce the same keys after a timeout or app restart.
+        const prepared = [];
+        for (const entry of entries) {
+          const voucherKey = await stableIdempotencyKey('voucher', 'create:' + entry.clientId);
+          const receiptKeys = [];
+          for (let index = 0; index < entry.receipts.length; index += 1) {
+            const receipt = entry.receipts[index];
+            receiptKeys.push(
+              await stableIdempotencyKey(
+                'receipt',
+                'attach:' + entry.clientId + ':' + index + ':' + receipt.mime + ':' + receipt.data,
+              ),
+            );
+          }
+          prepared.push({ entry, voucherKey, receiptKeys });
+        }
+
+        const created = [];
+        let skipped = 0;
+        try {
+          // Keep the legacy New Entry batch order. Each voucher is its own idempotent,
+          // audited transaction so approval totals and voucher numbering see prior rows.
+          for (const operation of prepared) {
+            const { entry, voucherKey, receiptKeys } = operation;
+            const result = await mutate(
+              '/vouchers',
+              {
+                date: entry.date,
+                vendor: entry.vendor,
+                vendorId: entry.vendorId,
+                amount: entry.amount,
+                category: entry.category,
+                notes: entry.notes,
+                type: entry.type,
+                cashImpact: entry.cashImpact,
+                paymentMethod: entry.paymentMethod,
+                clientId: entry.clientId,
+                duplicateConfirmationToken: entry.duplicateConfirmationToken,
+              },
+              { idempotency: true, idempotencyKey: voucherKey },
+            );
+
+            const voucher = result?.voucher;
+            const voucherNo = Number(voucher?.voucherNo);
+            const voucherId = typeof voucher?.id === 'string' ? voucher.id : '';
+            if (
+              !voucher ||
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+                voucherId,
+              ) ||
+              !Number.isSafeInteger(voucherNo) ||
+              voucherNo < 1 ||
+              voucher.date !== entry.date ||
+              voucher.type !== entry.type ||
+              typeof voucher.vendor !== 'string' ||
+              !['PENDING', 'NOT_REQUIRED'].includes(voucher.approvalStatus)
+            ) {
+              throw failure(
+                'The server may have saved this entry, but its confirmation was incomplete. Retry using the same entry; do not enter it again.',
+                'BAD',
+              );
+            }
+
+            const mapped = {
+              ...voucher,
+              no: voucherNo,
+              voucherNo,
+              amount: rupeesToNumber(voucher.amount, 'created voucher amount'),
+              receipts: [],
+            };
+            if (result.replayed === true) skipped += 1;
+
+            for (let index = 0; index < entry.receipts.length; index += 1) {
+              try {
+                const attachment = await api('addReceipt', {
+                  id: voucherId,
+                  receipt: entry.receipts[index],
+                  idempotencyKey: receiptKeys[index],
+                  existingReceiptIds: mapped.receipts,
+                });
+                mapped.receipts = attachment.receipts;
+              } catch (error) {
+                const pending = failure(
+                  'Voucher #' +
+                    voucherNo +
+                    ' was saved, but receipt ' +
+                    (index + 1) +
+                    ' of ' +
+                    entry.receipts.length +
+                    ' could not be confirmed. The entry and receipt will be kept for safe retry. Do not enter this transaction again.',
+                  'RECEIPT_SYNC_PENDING',
+                );
+                pending.voucherId = voucherId;
+                pending.voucherNo = voucherNo;
+                pending.cause = error;
+                throw pending;
+              }
+            }
+
+            created.push(mapped);
+          }
+        } catch (error) {
+          if (['DUPLICATE_CONFIRMATION_REQUIRED', 'RECEIPT_SYNC_PENDING'].includes(error?.code)) {
+            throw error;
+          }
+          if (['NET', 'BAD'].includes(error?.code)) {
+            if (created.length) {
+              error.message =
+                'The connection was interrupted after ' +
+                created.length +
+                ' of ' +
+                entries.length +
+                ' entries were confirmed. Keep the entries and retry; the same transaction IDs will safely replay already-saved vouchers.';
+            }
+            throw error;
+          }
+          if (created.length) {
+            const partial = failure(
+              'The batch stopped after ' +
+                created.length +
+                ' of ' +
+                entries.length +
+                ' entries were saved. ' +
+                created.map((voucher) => '#' + voucher.voucherNo).join(', ') +
+                ' are already recorded. The remaining entries have not been confirmed. Keep this batch and retry; the saved rows will replay safely.',
+              'BATCH_PARTIAL_FAILURE',
+            );
+            partial.partialCreated = created.map((voucher) => ({
+              id: voucher.id,
+              voucherNo: voucher.voucherNo,
+            }));
+            partial.cause = error;
+            throw partial;
+          }
+          throw error;
+        }
+
+        return { created, skipped };
+      }
+
+      case 'registerPage': {
         const page = await request('/vouchers', {
           query: {
+            q: payload.q,
+            vendor: payload.vendor,
+            cat: payload.cat,
+            user: payload.user,
             from: payload.from,
             to: payload.to,
             type: payload.t,
             status: payload.st || 'ACTIVE',
+            approval: payload.approval,
+            paymentMethod: payload.paymentMethod,
+            cashImpact: payload.cashImpact,
+            amountValidity: payload.amountValidity,
             offset: payload.offset ?? 0,
             limit: payload.limit ?? 100,
           },
         });
-        const items = Array.isArray(page.items)
-          ? page.items.map((item) => ({
-              ...item,
-              no: Number(item.voucherNo),
-              amount:
-                item.amount === null || item.amount === undefined
-                  ? null
-                  : rupeesToNumber(item.amount, 'voucher amount'),
-              createdAt: '',
-              updatedBy: '',
-              updatedAt: '',
-              receipts: [],
-              cancelReason: '',
-              approvedBy: '',
-              approvedAt: '',
-              approvalReason: '',
-            }))
-          : [];
-        return {
-          ...page,
-          items,
-          totals: {},
-          facets: { vendors: [], users: [] },
-        };
+        return mapRegisterPage(page);
       }
 
       case 'saveVendor': {
@@ -579,6 +1169,254 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           { idempotency: true },
         );
         return result.vendor;
+      }
+
+      case 'updateVoucher': {
+        const id = normalizeVoucherId(payload);
+        const reason = normalizeMutationReason(payload.reason, 'correction reason');
+        const fields = normalizeUpdateFields(payload.fields);
+        const idempotencyKey = resolveMutationIdempotencyKey(payload, 'edit');
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(id),
+          { fields, reason },
+          { method: 'PATCH', idempotency: true, idempotencyKey },
+        );
+        return mapVoucherMutation(result, id);
+      }
+
+      case 'cancelVoucher': {
+        const id = normalizeVoucherId(payload);
+        const reason = normalizeMutationReason(payload.reason, 'cancellation reason');
+        const idempotencyKey = resolveMutationIdempotencyKey(payload, 'cancel');
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(id) + '/cancel',
+          { reason },
+          { idempotency: true, idempotencyKey },
+        );
+        return mapVoucherMutation(result, id);
+      }
+
+      case 'approveVoucher': {
+        const id = normalizeVoucherId(payload);
+        const idempotencyKey = resolveMutationIdempotencyKey(payload, 'approve');
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(id) + '/approval',
+          {},
+          { idempotency: true, idempotencyKey },
+        );
+        return mapVoucherMutation(result, id);
+      }
+
+      case 'rejectVoucher': {
+        const id = normalizeVoucherId(payload);
+        const reason = normalizeMutationReason(payload.reason, 'rejection reason');
+        const idempotencyKey = resolveMutationIdempotencyKey(payload, 'reject');
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(id) + '/rejection',
+          { reason },
+          { idempotency: true, idempotencyKey },
+        );
+        return mapVoucherMutation(result, id);
+      }
+
+      case 'addReceipt': {
+        const voucherId = typeof payload.id === 'string' ? payload.id.trim() : '';
+        const receipt = payload.receipt;
+        if (
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            voucherId,
+          ) ||
+          !receipt ||
+          typeof receipt !== 'object' ||
+          !['image/jpeg', 'image/png', 'image/webp'].includes(receipt.mime) ||
+          typeof receipt.data !== 'string' ||
+          !receipt.data.length ||
+          receipt.data.length > 2200000
+        ) {
+          throw failure('Choose a valid JPG, PNG or WebP receipt image.', 'PAYLOAD_INVALID');
+        }
+
+        const idempotencyKey =
+          typeof payload.idempotencyKey === 'string' &&
+          /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(payload.idempotencyKey)
+            ? payload.idempotencyKey
+            : createIdempotencyKey();
+        const result = await mutate(
+          '/vouchers/' + encodeURIComponent(voucherId) + '/receipts',
+          { receipt: { mime: receipt.mime, data: receipt.data } },
+          { idempotency: true, idempotencyKey },
+        );
+        if (
+          !result?.receipt ||
+          typeof result.receipt.id !== 'string' ||
+          result.receipt.voucherId !== voucherId ||
+          result.receipt.contentType !== receipt.mime ||
+          !Number.isSafeInteger(result.receipt.byteSize) ||
+          result.receipt.byteSize < 1 ||
+          result.receipt.byteSize > 1600000 ||
+          typeof result.receipt.sha256 !== 'string' ||
+          !/^[a-f0-9]{64}$/.test(result.receipt.sha256) ||
+          !Number.isSafeInteger(result.receiptCount) ||
+          result.receiptCount < 1 ||
+          result.receiptCount > 3
+        ) {
+          throw failure(
+            'The receipt upload response was incomplete. Refresh the Register before retrying.',
+            'API_RESPONSE_INVALID',
+          );
+        }
+        const existing = Array.isArray(payload.existingReceiptIds)
+          ? payload.existingReceiptIds.filter((id) => typeof id === 'string' && id.trim())
+          : [];
+        return {
+          receipts: [...existing, result.receipt.id]
+            .filter((id, index, list) => list.indexOf(id) === index)
+            .slice(0, 3),
+          receiptCount: result.receiptCount,
+          receiptUpload: {
+            id: result.receipt.id,
+            sha256: result.receipt.sha256,
+            byteSize: result.receipt.byteSize,
+            replayed: result.replayed === true,
+          },
+        };
+      }
+
+      case 'getReceipt': {
+        const receiptId = typeof payload.fileId === 'string' ? payload.fileId.trim() : '';
+        if (
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            receiptId,
+          )
+        ) {
+          throw failure(
+            'The receipt reference is invalid. Refresh the Register and retry.',
+            'PAYLOAD_INVALID',
+          );
+        }
+        return {
+          dataUrl: await requestImage('/receipts/' + encodeURIComponent(receiptId)),
+        };
+      }
+
+      case 'checkPaymentDuplicates': {
+        const entries = payload.entries;
+        if (!Array.isArray(entries) || entries.length < 1 || entries.length > 100) {
+          throw failure(
+            'Check between 1 and 100 entries for possible duplicates.',
+            'PAYLOAD_INVALID',
+          );
+        }
+
+        const results = [];
+        for (let index = 0; index < entries.length; index += 1) {
+          const entry = entries[index];
+          const date = typeof entry?.date === 'string' ? entry.date : '';
+          const vendor = typeof entry?.vendor === 'string' ? entry.vendor.trim() : '';
+          const amount = typeof entry?.amount === 'string' ? entry.amount.trim() : '';
+          const type = entry?.type || 'PAYMENT';
+          const cashImpact = entry?.cashImpact || '';
+          const paymentMethod = entry?.paymentMethod || '';
+          const category = entry?.category || 'Other';
+          const notes = typeof entry?.notes === 'string' ? entry.notes : '';
+          const clientId = typeof entry?.clientId === 'string' ? entry.clientId : '';
+          const vendorId = entry?.vendorId ?? null;
+
+          if (
+            !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+            !vendor ||
+            vendor.length > 200 ||
+            !/^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(amount) ||
+            !['PAYMENT', 'RECEIPT'].includes(type) ||
+            !['CASH_IN', 'CASH_OUT', 'NO_CASH'].includes(cashImpact) ||
+            !['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod) ||
+            typeof category !== 'string' ||
+            category.length > 80 ||
+            notes.length > 500 ||
+            !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(clientId) ||
+            (vendorId !== null &&
+              vendorId !== '' &&
+              (typeof vendorId !== 'string' ||
+                !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+                  vendorId,
+                )))
+          ) {
+            throw failure(
+              'An entry is incomplete or invalid. Check its date, payee and amount.',
+              'PAYLOAD_INVALID',
+            );
+          }
+
+          const checked = await mutate('/vouchers/duplicate-check', {
+            date,
+            vendor,
+            vendorId,
+            amount,
+            category,
+            notes,
+            type,
+            cashImpact,
+            paymentMethod,
+            clientId,
+          });
+          if (
+            !checked ||
+            !Array.isArray(checked.matches) ||
+            !Number.isSafeInteger(checked.duplicateCount) ||
+            checked.duplicateCount < 0 ||
+            !Number.isSafeInteger(checked.hiddenCount) ||
+            checked.hiddenCount < 0 ||
+            checked.hiddenCount > checked.duplicateCount ||
+            typeof checked.confirmationToken !== 'string'
+          ) {
+            throw failure(
+              'The duplicate-check API returned an invalid response.',
+              'API_RESPONSE_INVALID',
+            );
+          }
+
+          results.push({
+            index,
+            clientId,
+            matches: checked.matches,
+            duplicateCount: checked.duplicateCount,
+            hiddenCount: checked.hiddenCount,
+            confirmationToken: checked.confirmationToken,
+          });
+        }
+
+        return { results };
+      }
+
+      case 'entrySuggestions': {
+        const vendor = typeof payload.vendor === 'string' ? payload.vendor.trim() : '';
+        const type = payload.type || 'PAYMENT';
+        if (!vendor || vendor.length > 120 || !['PAYMENT', 'RECEIPT'].includes(type)) {
+          throw failure('Enter a valid payee before requesting suggestions.', 'PAYLOAD_INVALID');
+        }
+        const result = await request('/entry-suggestions', {
+          query: { vendor, type },
+        });
+        const isSuggestion = (value) =>
+          value === null ||
+          (value &&
+            typeof value === 'object' &&
+            typeof value.value === 'string' &&
+            value.value.length > 0 &&
+            ['VENDOR_DEFAULT', 'HISTORY'].includes(value.source) &&
+            Number.isSafeInteger(value.evidenceCount) &&
+            value.evidenceCount >= 0);
+        if (
+          !result ||
+          typeof result.vendor !== 'string' ||
+          !['OWN', 'PROPERTY'].includes(result.scope) ||
+          !result.suggestions ||
+          !isSuggestion(result.suggestions.category) ||
+          !isSuggestion(result.suggestions.paymentMethod)
+        ) {
+          throw failure('Entry suggestions returned an invalid response.', 'API_RESPONSE_INVALID');
+        }
+        return result;
       }
 
       default:

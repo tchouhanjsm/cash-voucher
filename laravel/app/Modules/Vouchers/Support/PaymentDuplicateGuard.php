@@ -29,6 +29,7 @@ final class PaymentDuplicateGuard
                AND status = :status
                AND business_date = :business_date
                AND amount_paise = :amount_paise
+               AND (client_id IS NULL OR client_id <> :client_id)
              ORDER BY created_at_utc DESC
              LIMIT 101'
         );
@@ -37,6 +38,7 @@ final class PaymentDuplicateGuard
             'status' => 'ACTIVE',
             'business_date' => $voucher['date'],
             'amount_paise' => $voucher['amountPaise'],
+            'client_id' => (string) ($voucher['clientId'] ?? ''),
         ]);
 
         $matches = [];
@@ -132,7 +134,10 @@ final class PaymentDuplicateGuard
      */
     private function issueToken(array $voucher, array $matches, array $principal): string
     {
-        $expiresAt = time() + 600;
+        // Keep the review token stable during the current ten-minute window.
+        // This lets a second Save reuse the fresh token without prompting again
+        // merely because another second elapsed; expiry never exceeds ten minutes.
+        $expiresAt = (intdiv(time(), 600) + 1) * 600;
         $payload = json_encode([
             'actor' => (string) $principal['id'],
             'fingerprint' => $this->fingerprint($voucher),

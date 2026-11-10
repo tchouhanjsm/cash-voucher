@@ -1,6 +1,6 @@
 # Dependency Security Exception Register
 
-**Last reviewed:** 31 October 2026  
+**Last reviewed:** 10 November 2026  
 **Scope:** development/build dependencies installed by `npm ci`; this does not claim the local developer toolchain is risk-free.
 
 ## Current time-bounded exception
@@ -14,8 +14,8 @@
 - **Why no dependency override was applied:** forcing Zod 4.x into Clasp's declared Zod 3.x range is an unverified major-version override. npm's suggested repair downgrades Clasp to 2.5.0, also a major-version downgrade from the locked 3.4.1. Neither option is accepted without compatibility and security verification.
 - **Decision:** retain Clasp 3.4.1 and time-bound this exact Zod advisory as a developer/CI-toolchain exception only. This is explicit risk acceptance, not a claim that Zod 3.x is fixed.
 - **Scope/exposure:** the package exists in `devDependencies`; it is not bundled into the static client artifact or Apps Script runtime. It can still affect developer/CI availability when the affected validation path is exercised.
-- **Compensating controls:** CI reports every package, severity, installed path and advisory URL. The gate permits only this exact GHSA attached to `zod`; any other high/critical path fails. Reassess by **9 November 2026**. CI rejects the exception from **10 November 2026** if it has not been renewed.
-- **Owner follow-up:** check for a Clasp release with a supported patched Zod dependency by 9 November. If one appears, update the Clasp lockfile and remove the exception only after compatibility, full audit, CI and Apps Script staging-deploy validation. Do not change the Clasp version solely to quiet npm's suggested fix.
+- **Compensating controls:** CI reports every package, severity, installed path and advisory URL. The gate permits only this exact GHSA attached to `zod`; any other high/critical path fails. This exception was re-reviewed on **10 November 2026** and is renewed only through **10 December 2026**.
+- **Owner follow-up:** the official Clasp release list still identifies **3.4.1** as latest, and its 3.4.1 manifest continues to declare `zod ^3.25.76`. Check for a Clasp release with a supported patched Zod dependency by 10 December. If one appears, update the Clasp lockfile and remove the exception only after compatibility, full audit, CI and Apps Script staging-deploy validation. Do not force a Zod 4 override or downgrade Clasp solely to quiet npm's suggested fix.
 
 ## Withdrawn advisory — not an active exception
 

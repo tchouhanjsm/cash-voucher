@@ -7,6 +7,7 @@ use App\Modules\Receipts\Http\Controllers\ReceiptController;
 use App\Modules\Reports\Http\Controllers\ReportsController;
 use App\Modules\Vouchers\Http\Controllers\VoucherController;
 use App\Modules\Vendors\Http\Controllers\VendorController;
+use App\Modules\Vendors\Http\Controllers\EntrySuggestionController;
 use App\Modules\Users\Http\Controllers\UserController;
 use App\Modules\Settings\Http\Controllers\SettingsController;
 use App\Modules\Audit\Http\Controllers\AuditController;
@@ -81,6 +82,7 @@ Route::prefix('v1')->group(function (): void {
                 'cash-close:corrections',
                 'dashboard:summary',
                 'reports:recorded-movements',
+                'entry:suggestions',
                 'vendors:list',
                 'vendors:create',
                 'vendors:update',
@@ -114,6 +116,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/vouchers/{voucherId}/rejection', [VoucherController::class, 'reject']);
         Route::post('/vouchers/{voucherId}/receipts', [ReceiptController::class, 'attach']);
         Route::get('/receipts/{receiptId}', [ReceiptController::class, 'show']);
+        Route::get('/entry-suggestions', EntrySuggestionController::class);
         Route::get('/vendors', [VendorController::class, 'index']);
         Route::post('/vendors', [VendorController::class, 'store']);
         Route::patch('/vendors/{vendorId}', [VendorController::class, 'update']);

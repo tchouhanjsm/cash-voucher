@@ -22,7 +22,7 @@ import {
 } from '../core/utils.js';
 import { validateRecoveryRecords } from '../core/recovery-validation.js';
 
-export function createPayments({ api, refresh }) {
+export function createPayments({ api, refresh, isLaravelShadow = false }) {
   let NT = 'PAYMENT';
   let flushing = false;
   let rowErrorSeq = 0;
@@ -199,6 +199,89 @@ export function createPayments({ api, refresh }) {
     row.dataset.paymentMethod = method;
     updateBatchSummary();
   }
+  function renderEntrySuggestions(row, response) {
+    const box = $('.entry-suggestions', row);
+    if (!box) return;
+    box.replaceChildren();
+
+    const fields = [
+      { key: 'category', selector: '.rc', label: 'Category' },
+      { key: 'paymentMethod', selector: '.rci', label: 'Payment method' },
+    ];
+    let count = 0;
+    fields.forEach(({ key, selector, label }) => {
+      const item = response?.suggestions?.[key];
+      if (!item || typeof item.value !== 'string') return;
+
+      const select = $(selector, row);
+      if (!select || ![...select.options].some((option) => option.value === item.value)) return;
+
+      const sourceLabel =
+        item.source === 'VENDOR_DEFAULT'
+          ? 'saved vendor default'
+          : 'used in ' +
+            item.evidenceCount +
+            ' matching entr' +
+            (item.evidenceCount === 1 ? 'y' : 'ies');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn sm entry-suggestion-action';
+      button.textContent = 'Use ' + label.toLowerCase() + ': ' + item.value;
+      button.title =
+        'Suggestion from ' + sourceLabel + '. Your entry changes only when you select this button.';
+      button.addEventListener('click', () => {
+        if (![...select.options].some((option) => option.value === item.value)) return;
+        select.value = item.value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        button.disabled = true;
+        button.textContent = label + ' selected: ' + item.value;
+      });
+      box.appendChild(button);
+      count += 1;
+    });
+
+    if (count) {
+      const note = document.createElement('small');
+      note.className = 'entry-suggestions-note muted';
+      note.textContent = 'Suggestions use saved records. Nothing changes until you choose one.';
+      box.prepend(note);
+      box.hidden = false;
+    } else {
+      box.hidden = true;
+    }
+  }
+
+  async function loadEntrySuggestions(row) {
+    if (!isLaravelShadow || !row?.isConnected) return;
+    const vendor = scalarText($('.rv', row)?.value).trim();
+    const box = $('.entry-suggestions', row);
+    if (!vendor || !box) return;
+
+    const requestKey = NT + ':' + vendor.toLocaleLowerCase('en-IN');
+    if (row.dataset.entrySuggestionsFor === requestKey) return;
+    row.dataset.entrySuggestionsFor = requestKey;
+    const requestNumber = (row._entrySuggestionRequest || 0) + 1;
+    row._entrySuggestionRequest = requestNumber;
+
+    try {
+      const result = await api('entrySuggestions', { vendor, type: NT });
+      if (
+        !row.isConnected ||
+        row._entrySuggestionRequest !== requestNumber ||
+        scalarText($('.rv', row)?.value).trim() !== vendor
+      ) {
+        return;
+      }
+      renderEntrySuggestions(row, result);
+    } catch {
+      if (row._entrySuggestionRequest === requestNumber) {
+        delete row.dataset.entrySuggestionsFor;
+        box.replaceChildren();
+        box.hidden = true;
+      }
+    }
+  }
+
   function createEntryRow() {
     const row = document.createElement('div');
     row.className = 'erow';
@@ -220,7 +303,21 @@ export function createPayments({ api, refresh }) {
     identity.setAttribute('role', 'status');
     identity.setAttribute('aria-live', 'polite');
     identity.textContent = 'Choose a saved vendor or enter a one-time payee.';
-    payeeLabel.append(payeeCaption, payeeInput, identity);
+    const suggestions = document.createElement('div');
+    suggestions.className = 'entry-suggestions';
+    suggestions.hidden = true;
+    suggestions.setAttribute('aria-live', 'polite');
+    payeeLabel.append(payeeCaption, payeeInput, identity, suggestions);
+    if (isLaravelShadow) {
+      payeeInput.addEventListener('input', () => {
+        delete row.dataset.entrySuggestionsFor;
+        suggestions.replaceChildren();
+        suggestions.hidden = true;
+      });
+      payeeInput.addEventListener('blur', () => {
+        void loadEntrySuggestions(row);
+      });
+    }
 
     const amountLabel = document.createElement('label');
     amountLabel.className = 'entry-row-field entry-amount-field';
@@ -799,6 +896,10 @@ export function createPayments({ api, refresh }) {
         vendorId: entry.vendorId,
         vendorType: entry.vendorType,
         amount: entry.amount,
+        category: entry.category,
+        notes: entry.notes,
+        cashImpact: entry.cashImpact,
+        paymentMethod: entry.paymentMethod,
         confirmationToken: entryRows[index].dataset.duplicateConfirmationToken || '',
       })),
     });
@@ -1261,10 +1362,19 @@ export function createPayments({ api, refresh }) {
         }
         // A lost connection or non-JSON response can happen after the server committed the voucher.
         // Preserve each original client ID locally, then retry those same IDs once through the outbox.
-        if (!['NET', 'BAD'].includes(String(e?.code || ''))) return fail(e);
-        const queued = await saveOnDevice(
-          'The server response did not confirm whether this entry was saved. It is stored on this device under the same transaction ID. Do not enter it again while we confirm the result.',
-        );
+        const failureCode = String(e?.code || '');
+        if (
+          !['NET', 'BAD', 'RECEIPT_SYNC_PENDING', 'BATCH_PARTIAL_FAILURE'].includes(failureCode)
+        ) {
+          return fail(e);
+        }
+        const recoveryMessage = ['RECEIPT_SYNC_PENDING', 'BATCH_PARTIAL_FAILURE'].includes(
+          failureCode,
+        )
+          ? e.message +
+            ' The original entries and receipt images are being preserved on this device for retry.'
+          : 'The server response did not confirm whether this entry was saved. It is stored on this device under the same transaction ID. Do not enter it again while we confirm the result.';
+        const queued = await saveOnDevice(recoveryMessage);
         if (!queued || !navigator.onLine || !S.token || S.offlineMode) return;
 
         await flushOutbox();

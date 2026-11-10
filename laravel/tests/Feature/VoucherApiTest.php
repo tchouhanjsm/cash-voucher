@@ -29,11 +29,343 @@ final class VoucherApiTest extends TestCase
         $this->insertVoucherFixture($this->userId, 'Own vendor', 10000);
         $this->insertVoucherFixture($otherUser, 'Other vendor', 20000);
 
+        $ownEmail = 'fixture-'.$this->userId.'@example.test';
         $response = $this->withLegacySession()->getJson('/api/v1/vouchers');
 
         $response->assertOk()
             ->assertJsonPath('data.totalCount', 1)
-            ->assertJsonPath('data.items.0.vendor', 'Own vendor');
+            ->assertJsonPath('data.items.0.vendor', 'Own vendor')
+            ->assertJsonPath('data.facets.vendors', ['Own vendor'])
+            ->assertJsonPath('data.facets.users', [$ownEmail]);
+    }
+
+    public function test_register_filters_search_totals_and_facets_match_the_legacy_contract(): void
+    {
+        $this->withRoleSession('manager');
+        $otherUser = $this->createUser('staff');
+
+        $paymentId = $this->insertVoucherFixture($this->userId, 'Acme Steel', 12550);
+        $receiptId = $this->insertVoucherFixture($otherUser, 'Acme Return', 4500);
+        $pendingId = $this->insertVoucherFixture($this->userId, 'Pending Supplier', 0);
+        $cancelledId = $this->insertVoucherFixture($otherUser, 'Cancelled Supplier', 6000);
+        $legacyDefaultsId = $this->insertVoucherFixture($this->userId, 'Legacy Defaults Supplier', 8000);
+        $unknownApprovalId = $this->insertVoucherFixture($this->userId, 'Unknown Approval Supplier', 9000);
+        $malformedId = $this->insertVoucherFixture($otherUser, 'Malformed Hidden Supplier', 1000);
+        $malformedTypeId = $this->insertVoucherFixture($otherUser, 'Lowercase Type Supplier', 1500);
+        $malformedStatusId = $this->insertVoucherFixture($otherUser, 'Lowercase Status Supplier', 2000);
+        $lowercaseEnumId = $this->insertVoucherFixture($this->userId, 'Lowercase Enum Supplier', 7000);
+
+        DB::table('vouchers')->where('id', $legacyDefaultsId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '505',
+            'status' => '',
+            'approval_status' => '',
+        ]);
+        DB::table('vouchers')->where('id', $unknownApprovalId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '506',
+            'approval_status' => 'UNKNOWN_REVIEW_STATE',
+        ]);
+        DB::table('vouchers')->where('id', $malformedId)->update([
+            'voucher_type' => 'BROKEN',
+        ]);
+        DB::table('vouchers')->where('id', $malformedTypeId)->update([
+            'voucher_type' => 'payment',
+        ]);
+        DB::table('vouchers')->where('id', $malformedStatusId)->update([
+            'status' => 'active',
+        ]);
+        DB::table('vouchers')->where('id', $lowercaseEnumId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '507',
+            'category' => 'Other',
+            'notes' => 'Lowercase enum preservation',
+            'cash_impact' => 'cash_out',
+            'approval_status' => 'approved',
+            'payment_method' => 'cash',
+        ]);
+        DB::table('vouchers')->where('id', $paymentId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '501',
+            'category' => 'Travel',
+            'notes' => 'Trip note Jaipur',
+            'cash_impact' => 'CASH_OUT',
+            'approval_status' => 'APPROVED',
+            'payment_method' => 'UPI',
+        ]);
+        DB::table('vouchers')->where('id', $receiptId)->update([
+            'voucher_type' => 'RECEIPT',
+            'voucher_number' => '502',
+            'category' => 'Guest Advance',
+            'notes' => 'Refund received',
+            'cash_impact' => 'CASH_IN',
+            'approval_status' => 'NOT_REQUIRED',
+            'payment_method' => 'CASH',
+        ]);
+        DB::table('vouchers')->where('id', $pendingId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '503',
+            'category' => 'Travel',
+            'notes' => 'Waiting for approval',
+            'cash_impact' => 'UNCLASSIFIED',
+            'approval_status' => 'PENDING',
+            'payment_method' => '',
+        ]);
+        DB::table('vouchers')->where('id', $cancelledId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '504',
+            'category' => 'Maintenance',
+            'notes' => 'Cancelled supplier payment',
+            'status' => 'CANCELLED',
+            'cash_impact' => 'CASH_OUT',
+            'approval_status' => 'NOT_REQUIRED',
+            'payment_method' => 'BANK_TRANSFER',
+        ]);
+
+        $managerEmail = 'fixture-'.$this->userId.'@example.test';
+        $otherEmail = 'fixture-'.$otherUser.'@example.test';
+
+        $all = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+            'status' => 'ALL',
+            'offset' => 0,
+            'limit' => 2,
+        ]));
+        $all->assertOk()
+            ->assertJsonPath('data.totalCount', 7)
+            ->assertJsonPath('data.limit', 2)
+            ->assertJsonPath('data.hasMore', true)
+            ->assertJsonPath('data.totals.paid', '205.50')
+            ->assertJsonPath('data.totals.received', '45.00')
+            ->assertJsonPath('data.totals.approvalExceptionCount', 3)
+            ->assertJsonPath('data.totals.invalidAmountCount', 1)
+            ->assertJsonPath('data.totals.malformedRecordCount', 3)
+            ->assertJsonPath('data.totals.malformedFieldCount', 0);
+
+        $visibleVendors = $all->json('data.facets.vendors');
+        foreach ([
+            'Acme Return',
+            'Acme Steel',
+            'Cancelled Supplier',
+            'Legacy Defaults Supplier',
+            'Lowercase Enum Supplier',
+            'Pending Supplier',
+            'Unknown Approval Supplier',
+        ] as $vendor) {
+            self::assertContains($vendor, $visibleVendors);
+        }
+        foreach (['Malformed Hidden Supplier', 'Lowercase Type Supplier', 'Lowercase Status Supplier'] as $vendor) {
+            self::assertNotContains(
+                $vendor,
+                $visibleVendors,
+                'Malformed records must not pollute Register filter facets.',
+            );
+        }
+        $visibleUsers = $all->json('data.facets.users');
+        self::assertContains($managerEmail, $visibleUsers);
+        self::assertContains($otherEmail, $visibleUsers);
+
+        $exportPage = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+            'status' => 'ALL',
+            'offset' => 0,
+            'limit' => 200,
+        ]));
+        $exportPage->assertOk()
+            ->assertJsonPath('data.limit', 200)
+            ->assertJsonPath('data.totalCount', 7)
+            ->assertJsonPath('data.hasMore', false);
+
+        $searchByReceiptNumber = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'q' => 'r-502',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $searchByReceiptNumber->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.type', 'RECEIPT')
+            ->assertJsonPath('data.items.0.voucherNo', '502');
+
+        $searchByNote = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'q' => 'jaipur',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $searchByNote->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.vendor', 'Acme Steel');
+
+        $combinedFilters = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'q' => 'trip note',
+            'vendor' => 'Acme Steel',
+            'cat' => 'Travel',
+            'user' => $managerEmail,
+            'type' => 'PAYMENT',
+            'status' => 'ACTIVE',
+            'approval' => 'APPROVED',
+            'paymentMethod' => 'UPI',
+            'cashImpact' => 'CASH_OUT',
+            'amountValidity' => 'VALID',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+            'limit' => 100,
+        ]));
+        $combinedFilters->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $paymentId)
+            ->assertJsonPath('data.totals.paid', '125.50')
+            ->assertJsonPath('data.totals.received', '0.00');
+
+        $pendingExceptions = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'approval' => 'PENDING',
+            'paymentMethod' => 'UNRECORDED',
+            'cashImpact' => 'UNCLASSIFIED',
+            'amountValidity' => 'INVALID',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $pendingExceptions->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $pendingId)
+            ->assertJsonPath('data.totals.invalidAmountCount', 1)
+            ->assertJsonPath('data.totals.approvalExceptionCount', 1);
+
+        $unfilteredPaymentMethod = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'paymentMethod' => 'UNRECOGNIZED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $unfilteredPaymentMethod->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $lowercaseEnumId)
+            ->assertJsonPath('data.items.0.approvalStatus', 'REVIEW_REQUIRED');
+
+        $legacyDefaultState = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Legacy Defaults Supplier',
+            'status' => 'ACTIVE',
+            'approval' => 'NOT_REQUIRED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $legacyDefaultState->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $legacyDefaultsId)
+            ->assertJsonPath('data.items.0.status', 'ACTIVE')
+            ->assertJsonPath('data.items.0.approvalStatus', 'NOT_REQUIRED')
+            ->assertJsonPath('data.totals.paid', '80.00')
+            ->assertJsonPath('data.totals.approvalExceptionCount', 0);
+
+        $unknownApprovalState = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Unknown Approval Supplier',
+            'status' => 'ACTIVE',
+            'approval' => 'REVIEW_REQUIRED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $unknownApprovalState->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $unknownApprovalId)
+            ->assertJsonPath('data.items.0.approvalStatus', 'REVIEW_REQUIRED')
+            ->assertJsonPath('data.totals.paid', '0.00')
+            ->assertJsonPath('data.totals.approvalExceptionCount', 1);
+
+        $lowercaseEnums = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Lowercase Enum Supplier',
+            'approval' => 'REVIEW_REQUIRED',
+            'paymentMethod' => 'UNRECOGNIZED',
+            'cashImpact' => 'UNCLASSIFIED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $lowercaseEnums->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $lowercaseEnumId)
+            ->assertJsonPath('data.items.0.approvalStatus', 'REVIEW_REQUIRED')
+            ->assertJsonPath('data.totals.paid', '0.00')
+            ->assertJsonPath('data.totals.approvalExceptionCount', 1);
+
+        $caseSensitiveVendor = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'acme steel',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $caseSensitiveVendor->assertOk()->assertJsonPath('data.totalCount', 0);
+
+        $caseSensitiveCategory = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'cat' => 'travel',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $caseSensitiveCategory->assertOk()->assertJsonPath('data.totalCount', 0);
+
+        $caseSensitivePaymentMethod = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Lowercase Enum Supplier',
+            'paymentMethod' => 'CASH',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $caseSensitivePaymentMethod->assertOk()->assertJsonPath('data.totalCount', 0);
+
+        $caseSensitiveApproval = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Lowercase Enum Supplier',
+            'approval' => 'APPROVED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $caseSensitiveApproval->assertOk()->assertJsonPath('data.totalCount', 0);
+
+        $invalidFilter = $this->withLegacySession()->getJson('/api/v1/vouchers?approval=WAITING');
+        $invalidFilter->assertUnprocessable()
+            ->assertJsonPath('error.code', 'FILTER_INVALID');
+    }
+
+    public function test_register_vendor_facets_preserve_case_distinct_names(): void
+    {
+        $this->withRoleSession('manager');
+        $suffix = bin2hex(random_bytes(5));
+        $upperName = 'Case Vendor '.$suffix;
+        $lowerName = strtolower($upperName);
+
+        $this->insertVoucherFixture($this->userId, $upperName, 10000);
+        $this->insertVoucherFixture($this->userId, $lowerName, 12000);
+
+        $response = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+
+        $response->assertOk();
+        $facets = $response->json('data.facets.vendors');
+        self::assertIsArray($facets);
+        self::assertSame(
+            1,
+            count(array_filter($facets, static fn (string $name): bool => $name === $upperName)),
+        );
+        self::assertSame(
+            1,
+            count(array_filter($facets, static fn (string $name): bool => $name === $lowerName)),
+        );
+    }
+
+    public function test_staff_cannot_filter_other_users_and_facets_remain_creator_scoped(): void
+    {
+        $otherUser = $this->createUser('staff');
+        $this->insertVoucherFixture($this->userId, 'Own visible supplier', 10000);
+        $this->insertVoucherFixture($otherUser, 'Hidden supplier', 20000);
+
+        $forbidden = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'user' => 'fixture-'.$otherUser.'@example.test',
+        ]));
+        $forbidden->assertForbidden()->assertJsonPath('error.code', 'FORBIDDEN');
+
+        $ownEmail = 'fixture-'.$this->userId.'@example.test';
+        $visible = $this->withLegacySession()->getJson('/api/v1/vouchers');
+        $visible->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.facets.vendors', ['Own visible supplier'])
+            ->assertJsonPath('data.facets.users', [$ownEmail]);
     }
 
     public function test_accountant_cannot_open_the_voucher_register(): void
@@ -175,6 +507,104 @@ final class VoucherApiTest extends TestCase
                 'Idempotency-Key' => 'duplicate-confirmed-'.bin2hex(random_bytes(5)),
             ])
             ->assertCreated();
+    }
+
+    public function test_create_retry_ignores_a_refreshed_duplicate_confirmation_token(): void
+    {
+        $this->insertVoucherFixture($this->userId, 'Delayed retry supplier', 45000);
+        $payload = $this->validPayload([
+            'vendor' => 'Delayed retry supplier',
+            'amount' => '450.00',
+            'clientId' => 'delayed-retry-client-'.bin2hex(random_bytes(5)),
+        ]);
+        $token = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $payload)
+            ->assertOk()
+            ->json('data.confirmationToken');
+        self::assertNotSame('', $token);
+        $payload['duplicateConfirmationToken'] = $token;
+        $key = 'delayed-retry-'.bin2hex(random_bytes(8));
+
+        $first = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers', $payload, ['Idempotency-Key' => $key]);
+        $first->assertCreated()->assertJsonPath('data.replayed', false);
+        $voucherId = (string) $first->json('data.voucher.id');
+
+        // Model the token having expired between an unknown-outcome response and retry.
+        // The voucher payload and client operation identity are unchanged.
+        $payload['duplicateConfirmationToken'] = 'expired-review-token-replaced';
+        $retry = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers', $payload, ['Idempotency-Key' => $key]);
+
+        $retry->assertOk()
+            ->assertJsonPath('data.replayed', true)
+            ->assertJsonPath('data.voucher.id', $voucherId);
+        self::assertSame(
+            1,
+            DB::table('vouchers')->where('client_id', $payload['clientId'])->count(),
+        );
+        self::assertSame(
+            1,
+            DB::table('audit_events')
+                ->where('target_id', $voucherId)
+                ->where('event_type', 'VOUCHER_CREATED')
+                ->count(),
+            'Refreshing an ephemeral duplicate token must not create another voucher or audit event.',
+        );
+    }
+
+    public function test_duplicate_check_reuses_a_stable_token_for_the_review_window_without_writing(): void
+    {
+        $this->insertVoucherFixture($this->userId, 'Review window supplier', 45000);
+        $payload = $this->validPayload([
+            'vendor' => 'Review window supplier',
+            'amount' => '450.00',
+        ]);
+        $beforeCount = DB::table('vouchers')->count();
+
+        $first = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $payload);
+        $second = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $payload);
+
+        $first->assertOk()->assertJsonPath('data.duplicateCount', 1);
+        $second->assertOk()->assertJsonPath('data.duplicateCount', 1);
+        self::assertNotSame('', $first->json('data.confirmationToken'));
+        self::assertSame(
+            $first->json('data.confirmationToken'),
+            $second->json('data.confirmationToken'),
+            'A stable candidate snapshot must keep one review token throughout its ten-minute window.',
+        );
+        self::assertSame(
+            $beforeCount,
+            DB::table('vouchers')->count(),
+            'Duplicate review must not create or mutate vouchers.',
+        );
+    }
+
+    public function test_duplicate_review_ignores_the_same_client_operation_after_a_create(): void
+    {
+        $payload = $this->validPayload([
+            'vendor' => 'Replay-safe supplier',
+            'amount' => '325.00',
+            'clientId' => 'replay-safe-client-'.bin2hex(random_bytes(5)),
+        ]);
+
+        $this->withLegacySession()
+            ->postJson('/api/v1/vouchers', $payload, [
+                'Idempotency-Key' => 'voucher-replay-safe-'.bin2hex(random_bytes(5)),
+            ])
+            ->assertCreated();
+
+        $sameOperation = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $payload);
+        $sameOperation->assertOk()->assertJsonPath('data.duplicateCount', 0);
+
+        $newOperation = $payload;
+        $newOperation['clientId'] = 'different-client-'.bin2hex(random_bytes(5));
+        $differentOperation = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers/duplicate-check', $newOperation);
+        $differentOperation->assertOk()->assertJsonPath('data.duplicateCount', 1);
     }
 
     public function test_unregistered_payee_is_recorded_as_one_time_not_unverified(): void

@@ -29,63 +29,305 @@ final class VoucherController
 
         $limit = filter_var($request->query('limit', 100), FILTER_VALIDATE_INT);
         $offset = filter_var($request->query('offset', 0), FILTER_VALIDATE_INT);
-
-        if ($limit === false || $limit < 1 || $limit > 100 || $offset === false || $offset < 0 || $offset > 1_000_000) {
+        if ($limit === false || $limit < 1 || $limit > 200 || $offset === false || $offset < 0 || $offset > 1_000_000) {
             throw new ApiException(422, 'PAGE_INVALID', 'Voucher page limit or offset is invalid.');
         }
 
-        $query = DB::table('vouchers');
-        if (! $canViewAll) {
-            $query->where('created_by_user_id', $principal['id']);
-        }
-
-        $from = (string) $request->query('from', '');
-        $to = (string) $request->query('to', '');
-        $type = (string) $request->query('type', '');
-        $status = (string) $request->query('status', 'ACTIVE');
-
-        if ($from !== '') {
-            if (! preg_match('/^\d{4}-\d{2}-\d{2}$/D', $from)) {
-                throw new ApiException(422, 'FILTER_INVALID', 'Start date filter is invalid.');
-            }
-            $query->where('business_date', '>=', $from);
-        }
-
-        if ($to !== '') {
-            if (! preg_match('/^\d{4}-\d{2}-\d{2}$/D', $to)) {
-                throw new ApiException(422, 'FILTER_INVALID', 'End date filter is invalid.');
-            }
-            $query->where('business_date', '<=', $to);
-        }
+        $search = $this->filterText($request, 'q', 'Search', 120);
+        $vendor = $this->filterText($request, 'vendor', 'Vendor', 200);
+        $category = $this->filterText($request, 'cat', 'Category', 120);
+        $createdBy = strtolower($this->filterText($request, 'user', 'User', 254));
+        $from = $this->filterDate($request, 'from', 'start');
+        $to = $this->filterDate($request, 'to', 'end');
+        $type = $this->filterText($request, 'type', 'Transaction type', 20);
+        $status = $this->filterText($request, 'status', 'Status', 20) ?: 'ACTIVE';
+        $approval = $this->filterText($request, 'approval', 'Approval status', 30) ?: 'ALL';
+        $paymentMethod = $this->filterText($request, 'paymentMethod', 'Payment method', 20) ?: 'ALL';
+        $cashImpact = $this->filterText($request, 'cashImpact', 'Physical cash movement', 20) ?: 'ALL';
+        $amountValidity = $this->filterText($request, 'amountValidity', 'Amount review', 20) ?: 'ALL';
 
         if ($from !== '' && $to !== '' && $from > $to) {
             throw new ApiException(422, 'FILTER_INVALID', 'Start date must be on or before end date.');
         }
-
-        if ($type !== '') {
-            if (! in_array($type, ['PAYMENT', 'RECEIPT'], true)) {
-                throw new ApiException(422, 'FILTER_INVALID', 'Voucher type filter is invalid.');
-            }
-            $query->where('voucher_type', $type);
+        if (! in_array($type, ['', 'PAYMENT', 'RECEIPT'], true)) {
+            throw new ApiException(422, 'FILTER_INVALID', 'Voucher type filter is invalid.');
         }
-
         if (! in_array($status, ['ACTIVE', 'CANCELLED', 'ALL'], true)) {
             throw new ApiException(422, 'FILTER_INVALID', 'Voucher status filter is invalid.');
         }
-        if ($status !== 'ALL') {
-            $query->where('status', $status);
+        if (! in_array($approval, ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_REQUIRED', 'REVIEW_REQUIRED'], true)) {
+            throw new ApiException(422, 'FILTER_INVALID', 'Approval status filter is invalid.');
+        }
+        if (! in_array($paymentMethod, ['ALL', 'CASH', 'UPI', 'BANK_TRANSFER', 'UNRECORDED', 'UNRECOGNIZED'], true)) {
+            throw new ApiException(422, 'FILTER_INVALID', 'Payment method filter is invalid.');
+        }
+        if (! in_array($cashImpact, ['ALL', 'CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'], true)) {
+            throw new ApiException(422, 'FILTER_INVALID', 'Physical cash movement filter is invalid.');
+        }
+        if (! in_array($amountValidity, ['ALL', 'VALID', 'INVALID'], true)) {
+            throw new ApiException(422, 'FILTER_INVALID', 'Amount review filter is invalid.');
+        }
+        if ($createdBy !== '' && ! $canViewAll) {
+            throw new ApiException(403, 'FORBIDDEN', 'You cannot filter other users’ vouchers.');
+        }
+
+        // Facets are derived from the caller's complete visibility scope, not the
+        // current page or active filter set, matching the legacy Register contract.
+        $visibilityScope = DB::table('vouchers');
+        if (! $canViewAll) {
+            $visibilityScope->where('created_by_user_id', $principal['id']);
+        }
+
+        $validTypeScope = static function ($builder): void {
+            $builder->whereRaw("BINARY voucher_type IN ('PAYMENT', 'RECEIPT')");
+        };
+        $validStatusScope = static function ($builder): void {
+            $builder->where(function ($status): void {
+                $status
+                    ->whereRaw("BINARY status IN ('ACTIVE', 'CANCELLED')")
+                    ->orWhereNull('status')
+                    ->orWhereRaw("BINARY status = ''");
+            });
+        };
+
+        $facetScope = (clone $visibilityScope)
+            ->where($validTypeScope)
+            ->where($validStatusScope);
+
+        $vendors = (clone $facetScope)
+            ->whereNotNull('vendor_name_snapshot')
+            ->whereRaw("BINARY vendor_name_snapshot <> ''")
+            ->selectRaw('DISTINCT BINARY vendor_name_snapshot AS vendor_name_snapshot')
+            ->orderByRaw('BINARY vendor_name_snapshot')
+            ->pluck('vendor_name_snapshot')
+            ->map(static fn ($value): string => (string) $value)
+            ->values()
+            ->all();
+
+        $users = (clone $facetScope)
+            ->whereNotNull('created_by_email_snapshot')
+            ->where('created_by_email_snapshot', '<>', '')
+            ->selectRaw('LOWER(created_by_email_snapshot) AS email')
+            ->distinct()
+            ->orderBy('email')
+            ->pluck('email')
+            ->map(static fn ($value): string => (string) $value)
+            ->values()
+            ->all();
+
+        $malformedRecordCount = (clone $visibilityScope)
+            ->where(function ($query): void {
+                $query
+                    ->whereNull('id')
+                    ->orWhereRaw("BINARY TRIM(id) = ''")
+                    ->orWhereNull('voucher_type')
+                    ->orWhereRaw("BINARY voucher_type = ''")
+                    ->orWhereRaw("BINARY voucher_type NOT IN ('PAYMENT', 'RECEIPT')")
+                    ->orWhere(function ($status): void {
+                        $status
+                            ->whereNotNull('status')
+                            ->whereRaw("BINARY status <> ''")
+                            ->whereRaw("BINARY status NOT IN ('ACTIVE', 'CANCELLED')");
+                    });
+            })
+            ->count();
+
+        $malformedFieldCount = 0;
+        foreach ([
+            'vendor_name_snapshot',
+            'category',
+            'created_by_email_snapshot',
+            'voucher_type',
+            'status',
+        ] as $field) {
+            $malformedFieldCount += (clone $visibilityScope)->whereNull($field)->count();
+        }
+
+        $query = (clone $visibilityScope)
+            ->where($validTypeScope)
+            ->where($validStatusScope);
+
+        if ($from !== '') {
+            $query->where('business_date', '>=', $from);
+        }
+        if ($to !== '') {
+            $query->where('business_date', '<=', $to);
+        }
+        if ($type !== '') {
+            $query->whereRaw('BINARY voucher_type = BINARY ?', [$type]);
+        }
+        if ($status === 'ACTIVE') {
+            $query->where(function ($builder): void {
+                $builder
+                    ->whereRaw("BINARY status = 'ACTIVE'")
+                    ->orWhereNull('status')
+                    ->orWhereRaw("BINARY status = ''");
+            });
+        } elseif ($status === 'CANCELLED') {
+            $query->whereRaw("BINARY status = 'CANCELLED'");
+        }
+        if ($vendor !== '') {
+            $query->whereRaw('BINARY vendor_name_snapshot = BINARY ?', [$vendor]);
+        }
+        if ($category !== '') {
+            $query->whereRaw('BINARY category = BINARY ?', [$category]);
+        }
+        if ($createdBy !== '') {
+            $query->whereRaw('LOWER(created_by_email_snapshot) = ?', [$createdBy]);
+        }
+        if ($approval !== 'ALL') {
+            if ($approval === 'NOT_REQUIRED') {
+                $query->where(function ($builder): void {
+                    $builder
+                        ->whereRaw("BINARY voucher_type = 'RECEIPT'")
+                        ->orWhere(function ($payment): void {
+                            $payment
+                                ->whereRaw("BINARY voucher_type = 'PAYMENT'")
+                                ->where(function ($status): void {
+                                    $status
+                                        ->whereRaw("BINARY approval_status = 'NOT_REQUIRED'")
+                                        ->orWhereNull('approval_status')
+                                        ->orWhereRaw("BINARY approval_status = ''");
+                                });
+                        });
+                });
+            } elseif ($approval === 'REVIEW_REQUIRED') {
+                $query
+                    ->whereRaw("BINARY voucher_type = 'PAYMENT'")
+                    ->whereNotNull('approval_status')
+                    ->whereRaw("BINARY approval_status <> ''")
+                    ->whereRaw(
+                        "BINARY approval_status NOT IN ('NOT_REQUIRED', 'PENDING', 'APPROVED', 'REJECTED')",
+                    );
+            } else {
+                $query
+                    ->whereRaw("BINARY voucher_type = 'PAYMENT'")
+                    ->whereRaw('BINARY approval_status = BINARY ?', [$approval]);
+            }
+        }
+        if ($paymentMethod === 'UNRECORDED') {
+            $query->whereRaw("TRIM(payment_method) = ''");
+        } elseif ($paymentMethod === 'UNRECOGNIZED') {
+            $query
+                ->whereRaw("TRIM(payment_method) <> ''")
+                ->whereRaw("BINARY TRIM(payment_method) NOT IN ('CASH', 'UPI', 'BANK_TRANSFER')");
+        } elseif ($paymentMethod !== 'ALL') {
+            $query->whereRaw('BINARY TRIM(payment_method) = BINARY ?', [$paymentMethod]);
+        }
+
+        if ($cashImpact === 'UNCLASSIFIED') {
+            $query->where(function ($builder): void {
+                $builder
+                    ->whereNull('cash_impact')
+                    ->orWhereRaw("BINARY cash_impact NOT IN ('CASH_IN', 'CASH_OUT', 'NO_CASH')");
+            });
+        } elseif ($cashImpact !== 'ALL') {
+            $query->whereRaw('BINARY cash_impact = BINARY ?', [$cashImpact]);
+        }
+
+        if ($amountValidity === 'VALID') {
+            $query->whereBetween('amount_paise', [1, 1_000_000_000]);
+        } elseif ($amountValidity === 'INVALID') {
+            $query->where(function ($builder): void {
+                $builder->where('amount_paise', '<=', 0)->orWhere('amount_paise', '>', 1_000_000_000);
+            });
+        }
+
+        if ($search !== '') {
+            $escaped = strtr(mb_strtolower($search, 'UTF-8'), [
+                '!' => '!!',
+                '%' => '!%',
+                '_' => '!_',
+            ]);
+            $pattern = '%'.$escaped.'%';
+            $query->where(function ($builder) use ($pattern): void {
+                $builder
+                    ->whereRaw(
+                        "LOWER(CONCAT(CASE WHEN BINARY voucher_type = 'RECEIPT' THEN 'R-' ELSE '' END, voucher_number)) LIKE ? ESCAPE '!'",
+                        [$pattern],
+                    )
+                    ->orWhereRaw("LOWER(vendor_name_snapshot) LIKE ? ESCAPE '!'", [$pattern])
+                    ->orWhereRaw("LOWER(notes) LIKE ? ESCAPE '!'", [$pattern]);
+            });
         }
 
         $totalCount = (clone $query)->count();
-        $rows = $query
-            ->orderByDesc('business_date')
-            ->orderByDesc('created_at_utc')
+
+        // Register totals describe the entire filtered result set, not this page.
+        // Invalid amounts remain visible for review but never enter financial sums.
+        $activeQuery = (clone $query)->where(function ($builder): void {
+            $builder
+                ->whereRaw("BINARY status = 'ACTIVE'")
+                ->orWhereNull('status')
+                ->orWhereRaw("BINARY status = ''");
+        });
+        $validAmountQuery = static function ($builder): void {
+            $builder->whereBetween('amount_paise', [1, 1_000_000_000]);
+        };
+        $paidPaise = (clone $activeQuery)
+            ->whereRaw("BINARY voucher_type = 'PAYMENT'")
+            ->where(function ($builder): void {
+                $builder
+                    ->whereRaw("BINARY approval_status IN ('NOT_REQUIRED', 'APPROVED')")
+                    ->orWhereNull('approval_status')
+                    ->orWhereRaw("BINARY approval_status = ''");
+            })
+            ->where($validAmountQuery)
+            ->sum('amount_paise');
+        $receivedPaise = (clone $activeQuery)
+            ->whereRaw("BINARY voucher_type = 'RECEIPT'")
+            ->where($validAmountQuery)
+            ->sum('amount_paise');
+        $approvalExceptionCount = (clone $activeQuery)
+            ->whereRaw("BINARY voucher_type = 'PAYMENT'")
+            ->whereNotNull('approval_status')
+            ->whereRaw("BINARY approval_status <> ''")
+            ->whereRaw("BINARY approval_status NOT IN ('NOT_REQUIRED', 'APPROVED')")
+            ->count();
+        $invalidAmountCount = (clone $activeQuery)
+            ->where(function ($builder): void {
+                $builder->where('amount_paise', '<=', 0)->orWhere('amount_paise', '>', 1_000_000_000);
+            })
+            ->count();
+
+        $rows = (clone $query)
+            ->leftJoin('users as approver', 'vouchers.approved_by_user_id', '=', 'approver.id')
+            ->leftJoin('users as updater', 'vouchers.updated_by_user_id', '=', 'updater.id')
+            ->select([
+                'vouchers.*',
+                'approver.full_name as approved_by_name',
+                'updater.full_name as updated_by_name',
+            ])
+            ->orderByDesc('vouchers.created_at_utc')
+            ->orderByRaw('CAST(vouchers.voucher_number AS UNSIGNED) DESC')
             ->offset($offset)
             ->limit($limit)
             ->get();
 
-        $items = $rows->map(static function (object $row): array {
+        $receiptIdsByVoucher = [];
+        if ($rows->isNotEmpty()) {
+            $receiptRows = DB::table('voucher_receipts')
+                ->whereIn('voucher_id', $rows->pluck('id')->map(static fn ($id): string => (string) $id)->all())
+                ->orderBy('created_at_utc')
+                ->orderBy('id')
+                ->get(['voucher_id', 'id']);
+
+            foreach ($receiptRows as $receiptRow) {
+                $receiptIdsByVoucher[(string) $receiptRow->voucher_id][] = (string) $receiptRow->id;
+            }
+        }
+
+        $items = $rows->map(function (object $row) use ($receiptIdsByVoucher): array {
             $paise = (int) $row->amount_paise;
+            $status = $row->status === null || $row->status === '' ? 'ACTIVE' : (string) $row->status;
+            $rawApproval = $row->approval_status === null ? '' : (string) $row->approval_status;
+            $approvalStatus = $row->voucher_type === 'RECEIPT'
+                ? 'NOT_REQUIRED'
+                : ($rawApproval === ''
+                    ? 'NOT_REQUIRED'
+                    : (in_array($rawApproval, ['NOT_REQUIRED', 'PENDING', 'APPROVED', 'REJECTED'], true)
+                        ? $rawApproval
+                        : 'REVIEW_REQUIRED'));
 
             return [
                 'id' => (string) $row->id,
@@ -94,27 +336,91 @@ final class VoucherController
                 'vendor' => (string) $row->vendor_name_snapshot,
                 'vendorId' => $row->vendor_id === null ? null : (string) $row->vendor_id,
                 'vendorType' => (string) $row->vendor_type,
-                'amount' => intdiv($paise, 100).'.'.str_pad((string) ($paise % 100), 2, '0', STR_PAD_LEFT),
+                'amount' => $this->formatPaise($paise),
                 'amountPaise' => $paise,
                 'category' => (string) $row->category,
                 'notes' => (string) $row->notes,
                 'type' => (string) $row->voucher_type,
-                'status' => (string) $row->status,
+                'status' => $status,
                 'cashImpact' => (string) $row->cash_impact,
-                'approvalStatus' => (string) $row->approval_status,
+                'approvalStatus' => $approvalStatus,
+                'approvalReason' => (string) $row->approval_reason,
                 'paymentMethod' => (string) $row->payment_method,
+                'cancelReason' => (string) $row->cancel_reason,
                 'createdBy' => (string) $row->created_by_email_snapshot,
+                'createdAt' => (string) $row->created_at_utc,
+                'updatedBy' => (string) ($row->updated_by_name ?? ''),
+                'updatedAt' => (string) $row->updated_at_utc,
+                'approvedBy' => (string) ($row->approved_by_name ?? ''),
+                'approvedAt' => $row->approved_at_utc === null ? '' : (string) $row->approved_at_utc,
+                'receipts' => $receiptIdsByVoucher[(string) $row->id] ?? [],
             ];
         })->all();
 
-        $requestId = (string) $request->attributes->get('request_id');
         return ApiResponse::success([
             'items' => $items,
             'offset' => $offset,
             'limit' => $limit,
             'totalCount' => $totalCount,
             'hasMore' => $offset + count($items) < $totalCount,
-        ], $requestId);
+            'totals' => [
+                'paid' => $this->formatPaise((int) $paidPaise),
+                'received' => $this->formatPaise((int) $receivedPaise),
+                'approvalExceptionCount' => $approvalExceptionCount,
+                'invalidAmountCount' => $invalidAmountCount,
+                'malformedRecordCount' => $malformedRecordCount,
+                'malformedFieldCount' => $malformedFieldCount,
+            ],
+            'facets' => [
+                'vendors' => $vendors,
+                'users' => $users,
+            ],
+        ], (string) $request->attributes->get('request_id'));
+    }
+
+    private function filterText(Request $request, string $key, string $label, int $maxLength): string
+    {
+        $value = $request->query($key, '');
+        if ($value === null || $value === '') {
+            return '';
+        }
+        if (! is_string($value)) {
+            throw new ApiException(422, 'FILTER_INVALID', $label.' filter is invalid.');
+        }
+
+        $value = trim($value);
+        if (mb_strlen($value, 'UTF-8') > $maxLength) {
+            throw new ApiException(422, 'FILTER_INVALID', $label.' filter is too long.');
+        }
+
+        return $value;
+    }
+
+    private function filterDate(Request $request, string $key, string $label): string
+    {
+        $date = $this->filterText($request, $key, ucfirst($label).' date', 10);
+        if ($date === '') {
+            return '';
+        }
+
+        if (
+            ! preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $date, $matches)
+            || ! checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1])
+        ) {
+            throw new ApiException(422, 'FILTER_INVALID', ucfirst($label).' date filter is invalid.');
+        }
+
+        return $date;
+    }
+
+    private function formatPaise(int $paise): string
+    {
+        $negative = $paise < 0;
+        $absolute = abs($paise);
+
+        return ($negative ? '-' : '')
+            .intdiv($absolute, 100)
+            .'.'.str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
     }
 
     public function duplicateCheck(StoreVoucherRequest $request, StoreVoucher $action): JsonResponse
