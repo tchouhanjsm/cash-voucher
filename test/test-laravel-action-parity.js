@@ -15,6 +15,7 @@ const transportTests = fs.readFileSync(
   'utf8',
 );
 const legacyRouteSource = fs.readFileSync(path.join(root, 'backend/99-routes.gs'), 'utf8');
+const legacyVoucherSource = fs.readFileSync(path.join(root, 'backend/50-vouchers.gs'), 'utf8');
 
 const STATES = new Set(['implemented', 'partial', 'planned']);
 const routeDefinitions = new Set();
@@ -186,9 +187,9 @@ for (const field of [
     'createVouchers must inventory the Apps Script source-safety field ' + field,
   );
 }
-assert.match(legacyRouteSource, /IMPORT_REQUIRES_RECONCILIATION/);
-assert.match(legacyRouteSource, /IMPORT_SOURCE_ID_REQUIRED/);
-assert.match(legacyRouteSource, /IMPORT_SOURCE_ID_DUPLICATE/);
+assert.match(legacyVoucherSource, /IMPORT_REQUIRES_RECONCILIATION/);
+assert.match(legacyVoucherSource, /IMPORT_SOURCE_ID_REQUIRED/);
+assert.match(legacyVoucherSource, /IMPORT_SOURCE_ID_DUPLICATE/);
 
 for (const field of [
   'entries[].vendorType',
