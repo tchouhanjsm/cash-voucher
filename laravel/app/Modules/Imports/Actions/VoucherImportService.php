@@ -51,6 +51,7 @@ final class VoucherImportService
         $canonicalRows = array_map(
             static fn (array $row): array => [
                 'sourceRecordId' => $row['sourceRecordId'],
+                'sourceRowNumber' => $row['rowNumber'],
                 'voucher' => $row['canonicalVoucher'],
             ],
             $prepared,
@@ -138,6 +139,18 @@ final class VoucherImportService
             }
 
             $sourceRecordId = $row['sourceRecordId'];
+            $sourceRowNumber = $row['sourceRowNumber'] ?? ($index + 1);
+            if (
+                ! is_int($sourceRowNumber)
+                || $sourceRowNumber < 1
+                || $sourceRowNumber > 1_000_000
+            ) {
+                throw new ApiException(
+                    422,
+                    'IMPORT_ROW_NUMBER_INVALID',
+                    'Each source row must have a valid 1-based row number between 1 and 1,000,000.',
+                );
+            }
             if (isset($seen[$sourceRecordId])) {
                 throw new ApiException(422, 'IMPORT_SOURCE_ID_DUPLICATE', 'Source record IDs must be unique within an import batch.');
             }
@@ -171,7 +184,7 @@ final class VoucherImportService
 
             $type = $voucher['type'] ?? 'PAYMENT';
             $prepared[] = [
-                'rowNumber' => $index + 1,
+                'rowNumber' => $sourceRowNumber,
                 'sourceRecordId' => $sourceRecordId,
                 'sourceLegacyId' => $sourceLegacyId,
                 'voucher' => $voucher,
