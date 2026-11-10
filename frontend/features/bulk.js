@@ -317,7 +317,7 @@ export function createBulk({ api, refresh, go }) {
     rows.forEach((row) => {
       if (row.serverDup) {
         row.duplicateConfirmed = checked;
-        row.skip = !checked;
+        row.skip = row.localDup || !checked;
       } else if (row.localDup) {
         row.skip = true;
       }
@@ -374,7 +374,7 @@ export function createBulk({ api, refresh, go }) {
       ) {
         duplicateCandidates.push({
           rowIndex: index,
-          clientId: 'bulk-' + sourceRecordId,
+          clientId: 'import-' + sourceSystem + ':' + sourceRecordId,
           date,
           vendor,
           vendorId: String(row.vendorId ?? '').trim() || null,
@@ -545,6 +545,7 @@ export function createBulk({ api, refresh, go }) {
             sourceApprovalStatus: row.sourceApprovalStatus,
             sourceVoucherNo: row.sourceVoucherNo,
             sourceReceipts: row.sourceReceipts,
+            sourceVendorType: row.sourceVendorType,
           }));
           const data = await api('createVouchers', {
             bulk: true,
