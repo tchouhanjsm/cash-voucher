@@ -128,10 +128,7 @@ function mapDailyOperations(preview) {
       : rupeesToNumber(source.expectedCash, 'expected drawer cash');
   const includedVouchers = closed ? close.includedVouchers : null;
   if (closed && !Array.isArray(includedVouchers)) {
-    throw failure(
-      'The saved cash-close voucher snapshot is incomplete.',
-      'API_RESPONSE_INVALID',
-    );
+    throw failure('The saved cash-close voucher snapshot is incomplete.', 'API_RESPONSE_INVALID');
   }
 
   const pendingApprovalCount = pendingApprovals.length;
@@ -250,10 +247,7 @@ function mapCashCloseRecord(close, requireCorrections = false) {
 
   if (close.corrections !== undefined) {
     if (!Array.isArray(close.corrections)) {
-      throw failure(
-        'The saved cash-close corrections are invalid.',
-        'API_RESPONSE_INVALID',
-      );
+      throw failure('The saved cash-close corrections are invalid.', 'API_RESPONSE_INVALID');
     }
     mapped.corrections = close.corrections.map((item) => {
       if (
@@ -267,10 +261,7 @@ function mapCashCloseRecord(close, requireCorrections = false) {
         typeof item.details !== 'string' ||
         typeof item.reason !== 'string'
       ) {
-        throw failure(
-          'The saved cash-close correction is incomplete.',
-          'API_RESPONSE_INVALID',
-        );
+        throw failure('The saved cash-close correction is incomplete.', 'API_RESPONSE_INVALID');
       }
       return {
         ...item,
@@ -289,10 +280,7 @@ function mapCashCloseRecord(close, requireCorrections = false) {
       };
     });
   } else if (requireCorrections) {
-    throw failure(
-      'The saved cash-close corrections are missing.',
-      'API_RESPONSE_INVALID',
-    );
+    throw failure('The saved cash-close corrections are missing.', 'API_RESPONSE_INVALID');
   }
 
   return mapped;
@@ -454,7 +442,7 @@ function mapRecordedMovementReportPage(report, filters, expectedOffset, expected
       !['ACTIVE', 'CANCELLED'].includes(item.status) ||
       typeof item.amountValid !== 'boolean' ||
       (item.amount !== null && typeof item.amount !== 'string') ||
-      (item.amountValid !== (item.amount !== null))
+      item.amountValid !== (item.amount !== null)
     ) {
       throw failure(
         'The Laravel movement report contains an invalid voucher row.',
@@ -512,10 +500,7 @@ function mapUserMutation(result, expectedId = '') {
     typeof user.active !== 'boolean' ||
     typeof user.mustChangePassword !== 'boolean'
   ) {
-    throw failure(
-      'The Laravel user API returned an invalid user record.',
-      'API_RESPONSE_INVALID',
-    );
+    throw failure('The Laravel user API returned an invalid user record.', 'API_RESPONSE_INVALID');
   }
 
   return {
@@ -545,10 +530,7 @@ function mapAuditPage(page) {
     (page.nextCursor !== null && typeof page.nextCursor !== 'string') ||
     (page.hasMore && !page.nextCursor)
   ) {
-    throw failure(
-      'The Laravel audit API returned an invalid page.',
-      'API_RESPONSE_INVALID',
-    );
+    throw failure('The Laravel audit API returned an invalid page.', 'API_RESPONSE_INVALID');
   }
 
   const rows = page.items.map((item) => {
@@ -562,10 +544,7 @@ function mapAuditPage(page) {
       (item.before !== null && typeof item.before !== 'object') ||
       (item.after !== null && typeof item.after !== 'object')
     ) {
-      throw failure(
-        'The Laravel audit API returned an invalid event.',
-        'API_RESPONSE_INVALID',
-      );
+      throw failure('The Laravel audit API returned an invalid event.', 'API_RESPONSE_INVALID');
     }
     return {
       id: item.id,
@@ -630,10 +609,7 @@ function normalizeUpdateFields(value) {
     Object.keys(value).length < 1 ||
     Object.keys(value).some((field) => !allowed.has(field))
   ) {
-    throw failure(
-      'Choose at least one supported voucher field to update.',
-      'PAYLOAD_INVALID',
-    );
+    throw failure('Choose at least one supported voucher field to update.', 'PAYLOAD_INVALID');
   }
 
   const fields = {};
@@ -856,10 +832,7 @@ function mapRegisterPage(page) {
       page.facets[field].some((value) => typeof value !== 'string') ||
       new Set(page.facets[field]).size !== page.facets[field].length
     ) {
-      throw failure(
-        'The Laravel Register filter options are invalid.',
-        'API_RESPONSE_INVALID',
-      );
+      throw failure('The Laravel Register filter options are invalid.', 'API_RESPONSE_INVALID');
     }
     facets[field] = page.facets[field];
   }
@@ -988,10 +961,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     try {
       envelope = await response.json();
     } catch {
-      throw failure(
-        'Unexpected Laravel API response. Expected a JSON API envelope.',
-        'BAD',
-      );
+      throw failure('Unexpected Laravel API response. Expected a JSON API envelope.', 'BAD');
     }
 
     const apiError = envelope?.error;
@@ -1057,10 +1027,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     }
     const declaredLength = response.headers?.get?.('Content-Length');
     if (declaredLength && (!/^\d+$/.test(declaredLength) || Number(declaredLength) > 1600000)) {
-      throw failure(
-        'The receipt image is larger than the allowed limit.',
-        'RECEIPT_SIZE_INVALID',
-      );
+      throw failure('The receipt image is larger than the allowed limit.', 'RECEIPT_SIZE_INVALID');
     }
     let bytes;
     try {
@@ -1148,10 +1115,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         new TextEncoder().encode(namespace + ':' + identity),
       );
     } catch {
-      throw failure(
-        'A secure retry identifier could not be prepared.',
-        'CRYPTO_UNAVAILABLE',
-      );
+      throw failure('A secure retry identifier could not be prepared.', 'CRYPTO_UNAVAILABLE');
     }
 
     const hex = Array.from(new Uint8Array(digest), (byte) =>
@@ -1606,10 +1570,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
           !['staff', 'manager', 'owner', 'accountant'].includes(role)
         ) {
-          throw failure(
-            'Enter a valid user name, email address and role.',
-            'PAYLOAD_INVALID',
-          );
+          throw failure('Enter a valid user name, email address and role.', 'PAYLOAD_INVALID');
         }
 
         const body = { name, email, role };
@@ -1617,10 +1578,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const method = userId ? 'PATCH' : 'POST';
         if (userId) {
           if (typeof payload.active !== 'boolean') {
-            throw failure(
-              'Choose whether this user account is active.',
-              'PAYLOAD_INVALID',
-            );
+            throw failure('Choose whether this user account is active.', 'PAYLOAD_INVALID');
           }
           body.active = payload.active;
         } else {
@@ -1776,10 +1734,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           typeof idempotencyKey !== 'string' ||
           !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(idempotencyKey)
         ) {
-          throw failure(
-            'The settings operation retry key is invalid.',
-            'PAYLOAD_INVALID',
-          );
+          throw failure('The settings operation retry key is invalid.', 'PAYLOAD_INVALID');
         }
 
         const result = await mutate('/settings', body, {
@@ -1832,10 +1787,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const clientIds = new Set();
         for (const entry of entries) {
           if (clientIds.has(entry.clientId)) {
-            throw failure(
-              'Each entry must have a different transaction ID.',
-              'PAYLOAD_INVALID',
-            );
+            throw failure('Each entry must have a different transaction ID.', 'PAYLOAD_INVALID');
           }
           clientIds.add(entry.clientId);
         }
@@ -2028,10 +1980,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       case 'toggleVendor': {
         const vendorId = typeof payload.id === 'string' ? payload.id.trim() : '';
         if (!vendorId || typeof payload.active !== 'boolean') {
-          throw failure(
-            'A vendor ID and desired active state are required.',
-            'PAYLOAD_INVALID',
-          );
+          throw failure('A vendor ID and desired active state are required.', 'PAYLOAD_INVALID');
         }
         const result = await mutate(
           '/vendors/' + encodeURIComponent(vendorId) + '/active',
@@ -2103,10 +2052,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           !receipt.data.length ||
           receipt.data.length > 2200000
         ) {
-          throw failure(
-            'Choose a valid JPG, PNG or WebP receipt image.',
-            'PAYLOAD_INVALID',
-          );
+          throw failure('Choose a valid JPG, PNG or WebP receipt image.', 'PAYLOAD_INVALID');
         }
 
         const idempotencyKey =
@@ -2265,10 +2211,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         const vendor = typeof payload.vendor === 'string' ? payload.vendor.trim() : '';
         const type = payload.type || 'PAYMENT';
         if (!vendor || vendor.length > 120 || !['PAYMENT', 'RECEIPT'].includes(type)) {
-          throw failure(
-            'Enter a valid payee before requesting suggestions.',
-            'PAYLOAD_INVALID',
-          );
+          throw failure('Enter a valid payee before requesting suggestions.', 'PAYLOAD_INVALID');
         }
         const result = await request('/entry-suggestions', {
           query: { vendor, type },
@@ -2290,10 +2233,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           !isSuggestion(result.suggestions.category) ||
           !isSuggestion(result.suggestions.paymentMethod)
         ) {
-          throw failure(
-            'Entry suggestions returned an invalid response.',
-            'API_RESPONSE_INVALID',
-          );
+          throw failure('Entry suggestions returned an invalid response.', 'API_RESPONSE_INVALID');
         }
         return result;
       }
