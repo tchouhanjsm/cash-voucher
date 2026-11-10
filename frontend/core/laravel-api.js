@@ -1,5 +1,5 @@
 const SESSION_MARKER = 'laravel-cookie-session';
-const CSRF_PATTERN = /^[a-f0-9]{64}$/;
+const CSRF_PATTERN = /^[a-f0-9]{64}$/;\nconst VOUCHER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function failure(message, code) {
   return Object.assign(new Error(message), { code });
@@ -537,7 +537,8 @@ function mapVoucherHistoryPage(page, expectedVoucherId, expectedCategory) {
     typeof voucher.date !== 'string' ||
     typeof voucher.vendor !== 'string' ||
     !['PAYMENT', 'RECEIPT'].includes(voucher.type) ||
-    !['ACTIVE', 'CANCELLED'].includes(voucher.status) ||
+    typeof voucher.status !== 'string' ||
+    voucher.status.length > 20 ||
     page.eventCategory !== expectedCategory ||
     !Array.isArray(items) ||
     !Number.isSafeInteger(page.count) ||
@@ -572,8 +573,8 @@ function mapVoucherHistoryPage(page, expectedVoucherId, expectedCategory) {
       item.reason.length > 500 ||
       typeof item.occurredAtUtc !== 'string' ||
       !/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?$/.test(item.occurredAtUtc) ||
-      !(item.before === null || (item.before && typeof item.before === 'object')) ||
-      !(item.after === null || (item.after && typeof item.after === 'object'))
+      !(item.before === null || (item.before && typeof item.before === 'object' && !Array.isArray(item.before))) ||
+      !(item.after === null || (item.after && typeof item.after === 'object' && !Array.isArray(item.after)))
     ) {
       throw failure('The Laravel voucher history contains an invalid event.', 'API_RESPONSE_INVALID');
     }
