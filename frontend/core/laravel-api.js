@@ -573,7 +573,7 @@ function mapVoucherHistoryPage(page, expectedVoucherId, expectedCategory) {
       typeof item.reason !== 'string' ||
       item.reason.length > 500 ||
       typeof item.occurredAtUtc !== 'string' ||
-      !/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?$/.test(item.occurredAtUtc) ||
+      !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?$/.test(item.occurredAtUtc) ||
       !(item.before === null || (item.before && typeof item.before === 'object' && !Array.isArray(item.before))) ||
       !(item.after === null || (item.after && typeof item.after === 'object' && !Array.isArray(item.after)))
     ) {
