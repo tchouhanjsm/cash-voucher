@@ -154,9 +154,10 @@ export function createBulk({ api, refresh, go }) {
       sourceReceipts: find(/^receipts?$/),
     };
     let body = input.slice(1);
-    sourceSystem = indexes.sourceRecordId >= 0 && headers[indexes.sourceRecordId] === 'voucherid'
-      ? 'apps-script-vouchers'
-      : 'manual-csv';
+    sourceSystem =
+      indexes.sourceRecordId >= 0 && headers[indexes.sourceRecordId] === 'voucherid'
+        ? 'apps-script-vouchers'
+        : 'manual-csv';
 
     if (indexes.date < 0 || indexes.vendor < 0 || indexes.amount < 0) {
       indexes = {
@@ -193,7 +194,8 @@ export function createBulk({ api, refresh, go }) {
       paymentMethod: indexes.paymentMethod >= 0 ? row[indexes.paymentMethod] : '',
       type: indexes.type >= 0 ? row[indexes.type] : '',
       sourceStatus: indexes.sourceStatus >= 0 ? row[indexes.sourceStatus] : '',
-      sourceApprovalStatus: indexes.sourceApprovalStatus >= 0 ? row[indexes.sourceApprovalStatus] : '',
+      sourceApprovalStatus:
+        indexes.sourceApprovalStatus >= 0 ? row[indexes.sourceApprovalStatus] : '',
       sourceVoucherNo: indexes.sourceVoucherNo >= 0 ? row[indexes.sourceVoucherNo] : '',
       sourceReceipts: indexes.sourceReceipts >= 0 ? row[indexes.sourceReceipts] : '',
     }));
@@ -209,15 +211,25 @@ export function createBulk({ api, refresh, go }) {
       const vendor = String(row.vendor ?? '').trim();
       const amount = parseAmt(row.amount);
       const categoryInput = String(row.cat ?? '').trim();
-      const impactInput = String(row.cashImpact ?? '').trim().toUpperCase();
+      const impactInput = String(row.cashImpact ?? '')
+        .trim()
+        .toUpperCase();
       const sourceRecordId = String(row.sourceRecordId ?? '').trim();
-      const rawPaymentMethod = String(row.paymentMethod ?? '').trim().toUpperCase().replace(/[ -]+/g, '_');
-      const paymentMethod = rawPaymentMethod === 'BANKTRANSFER' ? 'BANK_TRANSFER' : rawPaymentMethod;
-      const rowType = String(row.type ?? '').trim().toUpperCase() || type;
+      const rawPaymentMethod = String(row.paymentMethod ?? '')
+        .trim()
+        .toUpperCase()
+        .replace(/[ -]+/g, '_');
+      const paymentMethod =
+        rawPaymentMethod === 'BANKTRANSFER' ? 'BANK_TRANSFER' : rawPaymentMethod;
+      const rowType =
+        String(row.type ?? '')
+          .trim()
+          .toUpperCase() || type;
       const errors = [];
       const warnings = [];
 
-      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(sourceRecordId)) errors.push('missing or invalid SourceID');
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(sourceRecordId))
+        errors.push('missing or invalid SourceID');
       else if (seenSourceIds.has(sourceRecordId)) errors.push('duplicate SourceID in file');
       else seenSourceIds.add(sourceRecordId);
       if (!date) errors.push('bad date');
@@ -225,7 +237,8 @@ export function createBulk({ api, refresh, go }) {
       if (!vendor) errors.push('no vendor');
       if (!(amount > 0) || amount > 1e7) errors.push('bad amount');
       if (!['PAYMENT', 'RECEIPT'].includes(rowType)) errors.push('bad transaction type');
-      if (!['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod)) errors.push('bad payment method');
+      if (!['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod))
+        errors.push('bad payment method');
 
       const allowedCategories = rowType === 'RECEIPT' ? rcats() : categories();
       let category = allowedCategories.find(
@@ -356,11 +369,20 @@ export function createBulk({ api, refresh, go }) {
       const vendor = String(row.vendor ?? '').trim();
       const amount = parseAmt(row.amount);
       const sourceRecordId = String(row.sourceRecordId ?? '').trim();
-      const rowType = String(row.type ?? '').trim().toUpperCase() || type;
+      const rowType =
+        String(row.type ?? '')
+          .trim()
+          .toUpperCase() || type;
       const category = String(row.cat ?? '').trim() || 'Other';
-      const paymentMethod = String(row.paymentMethod ?? '').trim().toUpperCase().replace(/[ -]+/g, '_');
-      const normalizedPaymentMethod = paymentMethod === 'BANKTRANSFER' ? 'BANK_TRANSFER' : paymentMethod;
-      const requestedImpact = String(row.cashImpact ?? '').trim().toUpperCase();
+      const paymentMethod = String(row.paymentMethod ?? '')
+        .trim()
+        .toUpperCase()
+        .replace(/[ -]+/g, '_');
+      const normalizedPaymentMethod =
+        paymentMethod === 'BANKTRANSFER' ? 'BANK_TRANSFER' : paymentMethod;
+      const requestedImpact = String(row.cashImpact ?? '')
+        .trim()
+        .toUpperCase();
       const cashImpact = requestedImpact || suggestCashImpact(rowType, category);
       if (
         /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(sourceRecordId) &&
@@ -397,7 +419,10 @@ export function createBulk({ api, refresh, go }) {
           return entry;
         }),
       });
-      if (!Array.isArray(duplicateResult?.results) || duplicateResult.results.length !== duplicateCandidates.length) {
+      if (
+        !Array.isArray(duplicateResult?.results) ||
+        duplicateResult.results.length !== duplicateCandidates.length
+      ) {
         throw new Error('The server could not verify possible duplicates. Retry before importing.');
       }
       duplicateResult.results.forEach((result, candidateIndex) => {
@@ -433,24 +458,36 @@ export function createBulk({ api, refresh, go }) {
 
     const counts = document.createElement('p');
     counts.textContent =
-      summary.imported + ' imported · ' + summary.replayed + ' replayed · ' +
-      summary.quarantined + ' quarantined · ' + summary.pending + ' pending';
+      summary.imported +
+      ' imported · ' +
+      summary.replayed +
+      ' replayed · ' +
+      summary.quarantined +
+      ' quarantined · ' +
+      summary.pending +
+      ' pending';
     panel.appendChild(counts);
 
     const totals = document.createElement('p');
     totals.className = 'muted';
     totals.textContent =
-      'Source total ₹' + (summary.sourceTotalPaise / 100).toFixed(2) +
-      ' · imported ₹' + (summary.importedTotalPaise / 100).toFixed(2) +
-      ' · quarantined ₹' + (summary.quarantinedTotalPaise / 100).toFixed(2) +
-      ' · pending ₹' + (summary.pendingTotalPaise / 100).toFixed(2) +
-      ' · variance ₹' + (summary.variancePaise / 100).toFixed(2);
+      'Source total ₹' +
+      (summary.sourceTotalPaise / 100).toFixed(2) +
+      ' · imported ₹' +
+      (summary.importedTotalPaise / 100).toFixed(2) +
+      ' · quarantined ₹' +
+      (summary.quarantinedTotalPaise / 100).toFixed(2) +
+      ' · pending ₹' +
+      (summary.pendingTotalPaise / 100).toFixed(2) +
+      ' · variance ₹' +
+      (summary.variancePaise / 100).toFixed(2);
     panel.appendChild(totals);
 
     const batch = document.createElement('p');
     batch.className = 'muted';
     batch.textContent =
-      'Batch ID: ' + summary.batchIds.join(', ') +
+      'Batch ID: ' +
+      summary.batchIds.join(', ') +
       '. Re-submit the same file with the same SourceIDs to resume uncertain rows safely.';
     panel.appendChild(batch);
 
@@ -462,7 +499,12 @@ export function createBulk({ api, refresh, go }) {
       summary.quarantinedRows.concat(summary.pendingRows).forEach((row) => {
         const item = document.createElement('li');
         item.textContent =
-          'Row ' + row.rowNumber + ' · SourceID ' + row.sourceRecordId + ' · ' + row.status +
+          'Row ' +
+          row.rowNumber +
+          ' · SourceID ' +
+          row.sourceRecordId +
+          ' · ' +
+          row.status +
           (row.errorCode ? ' · ' + row.errorCode : '') +
           (row.errorMessage ? ' — ' + row.errorMessage : '');
         list.appendChild(item);
@@ -579,8 +621,13 @@ export function createBulk({ api, refresh, go }) {
           });
 
           $('#bprog').textContent =
-            'Processed ' + Math.min(index + chunkRows.length, ready.length) +
-            ' of ' + ready.length + ' rows; reconciliation status: ' + data.status + '.';
+            'Processed ' +
+            Math.min(index + chunkRows.length, ready.length) +
+            ' of ' +
+            ready.length +
+            ' rows; reconciliation status: ' +
+            data.status +
+            '.';
         }
 
         await refresh(true);
