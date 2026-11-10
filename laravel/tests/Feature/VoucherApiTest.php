@@ -321,6 +321,34 @@ final class VoucherApiTest extends TestCase
             ->assertJsonPath('error.code', 'FILTER_INVALID');
     }
 
+    public function test_register_vendor_facets_preserve_case_distinct_names(): void
+    {
+        $this->withRoleSession('manager');
+        $suffix = bin2hex(random_bytes(5));
+        $upperName = 'Case Vendor '.$suffix;
+        $lowerName = strtolower($upperName);
+
+        $this->insertVoucherFixture($this->userId, $upperName, 10000);
+        $this->insertVoucherFixture($this->userId, $lowerName, 12000);
+
+        $response = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+
+        $response->assertOk();
+        $facets = $response->json('data.facets.vendors');
+        self::assertIsArray($facets);
+        self::assertSame(
+            1,
+            count(array_filter($facets, static fn (string $name): bool => $name === $upperName)),
+        );
+        self::assertSame(
+            1,
+            count(array_filter($facets, static fn (string $name): bool => $name === $lowerName)),
+        );
+    }
+
     public function test_staff_cannot_filter_other_users_and_facets_remain_creator_scoped(): void
     {
         $otherUser = $this->createUser('staff');
