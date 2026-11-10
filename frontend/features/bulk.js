@@ -141,6 +141,7 @@ export function createBulk({ api, refresh, go }) {
       date: find(/^date|voucherdate/),
       vendor: find(/vendor|paidto|payee|party|name/),
       vendorId: find(/^vendorid$/),
+      vendorType: find(/^vendortype$/),
       amount: find(/amount|amt|rs|inr/),
       cat: find(/categor|head/),
       notes: find(/note|remark|desc|narration|particular/),
@@ -163,6 +164,7 @@ export function createBulk({ api, refresh, go }) {
         date: 0,
         vendor: 1,
         vendorId: -1,
+        vendorType: -1,
         amount: 2,
         cat: 3,
         notes: 4,
@@ -183,6 +185,7 @@ export function createBulk({ api, refresh, go }) {
       date: row[indexes.date],
       vendor: row[indexes.vendor],
       vendorId: indexes.vendorId >= 0 ? row[indexes.vendorId] : '',
+      vendorType: indexes.vendorType >= 0 ? row[indexes.vendorType] : '',
       amount: row[indexes.amount],
       cat: indexes.cat >= 0 ? row[indexes.cat] : '',
       notes: indexes.notes >= 0 ? row[indexes.notes] : '',
@@ -253,6 +256,7 @@ export function createBulk({ api, refresh, go }) {
         sourceApprovalStatus: String(row.sourceApprovalStatus ?? '').trim(),
         sourceVoucherNo: String(row.sourceVoucherNo ?? '').trim(),
         sourceReceipts: String(row.sourceReceipts ?? '').trim(),
+        sourceVendorType: String(row.vendorType ?? '').trim(),
         vendorId: String(row.vendorId ?? '').trim(),
         paymentMethod,
         type: rowType,
@@ -606,8 +610,8 @@ export function createBulk({ api, refresh, go }) {
   function downloadTemplate() {
     download(
       'voucher-template.csv',
-      'SourceID,Date,Vendor,Amount,Category,Notes,CashImpact,PaymentMethod\r\n' +
-        'manual-row-0001,25/12/2026,Ram Traders,1500,Kitchen,Vegetables,CASH_OUT,CASH\r\n',
+      'SourceID,Date,Vendor,VendorID,VendorType,Amount,Category,Notes,CashImpact,PaymentMethod\r\n' +
+        'manual-row-0001,25/12/2026,Ram Traders,,,1500,Kitchen,Vegetables,CASH_OUT,CASH\r\n',
       'text/csv',
     );
   }
