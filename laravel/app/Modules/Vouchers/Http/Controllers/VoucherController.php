@@ -256,7 +256,10 @@ final class VoucherController
         // Register totals describe the entire filtered result set, not this page.
         // Invalid amounts remain visible for review but never enter financial sums.
         $activeQuery = (clone $query)->where(function ($builder): void {
-            $builder->where('status', 'ACTIVE')->orWhereNull('status')->orWhere('status', '');
+            $builder
+                ->whereRaw("BINARY status = 'ACTIVE'")
+                ->orWhereNull('status')
+                ->orWhereRaw("BINARY status = ''");
         });
         $validAmountQuery = static function ($builder): void {
             $builder->whereBetween('amount_paise', [1, 1_000_000_000]);
