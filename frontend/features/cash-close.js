@@ -763,10 +763,8 @@ export function createCashClose({ api }) {
         toast('Daily cash close saved. The original report is now immutable.', 'ok');
         await preview(date);
       } catch (error) {
-        if (error.code !== 'NET' && error.code !== 'BAD') {
-          pendingRequestId = '';
-          pendingRequestSignature = '';
-        }
+        // Keep the same retry identity after every uncertain server/transport outcome.
+        // A changed payload receives a new identity through pendingRequestSignature.
         fail(error);
         if (error.code === 'CASH_CLOSE_EXISTS') await preview(date);
       }
@@ -799,10 +797,8 @@ export function createCashClose({ api }) {
         toast('Attributed correction note recorded; original close unchanged.', 'ok');
         await preview(data.date);
       } catch (error) {
-        if (error.code !== 'NET' && error.code !== 'BAD') {
-          pendingCorrectionRequestId = '';
-          pendingCorrectionSignature = '';
-        }
+        // Preserve the key until success; identical retries must replay the same correction.
+        // Editing any correction field produces a fresh request identity.
         fail(error);
       }
     });
