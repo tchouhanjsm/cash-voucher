@@ -115,6 +115,29 @@ assert.deepEqual(
 );
 
 assert.ok(actionMap.fieldContracts, 'legacy request/response field parity must be inventoried');
+assert.deepEqual(
+  Object.keys(actionMap.fieldContracts).sort(),
+  Object.keys(actionMap.actions).sort(),
+  'every registered Apps Script action must have exactly one field contract',
+);
+for (const [name, contract] of Object.entries(actionMap.fieldContracts)) {
+  assert.equal(contract.coverage, actionMap.actions[name].state, name + ' field-contract coverage must match the action map');
+  for (const fieldList of [
+    'legacyRequestFields',
+    'legacyResponseFields',
+    'laravelRequestFields',
+    'laravelResponseFields',
+  ]) {
+    assert.ok(Array.isArray(contract[fieldList]), name + ' must declare ' + fieldList);
+    assert.ok(contract[fieldList].every((field) => typeof field === 'string' && field.length > 0), name + ' ' + fieldList + ' must contain field paths');
+  }
+  assert.equal(typeof contract.notes, 'string');
+  assert.ok(contract.notes.trim().length > 0, name + ' field contract must record mapping assumptions or release boundaries');
+  if (actionMap.actions[name].serverState === 'planned') {
+    assert.equal(contract.laravelRequestFields.length, 0, name + ' planned server action must not claim Laravel request fields');
+    assert.equal(contract.laravelResponseFields.length, 0, name + ' planned server action must not claim Laravel response fields');
+  }
+}
 for (const field of [
   'sourceRecordId',
   'sourceSystem',
