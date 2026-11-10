@@ -378,13 +378,7 @@
     }
   },
   "phpFoundation": {
-    "implementedActions": [
-      "changePassword",
-      "login",
-      "logout",
-      "saveVendor",
-      "toggleVendor"
-    ]
+    "implementedActions": ["changePassword", "login", "logout", "saveVendor", "toggleVendor"]
   },
   "shadowResources": {
     "entrySuggestions": {
