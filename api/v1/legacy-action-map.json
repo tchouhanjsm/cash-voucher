@@ -150,10 +150,7 @@
       "adapterAction": "getReceipt"
     },
     "saveVendor": {
-      "method": [
-        "POST",
-        "PATCH"
-      ],
+      "method": ["POST", "PATCH"],
       "path": "/vendors[/{vendorId}]",
       "access": "vendors",
       "kind": "write",
@@ -183,10 +180,7 @@
       "adapterAction": "listUsers"
     },
     "saveUser": {
-      "method": [
-        "POST",
-        "PATCH"
-      ],
+      "method": ["POST", "PATCH"],
       "path": "/users[/{userId}]",
       "access": "users",
       "kind": "write",
@@ -376,13 +370,7 @@
     }
   },
   "phpFoundation": {
-    "implementedActions": [
-      "changePassword",
-      "login",
-      "logout",
-      "saveVendor",
-      "toggleVendor"
-    ]
+    "implementedActions": ["changePassword", "login", "logout", "saveVendor", "toggleVendor"]
   },
   "shadowResources": {
     "entrySuggestions": {
