@@ -209,6 +209,7 @@ $requiredTables = [
     'voucher_receipts', 'cash_closes', 'cash_close_corrections',
     'user_sessions', 'login_attempts', 'idempotency_requests', 'voucher_number_sequences', 'audit_events',
     'schema_migrations', 'vendor_name_claims',
+    'voucher_import_batches', 'voucher_import_rows',
 ];
 $tableQuery = $pdo->prepare(
     'SELECT COUNT(*) FROM information_schema.tables
