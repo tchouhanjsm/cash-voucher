@@ -48,8 +48,21 @@ final class VoucherApiTest extends TestCase
         $receiptId = $this->insertVoucherFixture($otherUser, 'Acme Return', 4500);
         $pendingId = $this->insertVoucherFixture($this->userId, 'Pending Supplier', 0);
         $cancelledId = $this->insertVoucherFixture($otherUser, 'Cancelled Supplier', 6000);
+        $legacyDefaultsId = $this->insertVoucherFixture($this->userId, 'Legacy Defaults Supplier', 8000);
+        $unknownApprovalId = $this->insertVoucherFixture($this->userId, 'Unknown Approval Supplier', 9000);
         $malformedId = $this->insertVoucherFixture($otherUser, 'Malformed Hidden Supplier', 1000);
 
+        DB::table('vouchers')->where('id', $legacyDefaultsId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '505',
+            'status' => '',
+            'approval_status' => '',
+        ]);
+        DB::table('vouchers')->where('id', $unknownApprovalId)->update([
+            'voucher_type' => 'PAYMENT',
+            'voucher_number' => '506',
+            'approval_status' => 'UNKNOWN_REVIEW_STATE',
+        ]);
         DB::table('vouchers')->where('id', $malformedId)->update([
             'voucher_type' => 'BROKEN',
         ]);
@@ -102,18 +115,25 @@ final class VoucherApiTest extends TestCase
             'limit' => 2,
         ]));
         $all->assertOk()
-            ->assertJsonPath('data.totalCount', 4)
+            ->assertJsonPath('data.totalCount', 6)
             ->assertJsonPath('data.limit', 2)
             ->assertJsonPath('data.hasMore', true)
-            ->assertJsonPath('data.totals.paid', '125.50')
+            ->assertJsonPath('data.totals.paid', '205.50')
             ->assertJsonPath('data.totals.received', '45.00')
-            ->assertJsonPath('data.totals.approvalExceptionCount', 1)
+            ->assertJsonPath('data.totals.approvalExceptionCount', 2)
             ->assertJsonPath('data.totals.invalidAmountCount', 1)
             ->assertJsonPath('data.totals.malformedRecordCount', 1)
             ->assertJsonPath('data.totals.malformedFieldCount', 0);
 
         $visibleVendors = $all->json('data.facets.vendors');
-        foreach (['Acme Return', 'Acme Steel', 'Cancelled Supplier', 'Pending Supplier'] as $vendor) {
+        foreach ([
+            'Acme Return',
+            'Acme Steel',
+            'Cancelled Supplier',
+            'Legacy Defaults Supplier',
+            'Pending Supplier',
+            'Unknown Approval Supplier',
+        ] as $vendor) {
             self::assertContains($vendor, $visibleVendors);
         }
         self::assertNotContains(
@@ -134,7 +154,7 @@ final class VoucherApiTest extends TestCase
         ]));
         $exportPage->assertOk()
             ->assertJsonPath('data.limit', 200)
-            ->assertJsonPath('data.totalCount', 4)
+            ->assertJsonPath('data.totalCount', 6)
             ->assertJsonPath('data.hasMore', false);
 
         $searchByReceiptNumber = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
@@ -198,6 +218,35 @@ final class VoucherApiTest extends TestCase
         ]));
         $unfilteredPaymentMethod->assertOk()
             ->assertJsonPath('data.totalCount', 0);
+
+        $legacyDefaultState = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Legacy Defaults Supplier',
+            'status' => 'ACTIVE',
+            'approval' => 'NOT_REQUIRED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $legacyDefaultState->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $legacyDefaultsId)
+            ->assertJsonPath('data.items.0.status', 'ACTIVE')
+            ->assertJsonPath('data.items.0.approvalStatus', 'NOT_REQUIRED')
+            ->assertJsonPath('data.totals.paid', '80.00')
+            ->assertJsonPath('data.totals.approvalExceptionCount', 0);
+
+        $unknownApprovalState = $this->withLegacySession()->getJson('/api/v1/vouchers?'.http_build_query([
+            'vendor' => 'Unknown Approval Supplier',
+            'status' => 'ACTIVE',
+            'approval' => 'REVIEW_REQUIRED',
+            'from' => $this->businessDate,
+            'to' => $this->businessDate,
+        ]));
+        $unknownApprovalState->assertOk()
+            ->assertJsonPath('data.totalCount', 1)
+            ->assertJsonPath('data.items.0.id', $unknownApprovalId)
+            ->assertJsonPath('data.items.0.approvalStatus', 'REVIEW_REQUIRED')
+            ->assertJsonPath('data.totals.paid', '0.00')
+            ->assertJsonPath('data.totals.approvalExceptionCount', 1);
 
         $invalidFilter = $this->withLegacySession()->getJson('/api/v1/vouchers?approval=WAITING');
         $invalidFilter->assertUnprocessable()
