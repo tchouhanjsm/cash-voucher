@@ -642,7 +642,9 @@
     },
     "createVouchers": {
       "legacyRequestFields": [
+        "sourceSystem",
         "bulk",
+        "entries[].sourceRecordId",
         "entries[].date",
         "entries[].vendor",
         "entries[].vendorId",
@@ -658,7 +660,11 @@
         "entries[].receipts[]",
         "entries[].receipts[].mime",
         "entries[].receipts[].data",
-        "entries[].sourceRecordId"
+        "entries[].sourceStatus",
+        "entries[].sourceApprovalStatus",
+        "entries[].sourceVoucherNo",
+        "entries[].sourceReceipts",
+        "entries[].sourceVendorType"
       ],
       "legacyResponseFields": [
         "created[]",
@@ -729,7 +735,7 @@
         "reconciliation.variancePaise",
         "reconciliation.balanced"
       ],
-      "notes": "Single entries use the voucher create route; bounded bulk batches use /imports/vouchers. The Apps Script writer accepts vendor identity and receipt arrays, and returns the vOut_ voucher projection. The Laravel adapter preserves source-only metadata in the batch manifest; unsupported historical status, approval, original voucher number, receipt references and vendor type are quarantined for specialist migration rather than silently rewritten. Stable source IDs and row hashes drive replay, conflicts are quarantined, and reconciliation totals are calculated in paise.",
+      "notes": "Single entries use the voucher create route; bounded bulk batches use /imports/vouchers in Laravel shadow. The Apps Script production writer requires one stable SourceID per row and binds ClientID to bulk-<SourceID> for replay; historical Apps Script export sources and populated lifecycle/approval/original-number/receipt/vendor-type metadata fail closed before writes instead of being discarded. Apps Script remains the production writer. Laravel shadow persists a repeatable source manifest, replays matching source hashes, quarantines conflicts and unsupported historical fields, and reconciles all submitted amounts in paise.",
       "coverage": "implemented"
     },
     "updateVoucher": {
