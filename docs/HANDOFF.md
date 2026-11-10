@@ -9,7 +9,6 @@
 - **Known safety boundary:** bulk import is intentionally unsupported in Laravel-shadow mode and must fail closed before network access. Do not mark it implemented or route it to Apps Script as a hidden fallback from shadow mode.
 - **Checkpoint:** remote GitHub-only review cannot execute Composer, PHP, MySQL, Chromium or inspect the owner's local environment. Treat those gates as pending until actual command/browser/log evidence is committed against an exact tested head.
 
-
 ## Current delivery focus — PR #280 novice-first workspace consolidation (9 November 2026)
 
 - **PR / branch:** [PR #280](https://github.com/tchouhanjsm/cash-voucher/pull/280), `feat/dashboard-admin-minimal-workspaces-20261108` → `client-main`, based on the merged Register search-first milestone.
