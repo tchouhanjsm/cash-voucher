@@ -8,7 +8,6 @@
 
 **Verification boundary:** exact-head CI reports are synthetic/disposable integration evidence, not proof of owner-local runtime operation. Owner-local Composer/PHP 8.3, MySQL, browser Network/Console, Laravel log, target private-storage and restore checks remain pending unless separately recorded with exact evidence.
 
-
 ## CVL-031 vendor write transport slice — 8 November 2026
 
 **Branch:** `feat/laravel-vendor-transport-clean-20261108`, based on the merged PR #273 integration head.
