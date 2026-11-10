@@ -592,6 +592,7 @@ export function createBulk({ api, refresh, go }) {
           const chunkRows = ready.slice(index, index + 100);
           const chunk = chunkRows.map((row) => ({
             sourceRecordId: row.sourceRecordId,
+            sourceRowNumber: row.n,
             clientId: row.cid,
             type: row.type,
             date: row.date,
