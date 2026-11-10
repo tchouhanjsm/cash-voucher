@@ -179,7 +179,7 @@ async function run() {
   assert.match(structuredCsv, /"sourceSystem","sourceScope","voucherId"/);
   assert.match(structuredCsv, /"laravel-sql-audit_events","voucher_id"/);
   assert.match(structuredCsv, /"COVERAGE"/);
-  assert.match(structuredCsv, /"not a point-in-time snapshot"/);
+  assert.ok(structuredCsv.includes('not a point-in-time snapshot'));
   assert.match(structuredCsv, /"VOUCHER_UPDATED"/);
   assert.match(structuredCsv, /"'=HYPERLINK/);
   assert.doesNotMatch(structuredCsv, /sessionToken/);
