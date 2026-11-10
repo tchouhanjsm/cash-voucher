@@ -196,7 +196,6 @@ export function createAuditReconciliationCsv(scans, exportedAt = new Date().toIS
   return '\uFEFF' + csvRows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }
 
-
 const STRUCTURED_EVENT_LIMIT = 1000;
 const AUDIT_EVENT_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -254,7 +253,9 @@ export function createStructuredVoucherAuditCsv(
     !Number.isFinite(Date.parse(exportedAt)) ||
     new Date(exportedAt).toISOString() !== exportedAt
   ) {
-    throw new TypeError('Structured audit export metadata does not match the validated source contract.');
+    throw new TypeError(
+      'Structured audit export metadata does not match the validated source contract.',
+    );
   }
 
   events.forEach((event) => {
@@ -262,7 +263,10 @@ export function createStructuredVoucherAuditCsv(
       !isRecord(event) ||
       typeof event.id !== 'string' ||
       !AUDIT_EVENT_UUID.test(event.id) ||
-      !(event.actorUserId === null || (typeof event.actorUserId === 'string' && AUDIT_EVENT_UUID.test(event.actorUserId))) ||
+      !(
+        event.actorUserId === null ||
+        (typeof event.actorUserId === 'string' && AUDIT_EVENT_UUID.test(event.actorUserId))
+      ) ||
       typeof event.actorEmail !== 'string' ||
       event.actorEmail.length > 254 ||
       typeof event.eventType !== 'string' ||
