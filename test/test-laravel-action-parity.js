@@ -141,10 +141,7 @@ for (const [name, entry] of Object.entries(shadowResources)) {
     name + ' shadow resource aggregate state must match coverage',
   );
   if (entry.serverState === 'implemented') {
-    assert.ok(
-      hasServerRoute(entry.method, entry.path),
-      name + ' shadow resource route must exist',
-    );
+    assert.ok(hasServerRoute(entry.method, entry.path), name + ' shadow resource route must exist');
   }
   if (entry.clientState === 'implemented' || entry.clientState === 'partial') {
     assert.equal(typeof entry.adapterAction, 'string');
