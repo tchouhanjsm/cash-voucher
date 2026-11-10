@@ -83,6 +83,7 @@ async function run() {
   const cashCloseCorrectionKeys = new Set();
   const createdVoucherOperations = new Map();
   const attachedReceiptOperations = new Map();
+  const importBatchOperations = new Map();
   const lifecycleIds = {
     update: '44444444-4444-4444-8444-444444444444',
     cancel: '55555555-5555-4555-8555-555555555555',
@@ -599,6 +600,75 @@ async function run() {
           },
         },
       });
+    }
+    if (new URL(String(url)).pathname === '/api/v1/imports/vouchers' && options.method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      const key = options.headers['Idempotency-Key'];
+      const previous = importBatchOperations.get(key);
+      if (previous) {
+        if (JSON.stringify(previous.body) !== JSON.stringify(body)) {
+          return jsonResponse(
+            { ok: false, error: { code: 'IDEMPOTENCY_CONFLICT', message: 'Batch key reused.' } },
+            409,
+          );
+        }
+        return jsonResponse({ ok: true, data: previous.response });
+      }
+      const rows = body.rows.map((row, index) => {
+        const voucher = {
+          id: '99999999-9999-4999-8999-' + String(index + 1).padStart(12, '0'),
+          voucherNo: String(901 + index),
+          date: row.voucher.date,
+          vendor: row.voucher.vendor,
+          vendorId: row.voucher.vendorId,
+          vendorType: row.voucher.vendorId ? 'REGISTERED' : 'ONE_TIME',
+          amount: row.voucher.amount,
+          amountPaise: Math.round(Number(row.voucher.amount) * 100),
+          category: row.voucher.category,
+          notes: row.voucher.notes,
+          type: row.voucher.type,
+          status: 'ACTIVE',
+          cashImpact: row.voucher.cashImpact,
+          paymentMethod: row.voucher.paymentMethod,
+          approvalStatus: 'NOT_REQUIRED',
+          clientId: row.voucher.clientId,
+          createdBy: 'manager@example.test',
+        };
+        return {
+          rowNumber: index + 1,
+          sourceRecordId: row.sourceRecordId,
+          status: 'IMPORTED',
+          voucherId: voucher.id,
+          sourceAmountPaise: voucher.amountPaise,
+          errorCode: null,
+          errorMessage: null,
+          voucher,
+        };
+      });
+      const total = rows.reduce((sum, row) => sum + row.sourceAmountPaise, 0);
+      const response = {
+        batchId: body.batchId,
+        batchRecordId: '88888888-8888-4888-8888-888888888888',
+        sourceSystem: body.sourceSystem,
+        status: 'COMPLETED',
+        reconciliation: {
+          rowCount: rows.length,
+          importedCount: rows.length,
+          replayedCount: 0,
+          quarantinedCount: 0,
+          pendingCount: 0,
+          unpricedCount: 0,
+          sourceTotalPaise: total,
+          importedTotalPaise: total,
+          quarantinedTotalPaise: 0,
+          pendingTotalPaise: 0,
+          variancePaise: 0,
+          balanced: true,
+        },
+        rows,
+      };
+      importBatchOperations.set(key, { body, response });
+      return jsonResponse({ ok: true, data: response });
     }
     if (String(url).endsWith('/vouchers/duplicate-check')) {
       const body = JSON.parse(options.body || '{}');
@@ -1492,19 +1562,76 @@ async function run() {
     'invalid lifecycle operations must be rejected before any API request',
   );
 
+  const bulkEntries = [
+    {
+      sourceRecordId: 'manual-source-001',
+      clientId: 'bulk-manual-source-001',
+      date: '2026-11-09',
+      type: 'PAYMENT',
+      vendor: 'Bulk supplier',
+      vendorId: null,
+      amount: '275.25',
+      category: 'Maintenance',
+      notes: 'Stable source import',
+      cashImpact: 'CASH_OUT',
+      paymentMethod: 'CASH',
+      duplicateConfirmationToken: '',
+      sourceStatus: '',
+      sourceApprovalStatus: '',
+      sourceVoucherNo: '',
+      sourceReceipts: '',
+    },
+  ];
+  const bulkImport = await api('createVouchers', {
+    bulk: true,
+    sourceSystem: 'manual-csv',
+    entries: bulkEntries,
+  });
+  assert.equal(bulkImport.status, 'COMPLETED');
+  assert.equal(bulkImport.created.length, 1);
+  assert.equal(bulkImport.created[0].id, '99999999-9999-4999-8999-000000000001');
+  assert.equal(bulkImport.created[0].amount, 275.25);
+  assert.equal(bulkImport.skipped, 0);
+  assert.equal(bulkImport.quarantined, 0);
+  assert.equal(bulkImport.reconciliation.balanced, true);
+  const importRequest = requests.at(-1);
+  const importBody = JSON.parse(importRequest.body);
+  assert.equal(importRequest.method, 'POST');
+  assert.match(importRequest.url, /\/imports\/vouchers$/);
+  assert.equal(importRequest.headers['Idempotency-Key'], importBody.batchId);
+  assert.match(importBody.batchId, /^voucher-import-batch-[a-f0-9]{64}$/);
+  assert.equal(importBody.sourceSystem, 'manual-csv');
+  assert.equal(importBody.rows[0].sourceRecordId, 'manual-source-001');
+  assert.equal(importBody.rows[0].voucher.amount, '275.25');
+  const repeatedBulkImport = await api('createVouchers', {
+    bulk: true,
+    sourceSystem: 'manual-csv',
+    entries: bulkEntries,
+  });
+  assert.equal(repeatedBulkImport.batchId, bulkImport.batchId);
+  assert.equal(repeatedBulkImport.created[0].id, bulkImport.created[0].id);
+  const importWrites = requests.filter((request) => request.url.endsWith('/imports/vouchers'));
+  assert.equal(importWrites.length, 2);
+  assert.equal(importWrites[0].headers['Idempotency-Key'], importWrites[1].headers['Idempotency-Key']);
+
   const beforeInvalidCreate = requests.length;
   await assert.rejects(
     () => api('createVouchers', { entries: [] }),
     (error) => error.code === 'PAYLOAD_INVALID',
   );
   await assert.rejects(
-    () => api('createVouchers', { bulk: true, entries: createEntries }),
-    (error) => error.code === 'API_ACTION_UNSUPPORTED',
+    () =>
+      api('createVouchers', {
+        bulk: true,
+        sourceSystem: 'manual-csv',
+        entries: [{ ...bulkEntries[0], sourceRecordId: '' }],
+      }),
+    (error) => error.code === 'PAYLOAD_INVALID',
   );
   assert.equal(
     requests.length,
     beforeInvalidCreate,
-    'invalid or bulk create payloads must not reach the Laravel server',
+    'invalid bulk manifests must be rejected before any network request',
   );
 
   const beforeFilteredRegister = requests.length;
