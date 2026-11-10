@@ -1,257 +1,404 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "actions": {
     "login": {
       "method": "POST",
       "path": "/sessions",
       "access": "public",
       "kind": "authentication",
-      "state": "implemented"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "login"
     },
     "logout": {
       "method": "POST",
       "path": "/sessions/current/logout",
       "access": "authenticated",
       "kind": "authentication",
-      "state": "implemented"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "logout"
     },
     "bootstrap": {
       "method": "GET",
       "path": "/bootstrap",
       "access": "authenticated",
       "kind": "read",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "bootstrap"
     },
     "registerPage": {
       "method": "GET",
       "path": "/vouchers",
       "access": "viewOwn-or-viewAll",
       "kind": "read",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "registerPage"
     },
     "checkVoucherDuplicates": {
       "method": "POST",
       "path": "/vouchers/duplicate-check",
       "access": "create",
       "kind": "read-validation",
-      "state": "planned"
+      "state": "planned",
+      "serverState": "planned",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "No distinct browser-adapter operation is mapped. The shared server endpoint is verified through checkPaymentDuplicates only."
     },
     "checkPaymentDuplicates": {
       "method": "POST",
-      "path": "/payments/duplicate-check",
+      "path": "/vouchers/duplicate-check",
       "access": "create",
       "kind": "read-validation",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "checkPaymentDuplicates"
     },
     "dashboardSummary": {
       "method": "GET",
       "path": "/dashboard/summary",
       "access": "authenticated-scope",
       "kind": "read",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "dashboardSummary"
     },
     "dailyOperationsSummary": {
       "method": "GET",
-      "path": "/dashboard/daily-operations",
+      "path": "/cash-closes/preview",
       "access": "viewAll",
       "kind": "read",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "dailyOperationsSummary"
     },
     "createVouchers": {
       "method": "POST",
       "path": "/vouchers",
       "access": "create; bulk additionally requires bulk",
       "kind": "write",
-      "state": "planned"
+      "state": "partial",
+      "serverState": "implemented",
+      "clientState": "partial",
+      "adapterAction": "createVouchers",
+      "capabilities": {
+        "singleEntry": "implemented",
+        "bulkImport": "unsupported"
+      },
+      "notes": "Sequential single-voucher writes are implemented. Bulk payloads are rejected before network access; no fallback writer is attempted."
     },
     "updateVoucher": {
       "method": "PATCH",
       "path": "/vouchers/{voucherId}",
       "access": "edit-and-record-scope",
       "kind": "write",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "updateVoucher"
     },
     "cancelVoucher": {
       "method": "POST",
       "path": "/vouchers/{voucherId}/cancel",
       "access": "cancel-and-record-scope",
       "kind": "write",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "cancelVoucher"
     },
     "approveVoucher": {
       "method": "POST",
       "path": "/vouchers/{voucherId}/approval",
       "access": "approvePayments",
       "kind": "write",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "approveVoucher"
     },
     "rejectVoucher": {
       "method": "POST",
       "path": "/vouchers/{voucherId}/rejection",
       "access": "approvePayments",
       "kind": "write",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "rejectVoucher"
     },
     "addReceipt": {
       "method": "POST",
       "path": "/vouchers/{voucherId}/receipts",
       "access": "create-or-receiptAny-and-record-scope",
       "kind": "write",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "addReceipt"
     },
     "getReceipt": {
       "method": "GET",
       "path": "/receipts/{receiptId}",
       "access": "receiptAny-or-own-record-scope",
       "kind": "read-private-file",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "getReceipt"
     },
     "saveVendor": {
-      "method": ["POST", "PATCH"],
+      "method": [
+        "POST",
+        "PATCH"
+      ],
       "path": "/vendors[/{vendorId}]",
       "access": "vendors",
       "kind": "write",
-      "state": "implemented"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "saveVendor"
     },
     "toggleVendor": {
       "method": "POST",
       "path": "/vendors/{vendorId}/active",
       "access": "vendors",
       "kind": "write",
-      "state": "implemented"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "toggleVendor"
     },
     "listUsers": {
       "method": "GET",
       "path": "/users",
       "access": "users",
       "kind": "read",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "listUsers"
     },
     "saveUser": {
-      "method": ["POST", "PATCH"],
+      "method": [
+        "POST",
+        "PATCH"
+      ],
       "path": "/users[/{userId}]",
       "access": "users",
       "kind": "write",
-      "state": "planned"
+      "state": "partial",
+      "serverState": "implemented",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
     },
     "resetPassword": {
       "method": "POST",
       "path": "/users/{userId}/password-reset",
       "access": "users",
       "kind": "write",
-      "state": "planned"
+      "state": "partial",
+      "serverState": "implemented",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
     },
     "changePassword": {
       "method": "POST",
       "path": "/sessions/current/password",
       "access": "authenticated",
       "kind": "write",
-      "state": "implemented"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "changePassword"
     },
     "saveSettings": {
       "method": "PUT",
       "path": "/settings",
       "access": "settings",
       "kind": "write",
-      "state": "planned"
+      "state": "partial",
+      "serverState": "implemented",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
     },
     "auditLog": {
       "method": "GET",
       "path": "/audit-events",
       "access": "audit",
       "kind": "read",
-      "state": "planned"
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "auditLog"
     },
     "voucherHistory": {
       "method": "GET",
       "path": "/vouchers/{voucherId}/history",
       "access": "viewAll-or-own-record-scope",
       "kind": "read",
-      "state": "planned"
+      "state": "partial",
+      "serverState": "implemented",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
     },
     "backupStatus": {
       "method": "GET",
       "path": "/operations/backup-status",
       "access": "settings",
       "kind": "read",
-      "state": "planned"
+      "state": "planned",
+      "serverState": "planned",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "No complete Laravel-shadow server and browser implementation is currently mapped."
     },
     "backupIntegrityReport": {
       "method": "GET",
       "path": "/operations/backup-integrity",
       "access": "settings",
       "kind": "read",
-      "state": "planned"
+      "state": "planned",
+      "serverState": "planned",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "No complete Laravel-shadow server and browser implementation is currently mapped."
     },
     "deploymentReadiness": {
       "method": "GET",
       "path": "/operations/readiness",
       "access": "settings",
       "kind": "read",
-      "state": "planned"
+      "state": "planned",
+      "serverState": "planned",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "No complete Laravel-shadow server and browser implementation is currently mapped."
     },
     "onboardingState": {
       "method": "GET",
       "path": "/onboarding",
       "access": "settings",
       "kind": "read",
-      "state": "planned"
+      "state": "planned",
+      "serverState": "planned",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "No complete Laravel-shadow server and browser implementation is currently mapped."
     },
     "onboardingConfirm": {
       "method": "POST",
       "path": "/onboarding/confirm",
       "access": "settings",
       "kind": "write",
-      "state": "planned"
+      "state": "planned",
+      "serverState": "planned",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "No complete Laravel-shadow server and browser implementation is currently mapped."
     },
     "onboardingAdvance": {
       "method": "POST",
       "path": "/onboarding/advance",
       "access": "settings",
       "kind": "write",
-      "state": "planned"
+      "state": "planned",
+      "serverState": "planned",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "No complete Laravel-shadow server and browser implementation is currently mapped."
     },
     "dataQualityReport": {
       "method": "GET",
       "path": "/reports/data-quality",
       "access": "settings",
       "kind": "read",
-      "state": "planned"
+      "state": "planned",
+      "serverState": "planned",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "No complete Laravel-shadow server and browser implementation is currently mapped."
     },
     "recordedMovementReport": {
       "method": "GET",
       "path": "/reports/recorded-movements",
       "access": "reports",
       "kind": "read",
-      "state": "planned"
+      "state": "partial",
+      "serverState": "implemented",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
     },
     "cashClosePreview": {
       "method": "GET",
       "path": "/cash-closes/preview",
       "access": "cashClose",
       "kind": "read",
-      "state": "planned"
+      "state": "partial",
+      "serverState": "implemented",
+      "clientState": "partial",
+      "adapterAction": "dailyOperationsSummary",
+      "notes": "The preview endpoint is available through dailyOperationsSummary; the legacy cashClosePreview action name is not exposed directly."
     },
     "createCashClose": {
       "method": "POST",
       "path": "/cash-closes",
       "access": "cashClose",
       "kind": "write",
-      "state": "planned"
+      "state": "partial",
+      "serverState": "implemented",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
     },
     "recordCashCloseCorrection": {
       "method": "POST",
       "path": "/cash-closes/{closeId}/corrections",
       "access": "cashClose",
       "kind": "append-only-write",
-      "state": "planned"
+      "state": "partial",
+      "serverState": "implemented",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "Laravel endpoint exists; the browser shadow adapter does not yet expose this legacy action."
     },
     "reportIssue": {
       "method": "POST",
       "path": "/support/issues",
       "access": "authenticated",
       "kind": "write",
-      "state": "planned"
+      "state": "planned",
+      "serverState": "planned",
+      "clientState": "planned",
+      "adapterAction": null,
+      "notes": "No complete Laravel-shadow server and browser implementation is currently mapped."
+    },
+    "entrySuggestions": {
+      "method": "GET",
+      "path": "/entry-suggestions",
+      "access": "authenticated; creator/property scoped",
+      "kind": "advisory-read",
+      "state": "implemented",
+      "serverState": "implemented",
+      "clientState": "implemented",
+      "adapterAction": "entrySuggestions",
+      "notes": "Hints are advisory and require an explicit employee selection."
     }
   }
 }
