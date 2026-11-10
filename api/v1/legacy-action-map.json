@@ -882,14 +882,7 @@
     "saveUser": {
       "legacyRequestFields": ["id", "name", "email", "role", "password", "active"],
       "legacyResponseFields": ["id", "name", "email", "role", "active", "mustChangePassword"],
-      "laravelRequestFields": [
-        "userId",
-        "name",
-        "email",
-        "role",
-        "temporaryPassword",
-        "active"
-      ],
+      "laravelRequestFields": ["userId", "name", "email", "role", "temporaryPassword", "active"],
       "laravelResponseFields": ["id", "name", "email", "role", "active", "mustChangePassword"],
       "notes": "Legacy password input is normalized to temporaryPassword in the request body. Retry identities do not contain the secret itself.",
       "coverage": "implemented"
@@ -1016,13 +1009,7 @@
     },
     "backupStatus": {
       "legacyRequestFields": [],
-      "legacyResponseFields": [
-        "lastSuccess",
-        "lastAttempt",
-        "lastError",
-        "backupAge",
-        "status"
-      ],
+      "legacyResponseFields": ["lastSuccess", "lastAttempt", "lastError", "backupAge", "status"],
       "laravelRequestFields": [],
       "laravelResponseFields": [],
       "notes": "No complete Laravel backup-status endpoint and browser mapping exists; remains Apps Script-only and planned.",
@@ -1030,14 +1017,7 @@
     },
     "backupIntegrityReport": {
       "legacyRequestFields": [],
-      "legacyResponseFields": [
-        "status",
-        "manifest",
-        "files",
-        "checksums",
-        "findings",
-        "coverage"
-      ],
+      "legacyResponseFields": ["status", "manifest", "files", "checksums", "findings", "coverage"],
       "laravelRequestFields": [],
       "laravelResponseFields": [],
       "notes": "No complete Laravel backup-integrity endpoint and browser mapping exists; remains Apps Script-only and planned.",
@@ -1094,15 +1074,7 @@
         "items[]",
         "byPaymentMethod"
       ],
-      "laravelRequestFields": [
-        "from",
-        "to",
-        "type",
-        "status",
-        "paymentMethod",
-        "offset",
-        "limit"
-      ],
+      "laravelRequestFields": ["from", "to", "type", "status", "paymentMethod", "offset", "limit"],
       "laravelResponseFields": [
         "generatedAt",
         "count",
