@@ -313,12 +313,14 @@ final class VoucherImportApiTest extends TestCase
     {
         $manager = $this->withRoleSession('manager');
         $batchId = 'legacy-quarantine-'.bin2hex(random_bytes(5));
+        $cancelledSourceId = 'legacy-cancelled-'.bin2hex(random_bytes(4));
+        $receiptSourceId = 'legacy-receipts-'.bin2hex(random_bytes(4));
         $payload = $this->manifest($batchId, [
-            $this->row('legacy-cancelled-'.bin2hex(random_bytes(4)), [
+            $this->row($cancelledSourceId, [
                 'sourceSystem' => 'apps-script-vouchers',
                 'sourceStatus' => 'CANCELLED',
             ]),
-            $this->row('legacy-receipts-'.bin2hex(random_bytes(4)), [
+            $this->row($receiptSourceId, [
                 'sourceSystem' => 'apps-script-vouchers',
                 'sourceReceipts' => 'drive-file-id-001,drive-file-id-002',
             ]),
@@ -333,7 +335,10 @@ final class VoucherImportApiTest extends TestCase
             ->assertJsonPath('data.reconciliation.quarantinedCount', 2)
             ->assertJsonPath('data.rows.0.errorCode', 'SOURCE_STATUS_REQUIRES_RECONCILIATION')
             ->assertJsonPath('data.rows.1.errorCode', 'SOURCE_RECEIPTS_REQUIRE_PRIVATE_MIGRATION');
-        self::assertSame(0, DB::table('vouchers')->where('source_legacy_id', 'like', 'apps-script-vouchers:%')->count());
+        self::assertSame(0, DB::table('vouchers')->whereIn('source_legacy_id', [
+            'apps-script-vouchers:'.$cancelledSourceId,
+            'apps-script-vouchers:'.$receiptSourceId,
+        ])->count());
     }
 
     public function test_only_manager_and_owner_can_import_and_manifest_identity_is_required(): void
