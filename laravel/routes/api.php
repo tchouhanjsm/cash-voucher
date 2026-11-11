@@ -37,7 +37,7 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::get('/health/ready', function () {
-        $requiredSchemaVersion = '0007';
+        $requiredSchemaVersion = '0008';
 
         try {
             $latest = DB::table('schema_migrations')->orderByDesc('version')->value('version');

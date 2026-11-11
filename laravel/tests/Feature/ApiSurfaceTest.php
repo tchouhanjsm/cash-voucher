@@ -62,13 +62,13 @@ final class ApiSurfaceTest extends TestCase
         }
     }
 
-    public function test_readiness_requires_and_reports_import_reconciliation_schema_version_0007(): void
+    public function test_readiness_requires_and_reports_historical_migration_schema_version_0008(): void
     {
         $this->getJson('/api/v1/health/ready')
             ->assertOk()
             ->assertJsonPath('data.status', 'ready')
             ->assertJsonPath('data.database', 'reachable')
-            ->assertJsonPath('data.schemaVersion', '0007')
+            ->assertJsonPath('data.schemaVersion', '0008')
             ->assertJsonPath('data.rolloutState', 'isolated-shadow');
     }
 

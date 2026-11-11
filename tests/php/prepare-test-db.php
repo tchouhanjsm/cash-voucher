@@ -45,6 +45,9 @@ try {
         ['audit_events', 'SELECT, INSERT'],
         ['voucher_import_batches', 'SELECT, INSERT, UPDATE'],
         ['voucher_import_rows', 'SELECT, INSERT, UPDATE'],
+        ['historical_import_batches', 'SELECT, INSERT, UPDATE'],
+        ['historical_import_rows', 'SELECT, INSERT, UPDATE'],
+        ['historical_approval_events', 'SELECT, INSERT'],
         ['schema_migrations', 'SELECT'],
     ];
 
