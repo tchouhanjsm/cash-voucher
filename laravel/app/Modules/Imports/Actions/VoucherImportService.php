@@ -417,40 +417,57 @@ final class VoucherImportService
 
         $sourceLegacyId = $row['sourceLegacyId'];
         $prior = $pdo->prepare(
-            "SELECT row_sha256, voucher_id, imported_amount_paise
+            "SELECT row_sha256, voucher_id, imported_amount_paise, status, batch_id
              FROM voucher_import_rows
              WHERE source_legacy_id = :source_id
                AND batch_id <> :batch_id
-               AND status IN ('IMPORTED', 'REPLAYED')
-             ORDER BY created_at_utc ASC
-             LIMIT 1"
+             ORDER BY created_at_utc ASC, id ASC"
         );
         $prior->execute(['source_id' => $sourceLegacyId, 'batch_id' => $batchId]);
-        $priorRow = $prior->fetch(PDO::FETCH_ASSOC);
-        if (is_array($priorRow)) {
-            if (hash_equals((string) $priorRow['row_sha256'], $row['rowHash'])) {
-                $importedAmountPaise = $priorRow['imported_amount_paise'] === null
-                    ? $this->voucherAmountPaise($pdo, (string) $priorRow['voucher_id'])
-                    : (int) $priorRow['imported_amount_paise'];
-                if ($importedAmountPaise === null) {
-                    $this->quarantine(
-                        $pdo,
-                        $rowId,
-                        'IMPORTED_VOUCHER_AMOUNT_UNAVAILABLE',
-                        'The previously imported voucher no longer has a verifiable amount. Reconcile the voucher ledger before replaying this source ID.',
-                    );
-
-                    return;
-                }
-                $this->markReplayed($pdo, $rowId, (string) $priorRow['voucher_id'], $importedAmountPaise);
+        $priorRows = $prior->fetchAll(PDO::FETCH_ASSOC);
+        $priorImported = null;
+        foreach ($priorRows as $priorRow) {
+            if (! hash_equals((string) $priorRow['row_sha256'], $row['rowHash'])) {
+                $this->quarantine(
+                    $pdo,
+                    $rowId,
+                    'SOURCE_ID_CONFLICT',
+                    'This source record ID was previously claimed with different content, including a quarantined or pending row. Reconcile the original source batch before retrying.',
+                );
 
                 return;
             }
+            if (
+                $priorImported === null
+                && in_array((string) $priorRow['status'], ['IMPORTED', 'REPLAYED'], true)
+            ) {
+                $priorImported = $priorRow;
+            }
+        }
+        if (is_array($priorImported)) {
+            $importedAmountPaise = $priorImported['imported_amount_paise'] === null
+                ? $this->voucherAmountPaise($pdo, (string) $priorImported['voucher_id'])
+                : (int) $priorImported['imported_amount_paise'];
+            if ($importedAmountPaise === null) {
+                $this->quarantine(
+                    $pdo,
+                    $rowId,
+                    'IMPORTED_VOUCHER_AMOUNT_UNAVAILABLE',
+                    'The previously imported voucher no longer has a verifiable amount. Reconcile the voucher ledger before replaying this source ID.',
+                );
+
+                return;
+            }
+            $this->markReplayed($pdo, $rowId, (string) $priorImported['voucher_id'], $importedAmountPaise);
+
+            return;
+        }
+        if ($priorRows !== []) {
             $this->quarantine(
                 $pdo,
                 $rowId,
-                'SOURCE_ID_CONFLICT',
-                'This source record ID was previously imported with different financial content. Reconcile the source before retrying.',
+                'SOURCE_ID_PREVIOUS_BATCH_INCOMPLETE',
+                'This source record ID is already reserved by an incomplete or quarantined batch. Resume the original batch instead of creating a second source identity.',
             );
 
             return;
