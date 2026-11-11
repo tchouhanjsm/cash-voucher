@@ -56,6 +56,7 @@ final class ApiSurfaceTest extends TestCase
             'audit:list',
             'audit:voucher-history',
             'imports:vouchers:create-and-reconcile',
+            'imports:historical:stage-validate-commit',
         ] as $resource) {
             self::assertContains($resource, $resources, 'Missing implemented resource: '.$resource);
         }
@@ -88,6 +89,11 @@ final class ApiSurfaceTest extends TestCase
             ['POST', 'api/v1/vouchers/duplicate-check'],
             ['POST', 'api/v1/vouchers'],
             ['POST', 'api/v1/imports/vouchers'],
+            ['POST', 'api/v1/imports/historical'],
+            ['GET', 'api/v1/imports/historical/{batchId}'],
+            ['POST', 'api/v1/imports/historical/{batchId}/validate'],
+            ['POST', 'api/v1/imports/historical/{batchId}/receipts/{sourceRecordId}'],
+            ['POST', 'api/v1/imports/historical/{batchId}/commit'],
             ['PATCH', 'api/v1/vouchers/{voucherId}'],
             ['POST', 'api/v1/vouchers/{voucherId}/cancel'],
             ['POST', 'api/v1/vouchers/{voucherId}/approval'],

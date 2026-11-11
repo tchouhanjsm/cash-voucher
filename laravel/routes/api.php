@@ -7,6 +7,7 @@ use App\Modules\Receipts\Http\Controllers\ReceiptController;
 use App\Modules\Reports\Http\Controllers\ReportsController;
 use App\Modules\Vouchers\Http\Controllers\VoucherController;
 use App\Modules\Imports\Http\Controllers\VoucherImportController;
+use App\Modules\Imports\Http\Controllers\HistoricalMigrationController;
 use App\Modules\Vendors\Http\Controllers\VendorController;
 use App\Modules\Vendors\Http\Controllers\EntrySuggestionController;
 use App\Modules\Users\Http\Controllers\UserController;
@@ -77,6 +78,7 @@ Route::prefix('v1')->group(function (): void {
                 'vouchers:duplicate-check',
                 'vouchers:create',
                 'imports:vouchers:create-and-reconcile',
+                'imports:historical:stage-validate-commit',
                 'vouchers:update',
                 'vouchers:cancel',
                 'vouchers:approve',
@@ -117,6 +119,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/vouchers/duplicate-check', [VoucherController::class, 'duplicateCheck']);
         Route::post('/vouchers', [VoucherController::class, 'store']);
         Route::post('/imports/vouchers', [VoucherImportController::class, 'store']);
+        Route::post('/imports/historical', [HistoricalMigrationController::class, 'store']);
+        Route::get('/imports/historical/{batchId}', [HistoricalMigrationController::class, 'show']);
+        Route::post('/imports/historical/{batchId}/validate', [HistoricalMigrationController::class, 'validateBatch']);
+        Route::post('/imports/historical/{batchId}/receipts/{sourceRecordId}', [HistoricalMigrationController::class, 'uploadReceipt']);
+        Route::post('/imports/historical/{batchId}/commit', [HistoricalMigrationController::class, 'commit']);
         Route::patch('/vouchers/{voucherId}', [VoucherController::class, 'update']);
         Route::post('/vouchers/{voucherId}/cancel', [VoucherController::class, 'cancel']);
         Route::post('/vouchers/{voucherId}/approval', [VoucherController::class, 'approve']);
