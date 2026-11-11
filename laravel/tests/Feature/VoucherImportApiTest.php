@@ -179,6 +179,52 @@ final class VoucherImportApiTest extends TestCase
         );
     }
 
+    public function test_changed_source_content_is_quarantined_even_when_the_prior_batch_was_already_quarantined(): void
+    {
+        $manager = $this->withRoleSession('manager');
+        $sourceId = 'quarantined-source-'.bin2hex(random_bytes(5));
+        $firstBatchId = 'quarantined-first-'.bin2hex(random_bytes(5));
+        $firstPayload = $this->manifest($firstBatchId, [
+            $this->row($sourceId, [
+                'sourceSystem' => 'apps-script-vouchers',
+                'sourceStatus' => 'CANCELLED',
+            ]),
+        ], 'apps-script-vouchers');
+
+        $first = $manager->postJson('/api/v1/imports/vouchers', $firstPayload, [
+            'Idempotency-Key' => $firstBatchId,
+        ]);
+        $first->assertOk()
+            ->assertJsonPath('data.status', 'RECONCILIATION_REQUIRED')
+            ->assertJsonPath('data.reconciliation.quarantinedCount', 1)
+            ->assertJsonPath('data.rows.0.errorCode', 'SOURCE_STATUS_REQUIRES_RECONCILIATION');
+
+        $secondBatchId = 'quarantined-second-'.bin2hex(random_bytes(5));
+        $secondPayload = $this->manifest($secondBatchId, [
+            $this->row($sourceId, [
+                'sourceSystem' => 'apps-script-vouchers',
+                'vendor' => 'Changed after quarantine',
+                'amount' => '126.00',
+            ]),
+        ], 'apps-script-vouchers');
+
+        $second = $manager->postJson('/api/v1/imports/vouchers', $secondPayload, [
+            'Idempotency-Key' => $secondBatchId,
+        ]);
+        $second->assertOk()
+            ->assertJsonPath('data.status', 'RECONCILIATION_REQUIRED')
+            ->assertJsonPath('data.reconciliation.importedCount', 0)
+            ->assertJsonPath('data.reconciliation.quarantinedCount', 1)
+            ->assertJsonPath('data.rows.0.status', 'QUARANTINED')
+            ->assertJsonPath('data.rows.0.errorCode', 'SOURCE_ID_CONFLICT');
+
+        self::assertSame(
+            0,
+            DB::table('vouchers')->where('source_legacy_id', 'apps-script-vouchers:'.$sourceId)->count(),
+            'A new batch must not replace the immutable content of a source ID reserved by an earlier quarantined batch.',
+        );
+    }
+
     public function test_import_recovers_a_committed_source_voucher_when_the_import_row_update_was_interrupted(): void
     {
         $manager = $this->withRoleSession('manager');
