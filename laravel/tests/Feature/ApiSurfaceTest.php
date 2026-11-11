@@ -61,6 +61,16 @@ final class ApiSurfaceTest extends TestCase
         }
     }
 
+    public function test_readiness_requires_and_reports_import_reconciliation_schema_version_0007(): void
+    {
+        $this->getJson('/api/v1/health/ready')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ready')
+            ->assertJsonPath('data.database', 'reachable')
+            ->assertJsonPath('data.schemaVersion', '0007')
+            ->assertJsonPath('data.rolloutState', 'isolated-shadow');
+    }
+
     public function test_shadow_route_inventory_matches_registered_methods_and_paths(): void
     {
         $routes = app('router')->getRoutes()->getRoutes();

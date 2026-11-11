@@ -36,10 +36,14 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::get('/health/ready', function () {
+        $requiredSchemaVersion = '0007';
+
         try {
             $latest = DB::table('schema_migrations')->orderByDesc('version')->value('version');
-            if ($latest !== '0006') {
-                throw new \RuntimeException('Expected schema baseline 0006 was not found.');
+            if ($latest !== $requiredSchemaVersion) {
+                throw new \RuntimeException(
+                    'Expected schema baseline '.$requiredSchemaVersion.' was not found.',
+                );
             }
         } catch (\Throwable $exception) {
             report($exception);
@@ -49,7 +53,7 @@ Route::prefix('v1')->group(function (): void {
         return ApiResponse::success([
             'status' => 'ready',
             'database' => 'reachable',
-            'schemaVersion' => '0006',
+            'schemaVersion' => $requiredSchemaVersion,
             'rolloutState' => 'isolated-shadow',
         ], (string) request()->attributes->get('request_id'));
     });
