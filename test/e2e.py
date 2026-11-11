@@ -1178,6 +1178,19 @@ with sync_playwright() as p:
                 f'{route_name}: route navigation places focus on the destination heading',
             )
         if route_id == 'dash':
+            # The shared page header is rendered before the async Dashboard summary.
+            # Wait for the explicit analysis or empty-state model before testing its
+            # authorized presence; otherwise the shell can be sampled mid-render.
+            page.wait_for_function(
+                """() => {
+                    const view = document.querySelector('#view .dashboard-view');
+                    return Boolean(view && (
+                        view.querySelector('.dashboard-analysis')
+                        || view.querySelector('.dashboard-empty-state')
+                    ));
+                }""",
+                timeout=10000,
+            )
             analysis_disclosure = page.locator('.dashboard-analysis')
             if analysis_disclosure.count() == 1:
                 open_disclosure(page, '.dashboard-analysis')
@@ -6563,8 +6576,8 @@ with sync_playwright() as p:
         'name': 'cash-voucher-import.csv',
         'mimeType': 'text/csv',
         'buffer': (
-            'Date,Vendor,Amount,Category,Notes\n'
-            f'{date_text},CSV File Vendor,33,Other,CSV file compatibility regression\n'
+            'SourceID,Date,Vendor,Amount,Category,Notes\n'
+            f'csv-file-row-0001,{date_text},CSV File Vendor,33,Other,CSV file compatibility regression\n'
         ).encode(),
     })
     page.click('[data-act=parse]')
@@ -6607,12 +6620,12 @@ with sync_playwright() as p:
     page.locator('#bf').set_input_files([])
 
     rows = (
-        'Date\tVendor\tAmount\tCategory\tNotes\n'
-        f'{date_text}\tRam Traders\t1250.50\tKitchen\tdup of staff entry\n'
-        f'{date_text}\tNew Vendor\t₹ 3,000\tFuel\t\n'
-        f'31/02/2026\t{xss_payload}\t10\t\t\n'
-        f'{date_text}\t\t50\t\t\n'
-        f'{date_text}\tBulk Imported Replacement Vendor\t40\tNonsense\t'
+        'SourceID\tDate\tVendor\tAmount\tCategory\tNotes\n'
+        f'bulk-row-0001\t{date_text}\tRam Traders\t1250.50\tKitchen\tdup of staff entry\n'
+        f'bulk-row-0002\t{date_text}\tNew Vendor\t₹ 3,000\tFuel\t\n'
+        f'bulk-row-0003\t31/02/2026\t{xss_payload}\t10\t\t\n'
+        f'bulk-row-0004\t{date_text}\t\t50\t\t\n'
+        f'bulk-row-0005\t{date_text}\tBulk Imported Replacement Vendor\t40\tNonsense\t'
     )
     page.fill('#bt', rows)
     page.click('[data-act=parse]')
@@ -6652,8 +6665,8 @@ with sync_playwright() as p:
     page.wait_for_selector('#bt')
     page.fill(
         '#bt',
-        'Date\tVendor\tAmount\tCategory\tNotes\n'
-        f'{date_text}\tBulk Receipt Test\t25\tOther\treceipt completion wording',
+        'SourceID\tDate\tVendor\tAmount\tCategory\tNotes\n'
+        f'receipt-row-0001\t{date_text}\tBulk Receipt Test\t25\tOther\treceipt completion wording',
     )
     page.select_option('#bt2', 'RECEIPT')
     page.click('[data-act=parse]')

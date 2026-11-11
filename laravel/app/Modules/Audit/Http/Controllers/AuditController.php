@@ -29,7 +29,7 @@ final class AuditController
         return ApiResponse::success($result, (string) $request->attributes->get('request_id'));
     }
 
-    public function voucherHistory(Request $request, AuditBrowser $action, string $voucherId): JsonResponse
+    public function voucherHistory(AuditListRequest $request, AuditBrowser $action, string $voucherId): JsonResponse
     {
         $principal = $this->principal($request);
         RoleCapabilities::require($principal, 'audit');
@@ -38,6 +38,7 @@ final class AuditController
             $voucherId,
             $request->query('limit'),
             $request->query('cursor'),
+            $request->query('eventCategory', 'ALL'),
         );
 
         return ApiResponse::success($result, (string) $request->attributes->get('request_id'));

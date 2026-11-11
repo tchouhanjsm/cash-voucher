@@ -43,6 +43,8 @@ try {
         ['idempotency_requests', 'SELECT, INSERT, UPDATE'],
         ['voucher_number_sequences', 'SELECT, INSERT, UPDATE'],
         ['audit_events', 'SELECT, INSERT'],
+        ['voucher_import_batches', 'SELECT, INSERT, UPDATE'],
+        ['voucher_import_rows', 'SELECT, INSERT, UPDATE'],
         ['schema_migrations', 'SELECT'],
     ];
 

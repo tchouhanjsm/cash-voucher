@@ -14,7 +14,10 @@ import {
   S,
 } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
-import { createAuditReconciliationCsv } from '../core/audit-export.js';
+import {
+  createAuditReconciliationCsv,
+  createStructuredVoucherAuditCsv,
+} from '../core/audit-export.js';
 import {
   addDays,
   compress,
@@ -1520,6 +1523,44 @@ export function createRegister({ api, go }) {
       return;
     }
 
+    const loading = document.createElement('p');
+    loading.className = 'muted';
+    loading.textContent = 'Loading voucher history…';
+    dialog(
+      voucher ? 'Voucher history for ' + voucherNo(voucher) : 'Voucher history',
+      loading,
+      null,
+    );
+
+    api('voucherHistory', {
+      id: voucherId,
+      beforeRow: null,
+      cursor: null,
+      limit: 50,
+      eventCategory: 'ALL',
+    })
+      .then((page) => {
+        closeModal();
+        if (page?.source === 'laravel-sql-audit-events') {
+          historyStructured(voucherId, page);
+        } else {
+          historyLegacy(voucherId, page);
+        }
+      })
+      .catch((error) => {
+        closeModal();
+        fail(error);
+      });
+  }
+
+  function historyLegacy(id, initialPage) {
+    const voucherId = typeof id === 'string' ? id.trim() : '';
+    const voucher = voucherRows().find((item) => item.id === voucherId);
+    if (!voucherId || voucherId.length > 100 || !can('audit')) {
+      fail(new Error('Voucher history is unavailable for this account. Refresh and retry.'));
+      return;
+    }
+
     const body = document.createElement('div');
     body.className = 'voucher-history';
     const note = document.createElement('p');
@@ -1583,6 +1624,7 @@ export function createRegister({ api, go }) {
     older.hidden = true;
     body.append(note, filterLabel, status, exportEvidence, findingsPanel, list, older);
 
+    let suppliedFirstPage = initialPage;
     let beforeRow = null;
     let loading = false;
     let eventCategory = 'ALL';
@@ -1830,11 +1872,15 @@ export function createRegister({ api, go }) {
       older.textContent = 'Loading older events…';
       try {
         const requestedBeforeRow = beforeRow;
-        const page = await api('voucherHistory', {
-          id: voucherId,
-          beforeRow: requestedBeforeRow,
-          eventCategory,
-        });
+        const page =
+          !append && suppliedFirstPage
+            ? suppliedFirstPage
+            : await api('voucherHistory', {
+                id: voucherId,
+                beforeRow: requestedBeforeRow,
+                eventCategory,
+              });
+        suppliedFirstPage = null;
         if (!isValidPage(page, requestedBeforeRow)) {
           throw new Error('The server returned invalid voucher-history data.');
         }
@@ -2034,6 +2080,221 @@ export function createRegister({ api, go }) {
       list.replaceChildren();
       status.className = 'muted voucher-history-status';
       status.textContent = 'Loading voucher history…';
+      loadPage(false);
+    });
+    older.addEventListener('click', () => loadPage(true));
+    dialog(voucher ? 'Voucher history for ' + voucherNo(voucher) : 'Voucher history', body, null);
+    loadPage(false);
+  }
+
+  function historyStructured(id, initialPage) {
+    const voucherId = typeof id === 'string' ? id.trim() : '';
+    const voucher = voucherRows().find((item) => item.id === voucherId);
+    if (!voucherId || voucherId.length > 100 || !can('audit')) {
+      fail(new Error('Voucher history is unavailable for this account. Refresh and retry.'));
+      return;
+    }
+
+    const body = document.createElement('div');
+    body.className = 'voucher-history';
+    const note = document.createElement('p');
+    note.className = 'muted voucher-history-intro';
+    note.textContent =
+      'Source: Laravel SQL audit events. This export covers only the structured events loaded below; it is not a point-in-time snapshot and does not include legacy spreadsheet audit rows that cannot be linked by stable voucher ID.';
+    const filterLabel = document.createElement('label');
+    filterLabel.className = 'voucher-history-filter';
+    filterLabel.append('Event type ');
+    const filter = document.createElement('select');
+    filter.id = 'voucherHistoryEventCategory';
+    filter.setAttribute('aria-label', 'Filter voucher history by event type');
+    [
+      ['ALL', 'All events'],
+      ['CREATED', 'Created'],
+      ['UPDATED', 'Updated'],
+      ['CANCELLED', 'Cancelled'],
+      ['APPROVED', 'Payment approved'],
+      ['REJECTED', 'Payment rejected'],
+      ['RECEIPT_ATTACHED', 'Receipt attached'],
+      ['OTHER', 'Other structured events'],
+    ].forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      filter.appendChild(option);
+    });
+    filterLabel.appendChild(filter);
+
+    const status = document.createElement('p');
+    status.className = 'muted voucher-history-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    status.textContent = 'Loading structured voucher history…';
+
+    const exportEvidence = document.createElement('button');
+    exportEvidence.type = 'button';
+    exportEvidence.className = 'btn sm voucher-history-export';
+    exportEvidence.textContent = 'Export loaded events CSV';
+    exportEvidence.disabled = true;
+    exportEvidence.setAttribute(
+      'aria-label',
+      'Export loaded Laravel SQL audit events and their source coverage statement as CSV',
+    );
+
+    const list = document.createElement('div');
+    list.className = 'voucher-history-list';
+    const older = document.createElement('button');
+    older.type = 'button';
+    older.className = 'btn voucher-history-older';
+    older.textContent = 'Load older events';
+    older.hidden = true;
+    body.append(note, filterLabel, status, exportEvidence, list, older);
+
+    const MAX_EXPORT_EVENTS = 1000;
+    let cursor = null;
+    let suppliedFirstPage = initialPage;
+    let loading = false;
+    let hasMore = false;
+    let loadedVoucher = null;
+    let eventCategory = 'ALL';
+    const loadedEvents = [];
+    const seenEventIds = new Set();
+
+    const renderEvent = (event) => {
+      const card = document.createElement('article');
+      card.className = 'voucher-history-event';
+      const title = document.createElement('h3');
+      title.textContent = event.eventType.replace(/_/g, ' ');
+      const metadata = document.createElement('p');
+      metadata.className = 'voucher-history-meta muted';
+      metadata.textContent = [
+        event.occurredAtUtc + ' UTC',
+        event.actorEmail || 'Unknown actor',
+        event.id,
+      ].join(' · ');
+      card.append(title, metadata);
+      if (event.reason) {
+        const reason = document.createElement('p');
+        reason.className = 'voucher-history-reason';
+        reason.textContent = 'Reason: ' + event.reason;
+        card.appendChild(reason);
+      }
+      if (event.before !== null || event.after !== null) {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = 'View recorded change snapshots';
+        details.appendChild(summary);
+        const snapshots = document.createElement('pre');
+        snapshots.className = 'voucher-history-snapshots';
+        snapshots.textContent = JSON.stringify(
+          { before: event.before, after: event.after },
+          null,
+          2,
+        ).slice(0, 12000);
+        details.appendChild(snapshots);
+        card.appendChild(details);
+      }
+      list.appendChild(card);
+    };
+
+    const loadPage = async (append) => {
+      if (loading) return;
+      if (loadedEvents.length >= MAX_EXPORT_EVENTS && append) {
+        status.className = 'error voucher-history-status';
+        status.textContent =
+          'The 1,000-event export limit has been reached. Export the loaded evidence before starting a new review.';
+        older.disabled = true;
+        return;
+      }
+      loading = true;
+      older.disabled = true;
+      filter.disabled = true;
+      older.textContent = 'Loading older events…';
+      try {
+        const page =
+          !append && suppliedFirstPage
+            ? suppliedFirstPage
+            : await api('voucherHistory', {
+                id: voucherId,
+                cursor: append ? cursor : null,
+                limit: Math.min(100, MAX_EXPORT_EVENTS - loadedEvents.length),
+                eventCategory,
+              });
+        suppliedFirstPage = null;
+        if (!page || page.source !== 'laravel-sql-audit-events' || page.voucher?.id !== voucherId) {
+          throw new Error('The server returned voucher history from an unexpected source.');
+        }
+        if (!append) {
+          list.replaceChildren();
+          loadedEvents.length = 0;
+          seenEventIds.clear();
+        }
+        const duplicate = page.items.find((event) => seenEventIds.has(event.id));
+        if (duplicate) {
+          throw new Error(
+            'A repeated audit event was returned across pages. Stop and inspect the audit cursor.',
+          );
+        }
+        page.items.forEach((event) => {
+          seenEventIds.add(event.id);
+          loadedEvents.push(event);
+          renderEvent(event);
+        });
+        loadedVoucher = page.voucher;
+        cursor = page.nextCursor;
+        hasMore = page.hasMore;
+        exportEvidence.disabled = false;
+        older.hidden = !hasMore || loadedEvents.length >= MAX_EXPORT_EVENTS;
+        status.className = 'muted voucher-history-status';
+        status.textContent =
+          'Loaded ' +
+          loadedEvents.length +
+          ' structured event(s) from Laravel SQL audit storage. ' +
+          (hasMore
+            ? 'More matching events remain; load older events to extend this export.'
+            : 'No further matching events remain.') +
+          ' Legacy spreadsheet rows without a stable voucher ID are outside this source and are not counted.';
+      } catch (error) {
+        status.className = 'error voucher-history-status';
+        status.textContent =
+          error && typeof error.message === 'string'
+            ? error.message.slice(0, 300)
+            : 'Voucher history could not be loaded. Check the connection and retry.';
+      } finally {
+        loading = false;
+        filter.disabled = false;
+        older.disabled = !hasMore || loadedEvents.length >= MAX_EXPORT_EVENTS;
+        older.textContent = 'Load older events';
+        older.hidden = !hasMore || loadedEvents.length >= MAX_EXPORT_EVENTS;
+      }
+    };
+
+    exportEvidence.addEventListener('click', () => {
+      try {
+        const exportedAt = new Date().toISOString();
+        const csv = createStructuredVoucherAuditCsv(
+          { voucher: loadedVoucher, eventCategory, events: loadedEvents, hasMore },
+          exportedAt,
+        );
+        const timestamp = exportedAt.replace(/[:.]/g, '-');
+        download('voucher-structured-audit-' + timestamp + '.csv', csv, 'text/csv;charset=utf-8');
+        toast('Structured audit export downloaded with source-coverage metadata.', 'ok');
+      } catch (error) {
+        fail(error);
+      }
+    });
+    filter.addEventListener('change', () => {
+      if (loading) return;
+      eventCategory = filter.value;
+      cursor = null;
+      hasMore = false;
+      loadedVoucher = null;
+      loadedEvents.length = 0;
+      seenEventIds.clear();
+      exportEvidence.disabled = true;
+      older.hidden = true;
+      list.replaceChildren();
+      status.className = 'muted voucher-history-status';
+      status.textContent = 'Loading structured voucher history…';
       loadPage(false);
     });
     older.addEventListener('click', () => loadPage(true));

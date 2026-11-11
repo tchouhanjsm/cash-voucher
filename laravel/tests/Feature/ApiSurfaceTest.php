@@ -55,9 +55,20 @@ final class ApiSurfaceTest extends TestCase
             'settings:update',
             'audit:list',
             'audit:voucher-history',
+            'imports:vouchers:create-and-reconcile',
         ] as $resource) {
             self::assertContains($resource, $resources, 'Missing implemented resource: '.$resource);
         }
+    }
+
+    public function test_readiness_requires_and_reports_import_reconciliation_schema_version_0007(): void
+    {
+        $this->getJson('/api/v1/health/ready')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ready')
+            ->assertJsonPath('data.database', 'reachable')
+            ->assertJsonPath('data.schemaVersion', '0007')
+            ->assertJsonPath('data.rolloutState', 'isolated-shadow');
     }
 
     public function test_shadow_route_inventory_matches_registered_methods_and_paths(): void
@@ -76,6 +87,7 @@ final class ApiSurfaceTest extends TestCase
             ['GET', 'api/v1/vouchers'],
             ['POST', 'api/v1/vouchers/duplicate-check'],
             ['POST', 'api/v1/vouchers'],
+            ['POST', 'api/v1/imports/vouchers'],
             ['PATCH', 'api/v1/vouchers/{voucherId}'],
             ['POST', 'api/v1/vouchers/{voucherId}/cancel'],
             ['POST', 'api/v1/vouchers/{voucherId}/approval'],

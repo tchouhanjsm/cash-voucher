@@ -139,6 +139,66 @@ function createVouchers_(user, req) {
   if (req.bulk) {
     need_(user, 'bulk');
     if (entries.length > CFG.MAX_BULK) throw err_('Maximum ' + CFG.MAX_BULK + ' rows per import.');
+
+    const sourceSystem = req.sourceSystem === undefined ? 'manual-csv' : req.sourceSystem;
+    if (sourceSystem !== 'manual-csv') {
+      throw err_(
+        'Historical Apps Script voucher exports cannot be imported as new vouchers. Use the source-aware migration workflow so original status, approval, numbering and receipts are reconciled.',
+        'IMPORT_REQUIRES_RECONCILIATION',
+      );
+    }
+
+    const seenSourceIds = Object.create(null);
+    entries.forEach(function (entry, index) {
+      const row = 'Row ' + (index + 1) + ': ';
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+        throw err_(row + 'invalid voucher details.', 'VALIDATION');
+      }
+      const sourceRecordId =
+        typeof entry.sourceRecordId === 'string' ? entry.sourceRecordId.trim() : '';
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,54}$/.test(sourceRecordId)) {
+        throw err_(
+          row + 'a stable SourceID (1–55 characters) is required for repeatable import.',
+          'IMPORT_SOURCE_ID_REQUIRED',
+        );
+      }
+      if (Object.prototype.hasOwnProperty.call(seenSourceIds, sourceRecordId)) {
+        throw err_(row + 'duplicate SourceID in this import batch.', 'IMPORT_SOURCE_ID_DUPLICATE');
+      }
+      seenSourceIds[sourceRecordId] = true;
+      if (entry.clientId !== 'bulk-' + sourceRecordId) {
+        throw err_(
+          row + 'the retry ClientID must be derived from its stable SourceID.',
+          'IMPORT_CLIENT_ID_MISMATCH',
+        );
+      }
+
+      const historicalFields = [
+        'sourceStatus',
+        'sourceApprovalStatus',
+        'sourceVoucherNo',
+        'sourceReceipts',
+        'sourceVendorType',
+      ];
+      const unsupported = historicalFields.filter(function (field) {
+        const value = entry[field];
+        return !(
+          value === undefined ||
+          value === null ||
+          value === '' ||
+          (Array.isArray(value) && value.length === 0)
+        );
+      });
+      if (unsupported.length) {
+        throw err_(
+          row +
+            'historical source fields (' +
+            unsupported.join(', ') +
+            ') cannot be discarded by new-entry bulk import. No rows were created; use the source-aware migration workflow.',
+          'IMPORT_REQUIRES_RECONCILIATION',
+        );
+      }
+    });
   } else if (entries.length > CFG.MAX_NORMAL)
     throw err_('Maximum ' + CFG.MAX_NORMAL + ' payments at once. Use Bulk Upload.');
   const catsP = categories_(),

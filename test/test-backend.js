@@ -736,9 +736,115 @@ ok(
   'non-owners blocked from admin',
 );
 ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff sees own');
+const historyRowsBeforeBulkGuard = g.sheets.Vouchers.rows.length;
+const blockedHistoricalExport = as(M, 'createVouchers', {
+  bulk: true,
+  sourceSystem: 'apps-script-vouchers',
+  entries: [
+    {
+      sourceRecordId: 'legacy-voucher-701',
+      clientId: 'bulk-legacy-voucher-701',
+      date: today,
+      vendor: 'Legacy Export Supplier',
+      amount: 125,
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+      sourceStatus: 'ACTIVE',
+      sourceApprovalStatus: 'APPROVED',
+      sourceVoucherNo: '701',
+      sourceReceipts: 'legacy-drive-file-id',
+      sourceVendorType: 'REGISTERED',
+    },
+  ],
+});
+ok(
+  !blockedHistoricalExport.ok && blockedHistoricalExport.code === 'IMPORT_REQUIRES_RECONCILIATION',
+  'Apps Script historical voucher exports are rejected before any new-entry writes',
+);
+ok(
+  g.sheets.Vouchers.rows.length === historyRowsBeforeBulkGuard,
+  'historical export rejection creates no voucher rows',
+);
+const blockedHistoricalFields = as(M, 'createVouchers', {
+  bulk: true,
+  sourceSystem: 'manual-csv',
+  entries: [
+    {
+      sourceRecordId: 'cancelled-source-1',
+      clientId: 'bulk-cancelled-source-1',
+      date: today,
+      vendor: 'Cancelled Source Supplier',
+      amount: 125,
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+      sourceStatus: 'CANCELLED',
+    },
+  ],
+});
+ok(
+  !blockedHistoricalFields.ok && blockedHistoricalFields.code === 'IMPORT_REQUIRES_RECONCILIATION',
+  'manual CSV cannot silently discard historical lifecycle fields',
+);
+ok(
+  g.sheets.Vouchers.rows.length === historyRowsBeforeBulkGuard,
+  'unsupported historical fields fail before the bulk write starts',
+);
+const missingBulkSourceId = as(M, 'createVouchers', {
+  bulk: true,
+  sourceSystem: 'manual-csv',
+  entries: [{ clientId: 'bulk-random', date: today, vendor: 'Missing Source ID', amount: 125 }],
+});
+ok(
+  !missingBulkSourceId.ok && missingBulkSourceId.code === 'IMPORT_SOURCE_ID_REQUIRED',
+  'Apps Script bulk import requires a stable source ID',
+);
+const mismatchedBulkClientId = as(M, 'createVouchers', {
+  bulk: true,
+  sourceSystem: 'manual-csv',
+  entries: [
+    {
+      sourceRecordId: 'stable-source-1',
+      clientId: 'random-retry-key',
+      date: today,
+      vendor: 'Mismatched Retry Supplier',
+      amount: 125,
+    },
+  ],
+});
+ok(
+  !mismatchedBulkClientId.ok && mismatchedBulkClientId.code === 'IMPORT_CLIENT_ID_MISMATCH',
+  'Apps Script bulk retry identity must be derived from SourceID',
+);
+const repeatedBulkSourceId = as(M, 'createVouchers', {
+  bulk: true,
+  sourceSystem: 'manual-csv',
+  entries: [
+    {
+      sourceRecordId: 'repeated-source-id',
+      clientId: 'bulk-repeated-source-id',
+      date: today,
+      vendor: 'Repeated Source Supplier',
+      amount: 125,
+    },
+    {
+      sourceRecordId: 'repeated-source-id',
+      clientId: 'bulk-repeated-source-id',
+      date: today,
+      vendor: 'Repeated Source Supplier',
+      amount: 125,
+    },
+  ],
+});
+ok(
+  !repeatedBulkSourceId.ok && repeatedBulkSourceId.code === 'IMPORT_SOURCE_ID_DUPLICATE',
+  'Apps Script rejects duplicate source IDs within the same import batch',
+);
 const mv = as(M, 'createVouchers', {
   bulk: true,
+  sourceSystem: 'manual-csv',
   entries: Array.from({ length: 50 }, (_, i) => ({
+    sourceRecordId: 'manager-bulk-source-' + i,
+    clientId: 'bulk-manager-bulk-source-' + i,
     date: today,
     vendor: 'V' + (i % 5),
     amount: 10 + i,
@@ -776,6 +882,37 @@ ok(
 );
 ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff still sees only own after bulk');
 ok(as(M, 'bootstrap').data.vouchers.length === 53, 'manager sees all');
+
+const replayBulkSource = {
+  bulk: true,
+  sourceSystem: 'manual-csv',
+  entries: [
+    {
+      sourceRecordId: 'bulk-replay-source-1',
+      clientId: 'bulk-bulk-replay-source-1',
+      date: today,
+      vendor: 'Bulk Replay Supplier',
+      amount: 175,
+      category: 'Other',
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+};
+const voucherCountBeforeBulkReplay = g.sheets.Vouchers.rows.length;
+const firstBulkReplay = as(M, 'createVouchers', replayBulkSource);
+const secondBulkReplay = as(M, 'createVouchers', replayBulkSource);
+ok(
+  firstBulkReplay.ok &&
+    secondBulkReplay.ok &&
+    firstBulkReplay.data.created[0].id === secondBulkReplay.data.created[0].id &&
+    secondBulkReplay.data.skipped === 1,
+  'Apps Script bulk retry with the same SourceID replays the original voucher',
+);
+ok(
+  g.sheets.Vouchers.rows.length === voucherCountBeforeBulkReplay + 1,
+  'Apps Script source-ID retry writes exactly one voucher row',
+);
 
 // Owner-approved high-value payment approval policy: inclusive INR 10,000 threshold.
 const approvalDate = '2020-02-01';

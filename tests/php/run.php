@@ -171,18 +171,18 @@ $mappedActions = array_keys($actionMap['actions'] ?? []);
 sort($registeredActions);
 sort($mappedActions);
 check($registeredActions === array_values(array_diff($mappedActions, ['login'])), 'every registered Apps Script action has a versioned API contract mapping');
-check(isset($actionMap['actions']['login']), 'the special public login action is mapped separately');
-$implementedActions = array_keys(array_filter(
-    $actionMap['actions'],
-    static fn (array $action): bool => ($action['state'] ?? '') === 'implemented'
-));
-sort($implementedActions);
 check(
-    $implementedActions === ['changePassword', 'login', 'logout', 'saveVendor', 'toggleVendor'],
-    'only authentication and the explicitly ported vendor actions are marked implemented in the replacement action map'
+    in_array('login', $actionMap['phpFoundation']['implementedActions'] ?? [], true),
+    'the special public login action remains explicitly mapped in the PHP foundation inventory'
+);
+$foundationActions = $actionMap['phpFoundation']['implementedActions'] ?? [];
+sort($foundationActions);
+check(
+    $foundationActions === ['changePassword', 'login', 'logout', 'saveVendor', 'toggleVendor'],
+    'the PHP foundation retains its explicit implemented-action boundary separately from Laravel-shadow parity'
 );
 check(
-    ($actionMap['actions']['login']['state'] ?? null) === 'implemented'
+    in_array('login', $foundationActions, true)
     && ($actionMap['actions']['logout']['state'] ?? null) === 'implemented'
     && ($actionMap['actions']['changePassword']['state'] ?? null) === 'implemented',
     'the three shipped legacy authentication actions are explicitly tracked as implemented'
@@ -199,16 +199,17 @@ check(
 $pdo = Database::connectFromEnvironment();
 $runner = new MigrationRunner($pdo, dirname(__DIR__, 2) . '/database/migrations');
 $migrations = $runner->status();
-check(count($migrations) === 5, 'five ordered migrations are registered');
-check(count(array_filter($migrations, static fn (array $row): bool => $row['applied'])) === 5, 'all five migrations are applied');
+check(count($migrations) === 7, 'seven ordered migrations are registered');
+check(count(array_filter($migrations, static fn (array $row): bool => $row['applied'])) === 7, 'all seven migrations are applied');
 $ready = $kernel->handle(Request::fromValues('GET', '/api/v1/health/ready'));
-check($ready->status() === 200 && ($ready->body()['data']['schemaVersion'] ?? null) === '0005', 'readiness endpoint requires the expected schema version');
+check($ready->status() === 200 && ($ready->body()['data']['schemaVersion'] ?? null) === '0007', 'readiness endpoint requires the expected schema version');
 
 $requiredTables = [
     'users', 'vendors', 'settings', 'vouchers', 'voucher_approval_events',
     'voucher_receipts', 'cash_closes', 'cash_close_corrections',
     'user_sessions', 'login_attempts', 'idempotency_requests', 'voucher_number_sequences', 'audit_events',
     'schema_migrations', 'vendor_name_claims',
+    'voucher_import_batches', 'voucher_import_rows',
 ];
 $tableQuery = $pdo->prepare(
     'SELECT COUNT(*) FROM information_schema.tables

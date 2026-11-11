@@ -108,6 +108,20 @@ final class StoreVoucher
                     );
                 }
 
+                if ($voucher['sourceLegacyId'] !== '') {
+                    $sourceQuery = $connection->prepare(
+                        'SELECT id FROM vouchers WHERE source_legacy_id = :source_id LIMIT 1 FOR UPDATE'
+                    );
+                    $sourceQuery->execute(['source_id' => $voucher['sourceLegacyId']]);
+                    if ($sourceQuery->fetchColumn() !== false) {
+                        throw new ApiException(
+                            409,
+                            'SOURCE_ID_CONFLICT',
+                            'This source record ID is already associated with a different voucher operation.',
+                        );
+                    }
+                }
+
                 $closed = $connection->prepare(
                     'SELECT id FROM cash_closes WHERE business_date = :business_date LIMIT 1 FOR SHARE'
                 );
@@ -145,7 +159,7 @@ final class StoreVoucher
                         :vendor_name, :vendor_id, :vendor_type, :amount_paise,
                         :category, :notes, :status, :cash_impact, :approval_status,
                         :approval_reason, :payment_method, :cancel_reason, :client_id,
-                        NULL, :created_by, :created_email,
+                        :source_legacy_id, :created_by, :created_email,
                         NULL, NULL, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6), NULL
                     )'
                 );
@@ -168,6 +182,7 @@ final class StoreVoucher
                     'payment_method' => $voucher['paymentMethod'],
                     'cancel_reason' => '',
                     'client_id' => $voucher['clientId'],
+                    'source_legacy_id' => $voucher['sourceLegacyId'] !== '' ? $voucher['sourceLegacyId'] : null,
                     'created_by' => $actorId,
                     'created_email' => $email,
                 ]);
@@ -189,6 +204,7 @@ final class StoreVoucher
                     'paymentMethod' => $voucher['paymentMethod'],
                     'approvalStatus' => $approvalStatus,
                     'clientId' => $voucher['clientId'],
+                    'sourceLegacyId' => $voucher['sourceLegacyId'] !== '' ? $voucher['sourceLegacyId'] : null,
                     'createdBy' => $email,
                 ];
             },
@@ -266,6 +282,13 @@ final class StoreVoucher
         }
 
         $duplicateToken = (string) ($input['duplicateConfirmationToken'] ?? '');
+        $sourceLegacyId = (string) ($input['sourceLegacyId'] ?? '');
+        if (
+            $sourceLegacyId !== ''
+            && ! preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $sourceLegacyId)
+        ) {
+            throw new ApiException(422, 'SOURCE_ID_INVALID', 'The source record identifier is invalid.');
+        }
 
         return [
             'date' => $date,
@@ -278,6 +301,7 @@ final class StoreVoucher
             'cashImpact' => $cashImpact,
             'paymentMethod' => $paymentMethod,
             'clientId' => $clientId,
+            'sourceLegacyId' => $sourceLegacyId,
             'duplicateConfirmationToken' => $duplicateToken,
         ];
     }

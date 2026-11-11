@@ -6,6 +6,7 @@ use App\Modules\CashClose\Http\Controllers\CashCloseController;
 use App\Modules\Receipts\Http\Controllers\ReceiptController;
 use App\Modules\Reports\Http\Controllers\ReportsController;
 use App\Modules\Vouchers\Http\Controllers\VoucherController;
+use App\Modules\Imports\Http\Controllers\VoucherImportController;
 use App\Modules\Vendors\Http\Controllers\VendorController;
 use App\Modules\Vendors\Http\Controllers\EntrySuggestionController;
 use App\Modules\Users\Http\Controllers\UserController;
@@ -35,10 +36,14 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::get('/health/ready', function () {
+        $requiredSchemaVersion = '0007';
+
         try {
             $latest = DB::table('schema_migrations')->orderByDesc('version')->value('version');
-            if ($latest !== '0005') {
-                throw new \RuntimeException('Expected schema baseline 0005 was not found.');
+            if ($latest !== $requiredSchemaVersion) {
+                throw new \RuntimeException(
+                    'Expected schema baseline '.$requiredSchemaVersion.' was not found.',
+                );
             }
         } catch (\Throwable $exception) {
             report($exception);
@@ -48,7 +53,7 @@ Route::prefix('v1')->group(function (): void {
         return ApiResponse::success([
             'status' => 'ready',
             'database' => 'reachable',
-            'schemaVersion' => '0005',
+            'schemaVersion' => $requiredSchemaVersion,
             'rolloutState' => 'isolated-shadow',
         ], (string) request()->attributes->get('request_id'));
     });
@@ -71,6 +76,7 @@ Route::prefix('v1')->group(function (): void {
                 'vouchers:list',
                 'vouchers:duplicate-check',
                 'vouchers:create',
+                'imports:vouchers:create-and-reconcile',
                 'vouchers:update',
                 'vouchers:cancel',
                 'vouchers:approve',
@@ -110,6 +116,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/cash-closes/{closeId}/corrections', [CashCloseController::class, 'recordCorrection']);
         Route::post('/vouchers/duplicate-check', [VoucherController::class, 'duplicateCheck']);
         Route::post('/vouchers', [VoucherController::class, 'store']);
+        Route::post('/imports/vouchers', [VoucherImportController::class, 'store']);
         Route::patch('/vouchers/{voucherId}', [VoucherController::class, 'update']);
         Route::post('/vouchers/{voucherId}/cancel', [VoucherController::class, 'cancel']);
         Route::post('/vouchers/{voucherId}/approval', [VoucherController::class, 'approve']);

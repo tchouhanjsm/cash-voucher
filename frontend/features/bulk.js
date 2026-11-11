@@ -6,6 +6,7 @@ import { busy, fail, head } from '../core/ui.js';
 export function createBulk({ api, refresh, go }) {
   let rows = [];
   let type = 'PAYMENT';
+  let sourceSystem = 'manual-csv';
 
   function render() {
     rows = [];
@@ -16,7 +17,7 @@ export function createBulk({ api, refresh, go }) {
         description: 'Review row data and cash-impact classifications before importing a batch.',
       }) +
       `<div class="card bulk-import-panel"><h2>1. Get your data in</h2>
-    <p class="muted">Columns: <b>Date, Vendor, Amount</b>, optional <b>Category, Notes, CashImpact</b>. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
+    <p class="muted">Required columns: <b>SourceID, Date, Vendor, Amount</b>; optional <b>Category, Notes, CashImpact, PaymentMethod</b>. Give each source transaction a unique, stable SourceID and keep it unchanged when retrying the same import. Replace the blank SourceID in the template before importing. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
     <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn bulk-file-label">📁 Choose file<input type="file" id="bf" class="bulk-file-input" accept=".csv,.tsv,.txt" aria-label="Choose CSV or TSV file"></label></div>
     <label class="bulk-entry-kind">These rows are<select id="bt2"><option value="PAYMENT">Payments (cash out)</option><option value="RECEIPT">Cash received (cash in)</option></select></label>
     <label>…or paste rows here<textarea id="bt" rows="5" placeholder="25/12/2026&#9;Ram Traders&#9;1500&#9;Kitchen&#9;vegetables"></textarea></label>
@@ -136,33 +137,73 @@ export function createBulk({ api, refresh, go }) {
     const headers = input[0].map(normalize);
     const find = (pattern) => headers.findIndex((value) => pattern.test(value));
     let indexes = {
+      sourceRecordId: find(/^(sourceid|voucherid|recordid|externalid|transactionid)$/),
       date: find(/^date|voucherdate/),
       vendor: find(/vendor|paidto|payee|party|name/),
+      vendorId: find(/^vendorid$/),
+      vendorType: find(/^vendortype$/),
       amount: find(/amount|amt|rs|inr/),
-      cat: find(/categor|head|type/),
+      cat: find(/categor|head/),
       notes: find(/note|remark|desc|narration|particular/),
       cashImpact: find(/cashimpact|drawerimpact|cashmovement/),
+      paymentMethod: find(/^paymentmethod$/),
+      type: find(/^(type|vouchertype)$/),
+      sourceStatus: find(/^status$/),
+      sourceApprovalStatus: find(/^approvalstatus$/),
+      sourceVoucherNo: find(/^(voucherno|receiptnumber)$/),
+      sourceReceipts: find(/^receipts?$/),
     };
     let body = input.slice(1);
+    sourceSystem =
+      indexes.sourceRecordId >= 0 && headers[indexes.sourceRecordId] === 'voucherid'
+        ? 'apps-script-vouchers'
+        : 'manual-csv';
 
     if (indexes.date < 0 || indexes.vendor < 0 || indexes.amount < 0) {
-      indexes = { date: 0, vendor: 1, amount: 2, cat: 3, notes: 4, cashImpact: 5 };
+      indexes = {
+        sourceRecordId: -1,
+        date: 0,
+        vendor: 1,
+        vendorId: -1,
+        vendorType: -1,
+        amount: 2,
+        cat: 3,
+        notes: 4,
+        cashImpact: 5,
+        paymentMethod: -1,
+        type: -1,
+        sourceStatus: -1,
+        sourceApprovalStatus: -1,
+        sourceVoucherNo: -1,
+        sourceReceipts: -1,
+      };
       body = input;
+      sourceSystem = 'manual-csv';
     }
 
     return body.map((row) => ({
+      sourceRecordId: indexes.sourceRecordId >= 0 ? row[indexes.sourceRecordId] : '',
       date: row[indexes.date],
       vendor: row[indexes.vendor],
+      vendorId: indexes.vendorId >= 0 ? row[indexes.vendorId] : '',
+      vendorType: indexes.vendorType >= 0 ? row[indexes.vendorType] : '',
       amount: row[indexes.amount],
       cat: indexes.cat >= 0 ? row[indexes.cat] : '',
       notes: indexes.notes >= 0 ? row[indexes.notes] : '',
       cashImpact: indexes.cashImpact >= 0 ? row[indexes.cashImpact] : '',
+      paymentMethod: indexes.paymentMethod >= 0 ? row[indexes.paymentMethod] : '',
+      type: indexes.type >= 0 ? row[indexes.type] : '',
+      sourceStatus: indexes.sourceStatus >= 0 ? row[indexes.sourceStatus] : '',
+      sourceApprovalStatus:
+        indexes.sourceApprovalStatus >= 0 ? row[indexes.sourceApprovalStatus] : '',
+      sourceVoucherNo: indexes.sourceVoucherNo >= 0 ? row[indexes.sourceVoucherNo] : '',
+      sourceReceipts: indexes.sourceReceipts >= 0 ? row[indexes.sourceReceipts] : '',
     }));
   }
 
-  function checkRows(raw, existingDuplicateIndexes = new Set()) {
+  function checkRows(raw, duplicateResultsByIndex = new Map()) {
     const seen = new Set();
-    const allowedCategories = type === 'RECEIPT' ? rcats() : categories();
+    const seenSourceIds = new Set();
     const output = [];
 
     raw.forEach((row, index) => {
@@ -173,33 +214,65 @@ export function createBulk({ api, refresh, go }) {
       const impactInput = String(row.cashImpact ?? '')
         .trim()
         .toUpperCase();
+      const sourceRecordId = String(row.sourceRecordId ?? '').trim();
+      const rawPaymentMethod = String(row.paymentMethod ?? '')
+        .trim()
+        .toUpperCase()
+        .replace(/[ -]+/g, '_');
+      const paymentMethod =
+        rawPaymentMethod === 'BANKTRANSFER' ? 'BANK_TRANSFER' : rawPaymentMethod;
+      const rowType =
+        String(row.type ?? '')
+          .trim()
+          .toUpperCase() || type;
       const errors = [];
       const warnings = [];
 
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,54}$/.test(sourceRecordId))
+        errors.push('missing or invalid SourceID');
+      else if (seenSourceIds.has(sourceRecordId)) errors.push('duplicate SourceID in file');
+      else seenSourceIds.add(sourceRecordId);
       if (!date) errors.push('bad date');
       else if (date > addDays(today(), 1)) errors.push('future date');
       if (!vendor) errors.push('no vendor');
       if (!(amount > 0) || amount > 1e7) errors.push('bad amount');
+      if (!['PAYMENT', 'RECEIPT'].includes(rowType)) errors.push('bad transaction type');
+      if (!['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod))
+        errors.push('bad payment method');
 
+      const allowedCategories = rowType === 'RECEIPT' ? rcats() : categories();
       let category = allowedCategories.find(
         (item) => item.toLowerCase() === categoryInput.toLowerCase(),
       );
-
       if (categoryInput && !category) warnings.push('category → Other');
-
       category ||= 'Other';
 
       if (impactInput && !CASH_IMPACT_CHOICES.includes(impactInput)) errors.push('bad cash impact');
       const cashImpactSuggested = !impactInput;
-      const cashImpact = cashImpactSuggested ? suggestCashImpact(type, category) : impactInput;
-
+      const cashImpact = cashImpactSuggested ? suggestCashImpact(rowType, category) : impactInput;
       const key = `${date}|${vendor.toLowerCase()}|${amount}`;
-      const duplicate = !errors.length && (existingDuplicateIndexes.has(index) || seen.has(key));
-
+      const localDuplicate = !errors.length && seen.has(key);
       if (!errors.length) seen.add(key);
+
+      const duplicateResult = duplicateResultsByIndex.get(index) || null;
+      const serverDuplicate = Number.isSafeInteger(duplicateResult?.duplicateCount)
+        ? duplicateResult.duplicateCount > 0
+        : false;
+      const duplicate = localDuplicate || serverDuplicate;
+      const sourceIdForClient = sourceRecordId || uid();
 
       output.push({
         n: index + 1,
+        sourceRecordId,
+        cid: 'bulk-' + sourceIdForClient,
+        sourceStatus: String(row.sourceStatus ?? '').trim(),
+        sourceApprovalStatus: String(row.sourceApprovalStatus ?? '').trim(),
+        sourceVoucherNo: String(row.sourceVoucherNo ?? '').trim(),
+        sourceReceipts: String(row.sourceReceipts ?? '').trim(),
+        sourceVendorType: String(row.vendorType ?? '').trim(),
+        vendorId: String(row.vendorId ?? '').trim(),
+        paymentMethod,
+        type: rowType,
         date,
         vendor,
         amount,
@@ -210,7 +283,14 @@ export function createBulk({ api, refresh, go }) {
         errs: errors,
         warns: warnings,
         dup: duplicate,
-        skip: duplicate,
+        localDup: localDuplicate,
+        serverDup: serverDuplicate,
+        duplicateConfirmed: false,
+        duplicateConfirmationToken:
+          typeof duplicateResult?.confirmationToken === 'string'
+            ? duplicateResult.confirmationToken
+            : '',
+        skip: localDuplicate || serverDuplicate,
       });
     });
 
@@ -235,7 +315,7 @@ export function createBulk({ api, refresh, go }) {
           : 'payments';
 
     $('#bprev').innerHTML =
-      `<div class="card bulk-review-panel"><h2>2. Review</h2><p class="bulk-review-summary" role="status" aria-live="polite"><b>${ready.length}</b> ready · <b>${needImpact.length}</b> need cash-impact selection · <span class="${bad.length ? 'up' : ''}"><b>${bad.length}</b> with errors (skipped)</span> · <b>${duplicates.length}</b> possible duplicates ${duplicates.length ? '<label class="bulk-duplicate-option"><input type="checkbox" id="bdup"> import duplicates too</label>' : ''}</p>
+      `<div class="card bulk-review-panel"><h2>2. Review</h2><p class="bulk-review-summary" role="status" aria-live="polite"><b>${ready.length}</b> ready · <b>${needImpact.length}</b> need cash-impact selection · <span class="${bad.length ? 'up' : ''}"><b>${bad.length}</b> with errors (skipped)</span> · <b>${duplicates.length}</b> possible duplicates ${duplicates.length ? '<label class="bulk-duplicate-option"><input type="checkbox" id="bdup"> confirm server matches (same-file exact duplicates remain skipped)</label>' : ''}</p>
     <div class="table-wrap bulk-review-table" role="region" aria-label="Bulk import preview table" tabindex="0"><table><thead><tr><th>#</th><th>Date</th><th>Vendor</th><th class="r">Amount</th><th>Category</th><th>Cash impact (required)</th><th>Status</th></tr></thead><tbody>${rows
       .slice(0, 300)
       .map(
@@ -248,7 +328,12 @@ export function createBulk({ api, refresh, go }) {
 
   function toggleDuplicates(checked) {
     rows.forEach((row) => {
-      if (row.dup) row.skip = !checked;
+      if (row.serverDup) {
+        row.duplicateConfirmed = checked;
+        row.skip = row.localDup || !checked;
+      } else if (row.localDup) {
+        row.skip = true;
+      }
     });
     drawPreview();
 
@@ -283,56 +368,176 @@ export function createBulk({ api, refresh, go }) {
       const date = parseDate(row.date);
       const vendor = String(row.vendor ?? '').trim();
       const amount = parseAmt(row.amount);
-      if (date && vendor && amount > 0 && amount <= 1e7) {
-        duplicateCandidates.push({ index, date, vendor, amount });
+      const sourceRecordId = String(row.sourceRecordId ?? '').trim();
+      const rowType =
+        String(row.type ?? '')
+          .trim()
+          .toUpperCase() || type;
+      const category = String(row.cat ?? '').trim() || 'Other';
+      const paymentMethod = String(row.paymentMethod ?? '')
+        .trim()
+        .toUpperCase()
+        .replace(/[ -]+/g, '_');
+      const normalizedPaymentMethod =
+        paymentMethod === 'BANKTRANSFER' ? 'BANK_TRANSFER' : paymentMethod;
+      const requestedImpact = String(row.cashImpact ?? '')
+        .trim()
+        .toUpperCase();
+      const cashImpact = requestedImpact || suggestCashImpact(rowType, category);
+      if (
+        /^[A-Za-z0-9][A-Za-z0-9._:-]{0,54}$/.test(sourceRecordId) &&
+        date &&
+        vendor &&
+        amount > 0 &&
+        amount <= 1e7 &&
+        ['PAYMENT', 'RECEIPT'].includes(rowType) &&
+        CASH_IMPACT_CHOICES.includes(cashImpact) &&
+        ['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(normalizedPaymentMethod)
+      ) {
+        duplicateCandidates.push({
+          rowIndex: index,
+          clientId: 'bulk-' + sourceRecordId,
+          date,
+          vendor,
+          vendorId: String(row.vendorId ?? '').trim() || null,
+          amount: amount.toFixed(2),
+          type: rowType,
+          cashImpact,
+          paymentMethod: normalizedPaymentMethod,
+          category,
+          notes: String(row.notes ?? '').trim(),
+        });
       }
     });
 
-    const existingDuplicateIndexes = new Set();
+    const duplicateResultsByIndex = new Map();
     if (duplicateCandidates.length) {
-      const duplicateResult = await api('checkVoucherDuplicates', {
-        type,
-        entries: duplicateCandidates,
+      const duplicateResult = await api('checkPaymentDuplicates', {
+        entries: duplicateCandidates.map((candidate) => {
+          const entry = { ...candidate };
+          delete entry.rowIndex;
+          return entry;
+        }),
       });
-      if (!Array.isArray(duplicateResult?.duplicateIndexes)) {
+      if (
+        !Array.isArray(duplicateResult?.results) ||
+        duplicateResult.results.length !== duplicateCandidates.length
+      ) {
         throw new Error('The server could not verify possible duplicates. Retry before importing.');
       }
-      duplicateResult.duplicateIndexes.forEach((index) => {
-        if (Number.isSafeInteger(index) && index >= 0 && index < mappedRows.length) {
-          existingDuplicateIndexes.add(index);
+      duplicateResult.results.forEach((result, candidateIndex) => {
+        const rowIndex = duplicateCandidates[candidateIndex].rowIndex;
+        if (
+          !result ||
+          result.index !== candidateIndex ||
+          typeof result.confirmationToken !== 'string' ||
+          !Number.isSafeInteger(result.duplicateCount)
+        ) {
+          throw new Error('The duplicate-review response was incomplete. Retry before importing.');
         }
+        duplicateResultsByIndex.set(rowIndex, result);
       });
     }
 
-    rows = checkRows(mappedRows, existingDuplicateIndexes);
+    rows = checkRows(mappedRows, duplicateResultsByIndex);
     drawPreview();
   }
 
-  function renderImportResult(done, pendingApprovalIds, skipped) {
+  function renderImportResult(summary) {
     const panel = document.createElement('div');
-    panel.className = 'card ok-panel';
+    panel.className = 'card ok-panel bulk-import-result';
     panel.setAttribute('role', 'status');
     panel.setAttribute('aria-live', 'polite');
 
     const title = document.createElement('h2');
-    title.textContent =
-      '✔ Imported ' + done + ' ' + (type === 'RECEIPT' ? 'cash receipts' : 'payments');
+    if (summary.mode === 'apps-script') {
+      const noun = type === 'RECEIPT' ? 'cash receipts' : 'payments';
+      title.textContent = '✔ Imported ' + summary.imported + ' ' + noun;
+    } else {
+      title.textContent =
+        summary.pending || summary.quarantined || summary.unbalanced
+          ? 'Import requires reconciliation'
+          : 'Import batch reconciled';
+    }
     panel.appendChild(title);
 
-    if (pendingApprovalIds.size) {
+    const counts = document.createElement('p');
+    if (summary.mode === 'apps-script') {
+      counts.textContent =
+        summary.replayed + ' row(s) safely skipped because the same ClientID was already saved.';
+    } else {
+      counts.textContent =
+        summary.imported +
+        ' imported · ' +
+        summary.replayed +
+        ' replayed · ' +
+        summary.quarantined +
+        ' quarantined · ' +
+        summary.pending +
+        ' pending';
+    }
+    panel.appendChild(counts);
+
+    if (summary.mode === 'apps-script' && summary.pendingApprovalCount > 0) {
       const pending = document.createElement('p');
-      pending.setAttribute('role', 'status');
       pending.textContent =
-        pendingApprovalIds.size +
+        summary.pendingApprovalCount +
         ' payment(s) need owner/manager approval. They are excluded from approved totals and Daily Cash Close until approved by someone other than the creator.';
       panel.appendChild(pending);
     }
 
-    if (skipped) {
-      const skippedMessage = document.createElement('p');
-      skippedMessage.className = 'muted';
-      skippedMessage.textContent = skipped + ' already existed and were skipped.';
-      panel.appendChild(skippedMessage);
+    if (summary.mode !== 'apps-script') {
+      const totals = document.createElement('p');
+      totals.className = 'muted';
+      totals.textContent =
+        'Source total ₹' +
+        (summary.sourceTotalPaise / 100).toFixed(2) +
+        ' · imported ₹' +
+        (summary.importedTotalPaise / 100).toFixed(2) +
+        ' · quarantined ₹' +
+        (summary.quarantinedTotalPaise / 100).toFixed(2) +
+        ' · pending ₹' +
+        (summary.pendingTotalPaise / 100).toFixed(2) +
+        ' · variance ₹' +
+        (summary.variancePaise / 100).toFixed(2);
+      panel.appendChild(totals);
+
+      const batch = document.createElement('p');
+      batch.className = 'muted';
+      batch.textContent =
+        'Batch ID: ' +
+        summary.batchIds.join(', ') +
+        '. Re-submit the same file with the same SourceIDs to resume uncertain rows safely.';
+      panel.appendChild(batch);
+    }
+
+    if (summary.quarantinedRows.length || summary.pendingRows.length) {
+      const heading = document.createElement('h3');
+      heading.textContent = 'Rows requiring review';
+      panel.appendChild(heading);
+      const list = document.createElement('ul');
+      summary.quarantinedRows.concat(summary.pendingRows).forEach((row) => {
+        const item = document.createElement('li');
+        item.textContent =
+          'Row ' +
+          row.rowNumber +
+          ' · SourceID ' +
+          row.sourceRecordId +
+          ' · ' +
+          row.status +
+          (row.errorCode ? ' · ' + row.errorCode : '') +
+          (row.errorMessage ? ' — ' + row.errorMessage : '');
+        list.appendChild(item);
+      });
+      panel.appendChild(list);
+    }
+
+    if (summary.unbalanced) {
+      const warning = document.createElement('p');
+      warning.className = 'error';
+      warning.textContent =
+        'Financial reconciliation did not balance or a source amount could not be verified. Do not treat this import as complete.';
+      panel.appendChild(warning);
     }
 
     const actions = document.createElement('div');
@@ -349,7 +554,6 @@ export function createBulk({ api, refresh, go }) {
     importMore.textContent = 'Import more';
     actions.append(openRegister, importMore);
     panel.appendChild(actions);
-
     $('#bprev').replaceChildren(panel);
   }
 
@@ -364,49 +568,150 @@ export function createBulk({ api, refresh, go }) {
     }
     if (!ready.length) return;
 
-    let done = 0;
-    let skipped = 0;
-    const pendingApprovalIds = new Set();
+    const summary = {
+      mode: null,
+      imported: 0,
+      replayed: 0,
+      pendingApprovalCount: 0,
+      quarantined: 0,
+      pending: 0,
+      sourceTotalPaise: 0,
+      importedTotalPaise: 0,
+      quarantinedTotalPaise: 0,
+      pendingTotalPaise: 0,
+      variancePaise: 0,
+      batchIds: [],
+      quarantinedRows: [],
+      pendingRows: [],
+      unbalanced: false,
+    };
 
     await busy(button, async () => {
       try {
         for (let index = 0; index < ready.length; index += 100) {
-          const chunk = ready.slice(index, index + 100).map((row) => ({
-            clientId: (row.cid ||= uid()),
-            type,
+          const chunkRows = ready.slice(index, index + 100);
+          const chunk = chunkRows.map((row) => ({
+            sourceRecordId: row.sourceRecordId,
+            sourceRowNumber: row.n,
+            clientId: row.cid,
+            type: row.type,
             date: row.date,
             vendor: row.vendor,
-            amount: row.amount,
+            vendorId: row.vendorId || null,
+            amount: row.amount.toFixed(2),
             category: row.category,
-            cashImpact: row.cashImpact,
             notes: row.notes,
+            cashImpact: row.cashImpact,
+            paymentMethod: row.paymentMethod,
+            duplicateConfirmationToken: row.duplicateConfirmed
+              ? row.duplicateConfirmationToken
+              : '',
+            sourceStatus: row.sourceStatus,
+            sourceApprovalStatus: row.sourceApprovalStatus,
+            sourceVoucherNo: row.sourceVoucherNo,
+            sourceReceipts: row.sourceReceipts,
+            sourceVendorType: row.sourceVendorType,
           }));
           const data = await api('createVouchers', {
             bulk: true,
+            sourceSystem,
             entries: chunk,
           });
+          const isShadowResult =
+            data &&
+            typeof data === 'object' &&
+            data.reconciliation &&
+            Array.isArray(data.rows) &&
+            Array.isArray(data.created);
+          const isAppsScriptResult =
+            data &&
+            typeof data === 'object' &&
+            Array.isArray(data.created) &&
+            Number.isSafeInteger(data.skipped) &&
+            data.skipped >= 0 &&
+            data.skipped <= data.created.length;
+          const mode = isShadowResult
+            ? 'laravel-shadow'
+            : isAppsScriptResult
+              ? 'apps-script'
+              : null;
+          if (!mode || (summary.mode !== null && summary.mode !== mode)) {
+            throw new Error(
+              'The bulk import response does not match the active transport. No success was assumed; retry the same SourceIDs after checking the server.',
+            );
+          }
+          summary.mode = mode;
 
-          done += data.created.length - data.skipped;
-          skipped += data.skipped;
-
-          data.created.forEach((created) => {
-            if (created.approvalStatus === 'PENDING' && typeof created.id === 'string') {
-              pendingApprovalIds.add(created.id);
+          if (mode === 'laravel-shadow') {
+            const reconciliation = data.reconciliation;
+            if (
+              data.rows.length !== chunkRows.length ||
+              data.created.length !== reconciliation.importedCount + reconciliation.replayedCount ||
+              !Number.isSafeInteger(reconciliation.rowCount) ||
+              reconciliation.rowCount !== chunkRows.length ||
+              !Number.isSafeInteger(reconciliation.variancePaise) ||
+              typeof reconciliation.balanced !== 'boolean'
+            ) {
+              throw new Error(
+                'The Laravel import response failed reconciliation checks. Retry the same SourceIDs; do not create a new import.',
+              );
             }
-            if (!S.vouchers.find((voucher) => voucher.id === created.id)) {
-              S.vouchers.push(created);
-            }
-          });
+            summary.batchIds.push(data.batchId);
+            summary.imported += reconciliation.importedCount;
+            summary.replayed += reconciliation.replayedCount;
+            summary.quarantined += reconciliation.quarantinedCount;
+            summary.pending += reconciliation.pendingCount;
+            summary.sourceTotalPaise += reconciliation.sourceTotalPaise;
+            summary.importedTotalPaise += reconciliation.importedTotalPaise;
+            summary.quarantinedTotalPaise += reconciliation.quarantinedTotalPaise;
+            summary.pendingTotalPaise += reconciliation.pendingTotalPaise;
+            summary.variancePaise += reconciliation.variancePaise;
+            summary.unbalanced =
+              summary.unbalanced ||
+              reconciliation.balanced !== true ||
+              reconciliation.unpricedCount > 0;
 
-          $('#bprog').textContent =
-            `Imported ${Math.min(index + 100, ready.length)} of ${ready.length}…`;
+            data.rows.forEach((row) => {
+              if (row.status === 'QUARANTINED') summary.quarantinedRows.push(row);
+              if (row.status === 'PENDING') summary.pendingRows.push(row);
+            });
+            $('#bprog').textContent =
+              'Processed ' +
+              Math.min(index + chunkRows.length, ready.length) +
+              ' of ' +
+              ready.length +
+              ' rows; reconciliation status: ' +
+              data.status +
+              '.';
+          } else {
+            if (data.created.length !== chunkRows.length) {
+              throw new Error(
+                'The Apps Script import response did not confirm every submitted row. Retry using the same SourceIDs.',
+              );
+            }
+            summary.imported += data.created.length - data.skipped;
+            summary.replayed += data.skipped;
+            data.created.forEach((created) => {
+              if (created.approvalStatus === 'PENDING') summary.pendingApprovalCount++;
+              if (!S.vouchers.find((voucher) => voucher.id === created.id)) {
+                S.vouchers.push(created);
+              }
+            });
+            $('#bprog').textContent =
+              'Imported or safely replayed ' +
+              Math.min(index + chunkRows.length, ready.length) +
+              ' of ' +
+              ready.length +
+              ' rows…';
+          }
         }
 
-        renderImportResult(done, pendingApprovalIds, skipped);
+        await refresh(true);
+        renderImportResult(summary);
       } catch (error) {
         fail(error);
         $('#bprog').textContent =
-          `Stopped after ${done} rows. Fix the problem and run "Check data" again — already imported rows will be skipped as duplicates.`;
+          'Import stopped before confirmation. Keep the same SourceIDs and retry the same file; completed rows will replay and unresolved rows will remain visible for reconciliation.';
         await refresh(true);
       }
     });
@@ -433,8 +738,8 @@ export function createBulk({ api, refresh, go }) {
   function downloadTemplate() {
     download(
       'voucher-template.csv',
-      'Date,Vendor,Amount,Category,Notes,CashImpact\r\n' +
-        '25/12/2026,Ram Traders,1500,Kitchen,Vegetables,CASH_OUT\r\n',
+      'SourceID,Date,Vendor,VendorID,VendorType,Amount,Category,Notes,CashImpact,PaymentMethod\r\n' +
+        ',25/12/2026,Ram Traders,,,1500,Kitchen,Vegetables,CASH_OUT,CASH\r\n',
       'text/csv',
     );
   }

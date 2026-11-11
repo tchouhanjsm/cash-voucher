@@ -195,3 +195,148 @@ export function createAuditReconciliationCsv(scans, exportedAt = new Date().toIS
 
   return '\uFEFF' + csvRows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }
+
+const STRUCTURED_EVENT_LIMIT = 1000;
+const AUDIT_EVENT_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const STRUCTURED_AUDIT_HEADERS = [
+  'recordType',
+  'schemaVersion',
+  'exportedAt',
+  'sourceSystem',
+  'sourceScope',
+  'voucherId',
+  'voucherNo',
+  'eventCategory',
+  'loadedEvents',
+  'moreEventsAvailable',
+  'coverageStatement',
+  'eventId',
+  'occurredAtUtc',
+  'actorUserId',
+  'actorEmail',
+  'eventType',
+  'targetType',
+  'targetId',
+  'reason',
+  'beforeJson',
+  'afterJson',
+];
+
+function isSnapshot(value) {
+  return value === null || isRecord(value);
+}
+
+const SENSITIVE_AUDIT_KEY =
+  /password|passphrase|password_hash|salt|token|secret|credential|csrf|session|authorization|api[_-]?key/i;
+
+function redactStructuredSnapshot(value, depth = 0) {
+  if (depth > 32) {
+    throw new TypeError('Structured audit snapshot exceeds the safe export depth.');
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => redactStructuredSnapshot(item, depth + 1));
+  }
+  if (!isRecord(value)) return value;
+
+  const redacted = {};
+  Object.entries(value).forEach(([key, item]) => {
+    redacted[key] = SENSITIVE_AUDIT_KEY.test(key)
+      ? '[REDACTED]'
+      : redactStructuredSnapshot(item, depth + 1);
+  });
+  return redacted;
+}
+
+/**
+ * Export only the structured SQL audit events actually loaded by the browser.
+ * The coverage row explicitly disclaims a point-in-time snapshot and unlinked
+ * legacy spreadsheet rows; no spreadsheet row number or global completeness
+ * claim is fabricated.
+ */
+export function createStructuredVoucherAuditCsv(
+  { voucher, eventCategory, events, hasMore },
+  exportedAt = new Date().toISOString(),
+) {
+  if (
+    !isRecord(voucher) ||
+    typeof voucher.id !== 'string' ||
+    !AUDIT_EVENT_UUID.test(voucher.id) ||
+    typeof voucher.voucherNo !== 'string' ||
+    typeof voucher.date !== 'string' ||
+    typeof voucher.vendor !== 'string' ||
+    !EVENT_CATEGORIES.has(eventCategory) ||
+    !Array.isArray(events) ||
+    events.length > STRUCTURED_EVENT_LIMIT ||
+    typeof hasMore !== 'boolean' ||
+    typeof exportedAt !== 'string' ||
+    !UTC_TIMESTAMP.test(exportedAt) ||
+    !Number.isFinite(Date.parse(exportedAt)) ||
+    new Date(exportedAt).toISOString() !== exportedAt
+  ) {
+    throw new TypeError(
+      'Structured audit export metadata does not match the validated source contract.',
+    );
+  }
+
+  events.forEach((event) => {
+    if (
+      !isRecord(event) ||
+      typeof event.id !== 'string' ||
+      !AUDIT_EVENT_UUID.test(event.id) ||
+      !(
+        event.actorUserId === null ||
+        (typeof event.actorUserId === 'string' && AUDIT_EVENT_UUID.test(event.actorUserId))
+      ) ||
+      typeof event.actorEmail !== 'string' ||
+      event.actorEmail.length > 254 ||
+      typeof event.eventType !== 'string' ||
+      !/^[A-Z][A-Z0-9_]{1,79}$/.test(event.eventType) ||
+      event.targetType !== 'voucher' ||
+      event.targetId !== voucher.id ||
+      typeof event.reason !== 'string' ||
+      event.reason.length > 500 ||
+      typeof event.occurredAtUtc !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?$/.test(event.occurredAtUtc) ||
+      !isSnapshot(event.before) ||
+      !isSnapshot(event.after)
+    ) {
+      throw new TypeError('Structured audit export contains an invalid or out-of-scope event.');
+    }
+  });
+
+  const coverageStatement =
+    'Loaded pages from Laravel SQL audit_events only; not a point-in-time snapshot; legacy spreadsheet rows without a stable voucher ID are excluded.';
+  const common = [
+    1,
+    exportedAt,
+    'laravel-sql-audit_events',
+    'voucher_id',
+    voucher.id,
+    voucher.voucherNo,
+    eventCategory,
+    events.length,
+    hasMore,
+    coverageStatement,
+  ];
+  const rows = [STRUCTURED_AUDIT_HEADERS];
+  rows.push(['COVERAGE', ...common, '', '', '', '', '', '', '', '', '', '']);
+  events.forEach((event) => {
+    rows.push([
+      'EVENT',
+      ...common,
+      event.id,
+      event.occurredAtUtc,
+      event.actorUserId ?? '',
+      event.actorEmail,
+      event.eventType,
+      event.targetType,
+      event.targetId,
+      event.reason,
+      event.before === null ? '' : JSON.stringify(redactStructuredSnapshot(event.before)),
+      event.after === null ? '' : JSON.stringify(redactStructuredSnapshot(event.after)),
+    ]);
+  });
+
+  return '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+}

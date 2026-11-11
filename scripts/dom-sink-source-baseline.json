@@ -1,6 +1,6 @@
 {
   "frontend/features/administration.js": ["30259220", "0060a9b4", "ebc2c921", "3e9a0e4f"],
-  "frontend/features/bulk.js": ["f0afcb75", "c3e0e3e9"],
+  "frontend/features/bulk.js": ["884022b7", "002f114d"],
   "frontend/features/cash-close.js": ["8b83b045", "269d5b33", "a751478e", "e292b23f"],
   "frontend/features/dashboard.js": ["aa41e2b0"],
   "frontend/features/payments.js": ["0056c613"],

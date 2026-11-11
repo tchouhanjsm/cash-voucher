@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 namespace CashVoucher\Api\Financial;
 
+use CashVoucher\Api\Support\ApiException;
+use InvalidArgumentException;
 use PDO;
 use RuntimeException;
-use InvalidArgumentException;
 
 final class VoucherNumberAllocator
 {
@@ -54,6 +55,28 @@ final class VoucherNumberAllocator
         $number = (int) $next;
         if ($number < 1 || $number >= 9_223_372_036_854_775_000) {
             throw new RuntimeException('The voucher number sequence is exhausted.');
+        }
+
+        // A previously issued/imported numeric voucher number may be above the
+        // current sequence. Never skip/reuse numbers automatically: the Owner
+        // must reconcile the series from the source ledger before writes resume.
+        // This check runs after the per-type sequence lock, serializing normal
+        // allocator writes while keeping the sequence itself server-authoritative.
+        $issued = $this->pdo->prepare(
+            "SELECT COALESCE(MAX(CAST(voucher_number AS UNSIGNED)), 0)
+             FROM vouchers
+             WHERE voucher_type = :voucher_type
+               AND voucher_number <> ''
+               AND voucher_number NOT REGEXP '[^0-9]'"
+        );
+        $issued->execute(['voucher_type' => $voucherType]);
+        $maxIssued = (int) $issued->fetchColumn();
+        if ($number <= $maxIssued) {
+            throw new ApiException(
+                503,
+                'VOUCHER_SEQUENCE_RECONCILIATION_REQUIRED',
+                'The voucher number sequence is not above every issued numeric voucher number. An Owner must reconcile the series before more vouchers can be created.',
+            );
         }
 
         $advance = $this->pdo->prepare(

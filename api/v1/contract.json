@@ -1,6 +1,6 @@
 {
   "apiVersion": "v1",
-  "rolloutState": "isolated-foundation",
+  "rolloutState": "isolated-shadow",
   "transport": "same-origin HTTPS JSON",
   "basePath": "/api/v1",
   "implementedResources": [
@@ -10,16 +10,19 @@
     "POST /sessions",
     "GET /sessions/current",
     "POST /sessions/current/logout",
-    "POST /sessions/current/password"
+    "POST /sessions/current/password",
+    "POST /imports/vouchers (manager/owner; stable source ID; reconciliation and quarantine)"
   ],
   "legacyRoleKeys": ["staff", "manager", "owner", "accountant"],
   "businessActionsEnabled": false,
   "notes": [
     "The current Apps Script endpoint remains authoritative.",
     "No PWA client is switched to the replacement API in this phase.",
-    "Financial routes, imports, backups and production cutover require separate owner-approved gates."
+    "Financial routes, imports, backups and production cutover require separate owner-approved gates.",
+    "Bulk import creates new active voucher entries only. It does not migrate original voucher numbers, approval/cancellation state, or private receipt files; those rows are quarantined and require a separate reconciled historical migration.",
+    "Voucher import reconciliation stores source and actual persisted imported amounts separately in integer paise; a non-zero variance or unknown amount keeps the batch in reconciliation-required state."
   ],
-  "schemaVersion": "0004",
+  "schemaVersion": "0007",
   "moneyStorageUnit": "integer-paise",
   "businessTimeZone": "Asia/Kolkata",
   "legacyActionMapSource": "api/v1/legacy-action-map.json (source-controlled inventory; deliberately not served publicly)",

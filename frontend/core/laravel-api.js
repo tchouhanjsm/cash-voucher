@@ -1,5 +1,7 @@
 const SESSION_MARKER = 'laravel-cookie-session';
 const CSRF_PATTERN = /^[a-f0-9]{64}$/;
+const VOUCHER_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function failure(message, code) {
   return Object.assign(new Error(message), { code });
@@ -170,6 +172,463 @@ function mapDailyOperations(preview) {
   };
 }
 
+function isCalendarDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(value + 'T00:00:00.000Z');
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function mapCashCloseVoucher(item, label = 'cash-close voucher') {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    throw failure(
+      'The Laravel cash-close API returned an invalid voucher.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+  const voucherNo =
+    typeof item.voucherNo === 'string'
+      ? item.voucherNo
+      : typeof item.no === 'string'
+        ? item.no
+        : '';
+  if (!voucherNo || typeof item.date !== 'string' || typeof item.vendor !== 'string') {
+    throw failure(
+      'The Laravel cash-close API returned an incomplete voucher.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+  const amount =
+    item.amount === null || item.amount === undefined
+      ? null
+      : rupeesToNumber(item.amount, label + ' amount');
+  return { ...item, no: voucherNo, amount };
+}
+
+function mapCashCloseRecord(close, requireCorrections = false) {
+  if (
+    !close ||
+    typeof close !== 'object' ||
+    Array.isArray(close) ||
+    typeof close.id !== 'string' ||
+    !VOUCHER_ID_PATTERN.test(close.id) ||
+    typeof close.date !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(close.date) ||
+    !Array.isArray(close.includedVouchers) ||
+    !Array.isArray(close.includedVoucherIds) ||
+    !Number.isSafeInteger(close.includedVoucherCount) ||
+    close.includedVoucherCount !== close.includedVouchers.length ||
+    close.includedVoucherIds.length !== close.includedVouchers.length
+  ) {
+    throw failure('The saved cash-close record is incomplete.', 'API_RESPONSE_INVALID');
+  }
+
+  const mapped = {
+    ...close,
+    openingCash: rupeesToNumber(close.openingCash, 'opening cash'),
+    cashInTotal: rupeesToNumber(close.cashInTotal, 'cash-in total'),
+    cashOutTotal: rupeesToNumber(close.cashOutTotal, 'cash-out total'),
+    expectedCash: rupeesToNumber(close.expectedCash, 'expected cash'),
+    countedCash: rupeesToNumber(close.countedCash, 'counted cash'),
+    variance: rupeesToNumber(close.variance, 'cash variance'),
+    createdBy:
+      typeof close.createdBy === 'string'
+        ? close.createdBy
+        : typeof close.createdByUserId === 'string'
+          ? close.createdByUserId
+          : '',
+    createdAt:
+      typeof close.createdAt === 'string'
+        ? close.createdAt
+        : typeof close.createdAtUtc === 'string'
+          ? close.createdAtUtc
+          : '',
+    includedVouchers: close.includedVouchers.map((item) =>
+      mapCashCloseVoucher(item, 'saved cash-close voucher'),
+    ),
+  };
+
+  if (close.corrections !== undefined) {
+    if (!Array.isArray(close.corrections)) {
+      throw failure('The saved cash-close corrections are invalid.', 'API_RESPONSE_INVALID');
+    }
+    mapped.corrections = close.corrections.map((item) => {
+      if (
+        !item ||
+        typeof item !== 'object' ||
+        Array.isArray(item) ||
+        typeof item.id !== 'string' ||
+        typeof item.closeId !== 'string' ||
+        typeof item.date !== 'string' ||
+        typeof item.type !== 'string' ||
+        typeof item.details !== 'string' ||
+        typeof item.reason !== 'string'
+      ) {
+        throw failure('The saved cash-close correction is incomplete.', 'API_RESPONSE_INVALID');
+      }
+      return {
+        ...item,
+        createdBy:
+          typeof item.createdBy === 'string'
+            ? item.createdBy
+            : typeof item.createdByUserId === 'string'
+              ? item.createdByUserId
+              : '',
+        createdAt:
+          typeof item.createdAt === 'string'
+            ? item.createdAt
+            : typeof item.createdAtUtc === 'string'
+              ? item.createdAtUtc
+              : '',
+      };
+    });
+  } else if (requireCorrections) {
+    throw failure('The saved cash-close corrections are missing.', 'API_RESPONSE_INVALID');
+  }
+
+  return mapped;
+}
+
+function mapCashClosePreview(preview) {
+  if (
+    !preview ||
+    typeof preview !== 'object' ||
+    Array.isArray(preview) ||
+    typeof preview.closed !== 'boolean' ||
+    typeof preview.date !== 'string' ||
+    !Array.isArray(preview.recentCloses)
+  ) {
+    throw failure(
+      'The Laravel cash-close preview returned an invalid response.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+
+  const mapped = {
+    ...preview,
+    recentCloses: preview.recentCloses.map((close) => mapCashCloseRecord(close, true)),
+  };
+  if (preview.closed) {
+    mapped.close = mapCashCloseRecord(preview.close, true);
+    return mapped;
+  }
+
+  const amountOrNull = (value, label) =>
+    value === null || value === undefined ? null : rupeesToNumber(value, label);
+  const mapPreviewVoucher = (item, label) => mapCashCloseVoucher(item, label);
+  const mapIssue = (item, label) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw failure(
+        'The Laravel cash-close preview contains an invalid issue row.',
+        'API_RESPONSE_INVALID',
+      );
+    }
+    const voucherNo =
+      typeof item.voucherNo === 'string'
+        ? item.voucherNo
+        : typeof item.no === 'string'
+          ? item.no
+          : '';
+    if (!voucherNo || typeof item.id !== 'string' || typeof item.vendor !== 'string') {
+      throw failure(
+        'The Laravel cash-close preview contains an incomplete issue row.',
+        'API_RESPONSE_INVALID',
+      );
+    }
+    return {
+      ...item,
+      no: voucherNo,
+      amount:
+        label === 'invalid'
+          ? String(item.amount ?? '')
+          : amountOrNull(item.amount, label + ' voucher amount'),
+    };
+  };
+
+  if (
+    !Array.isArray(preview.includedVouchers) ||
+    !Array.isArray(preview.pendingApprovals) ||
+    !Array.isArray(preview.unclassified) ||
+    !Array.isArray(preview.invalidVouchers)
+  ) {
+    throw failure(
+      'The Laravel cash-close preview is missing voucher details.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+
+  mapped.openingCash = amountOrNull(preview.openingCash, 'opening cash');
+  mapped.cashInTotal = rupeesToNumber(preview.cashInTotal, 'cash-in total');
+  mapped.cashOutTotal = rupeesToNumber(preview.cashOutTotal, 'cash-out total');
+  mapped.expectedCash = amountOrNull(preview.expectedCash, 'expected cash');
+  mapped.previousClose =
+    preview.previousClose === null || preview.previousClose === undefined
+      ? null
+      : mapCashCloseRecord(preview.previousClose);
+  mapped.includedVouchers = preview.includedVouchers.map((item) =>
+    mapPreviewVoucher(item, 'included'),
+  );
+  mapped.pendingApprovals = preview.pendingApprovals.map((item) => mapIssue(item, 'approval'));
+  mapped.unclassified = preview.unclassified.map((item) => mapIssue(item, 'unclassified'));
+  mapped.invalidVouchers = preview.invalidVouchers.map((item) => mapIssue(item, 'invalid'));
+  return mapped;
+}
+
+function mapRecordedMovementReportPage(report, filters, expectedOffset, expectedLimit) {
+  const countFields = [
+    'count',
+    'activeCount',
+    'cancelledCount',
+    'pendingApprovalCount',
+    'unmatchedVendorCount',
+    'ambiguousVendorCount',
+    'approvalExceptionCount',
+    'invalidAmountCount',
+    'totalCount',
+  ];
+  const amountFields = ['paymentTotal', 'receiptTotal', 'activePaymentTotal', 'activeReceiptTotal'];
+  if (
+    !report ||
+    typeof report !== 'object' ||
+    Array.isArray(report) ||
+    !Array.isArray(report.items) ||
+    !Array.isArray(report.byPaymentMethod) ||
+    typeof report.generatedAt !== 'string' ||
+    report.from !== filters.from ||
+    report.to !== filters.to ||
+    report.type !== filters.type ||
+    report.status !== filters.status ||
+    report.paymentMethod !== filters.paymentMethod ||
+    !countFields.every((field) => Number.isSafeInteger(report[field]) && report[field] >= 0) ||
+    !amountFields.every((field) => typeof report[field] === 'string') ||
+    report.totalCount !== report.count ||
+    report.offset !== expectedOffset ||
+    report.limit !== expectedLimit ||
+    report.items.length > report.limit ||
+    typeof report.hasMore !== 'boolean' ||
+    report.hasMore !== report.offset + report.items.length < report.totalCount
+  ) {
+    throw failure(
+      'The Laravel movement report returned an incomplete response.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+
+  const mappedItems = report.items.map((item) => {
+    const textFields = [
+      'id',
+      'voucherNo',
+      'date',
+      'vendor',
+      'vendorId',
+      'vendorType',
+      'paymentMethod',
+      'category',
+      'notes',
+      'type',
+      'status',
+      'createdBy',
+      'cancelReason',
+      'approvalStatus',
+      'approvedBy',
+      'approvedAt',
+      'approvalReason',
+      'cashImpact',
+    ];
+    if (
+      !item ||
+      typeof item !== 'object' ||
+      Array.isArray(item) ||
+      !textFields.every((field) => typeof item[field] === 'string') ||
+      !VOUCHER_ID_PATTERN.test(item.id) ||
+      !['PAYMENT', 'RECEIPT'].includes(item.type) ||
+      !['ACTIVE', 'CANCELLED'].includes(item.status) ||
+      typeof item.amountValid !== 'boolean' ||
+      (item.amount !== null && typeof item.amount !== 'string') ||
+      item.amountValid !== (item.amount !== null)
+    ) {
+      throw failure(
+        'The Laravel movement report contains an invalid voucher row.',
+        'API_RESPONSE_INVALID',
+      );
+    }
+    return {
+      ...item,
+      amount: item.amount === null ? null : rupeesToNumber(item.amount, 'report voucher amount'),
+    };
+  });
+
+  const byPaymentMethod = report.byPaymentMethod.map((item) => {
+    if (
+      !item ||
+      typeof item !== 'object' ||
+      Array.isArray(item) ||
+      typeof item.k !== 'string' ||
+      !Number.isSafeInteger(item.n) ||
+      item.n < 0 ||
+      typeof item.s !== 'string'
+    ) {
+      throw failure(
+        'The Laravel movement report contains an invalid payment-method total.',
+        'API_RESPONSE_INVALID',
+      );
+    }
+    return { ...item, s: rupeesToNumber(item.s, 'payment-method total') };
+  });
+
+  return {
+    ...report,
+    ...Object.fromEntries(
+      amountFields.map((field) => [field, rupeesToNumber(report[field], field)]),
+    ),
+    items: mappedItems,
+    byPaymentMethod,
+  };
+}
+
+function mapUserMutation(result, expectedId = '') {
+  const user = result?.user;
+  if (
+    !user ||
+    typeof user !== 'object' ||
+    Array.isArray(user) ||
+    typeof user.id !== 'string' ||
+    !VOUCHER_ID_PATTERN.test(user.id) ||
+    (expectedId && user.id !== expectedId) ||
+    typeof user.name !== 'string' ||
+    !user.name.trim() ||
+    typeof user.email !== 'string' ||
+    !user.email.trim() ||
+    !['staff', 'manager', 'owner', 'accountant'].includes(user.role) ||
+    typeof user.active !== 'boolean' ||
+    typeof user.mustChangePassword !== 'boolean'
+  ) {
+    throw failure('The Laravel user API returned an invalid user record.', 'API_RESPONSE_INVALID');
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    active: user.active,
+    mustChangePassword: user.mustChangePassword,
+    createdAtUtc: typeof user.createdAtUtc === 'string' ? user.createdAtUtc : '',
+    updatedAtUtc: typeof user.updatedAtUtc === 'string' ? user.updatedAtUtc : '',
+    lastLoginAtUtc:
+      typeof user.lastLoginAtUtc === 'string' || user.lastLoginAtUtc === null
+        ? user.lastLoginAtUtc
+        : null,
+    replayed: result.replayed === true,
+  };
+}
+
+function mapVoucherHistoryPage(page, expectedVoucherId, expectedCategory) {
+  const voucher = page?.voucher;
+  const items = page?.items;
+  if (
+    !page ||
+    typeof page !== 'object' ||
+    Array.isArray(page) ||
+    page.source !== 'laravel-sql-audit-events' ||
+    !voucher ||
+    typeof voucher !== 'object' ||
+    Array.isArray(voucher) ||
+    voucher.id !== expectedVoucherId ||
+    !VOUCHER_ID_PATTERN.test(voucher.id) ||
+    typeof voucher.voucherNo !== 'string' ||
+    typeof voucher.date !== 'string' ||
+    typeof voucher.vendor !== 'string' ||
+    !['PAYMENT', 'RECEIPT'].includes(voucher.type) ||
+    typeof voucher.status !== 'string' ||
+    voucher.status.length > 20 ||
+    page.eventCategory !== expectedCategory ||
+    !Array.isArray(items) ||
+    !Number.isSafeInteger(page.count) ||
+    page.count !== items.length ||
+    !Number.isSafeInteger(page.limit) ||
+    page.limit < 1 ||
+    page.limit > 100 ||
+    items.length > page.limit ||
+    typeof page.hasMore !== 'boolean' ||
+    page.hasMore !== (typeof page.nextCursor === 'string' && page.nextCursor.length > 0) ||
+    !(
+      page.nextCursor === null ||
+      (typeof page.nextCursor === 'string' && page.nextCursor.length <= 512)
+    )
+  ) {
+    throw failure(
+      'The Laravel voucher-history API returned an invalid page.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+
+  const seenIds = new Set();
+  const mappedItems = items.map((item) => {
+    if (
+      !item ||
+      typeof item !== 'object' ||
+      Array.isArray(item) ||
+      !VOUCHER_ID_PATTERN.test(String(item.id || '')) ||
+      seenIds.has(item.id) ||
+      !(item.actorUserId === null || VOUCHER_ID_PATTERN.test(String(item.actorUserId || ''))) ||
+      typeof item.actorEmail !== 'string' ||
+      item.actorEmail.length > 254 ||
+      typeof item.eventType !== 'string' ||
+      !/^[A-Z][A-Z0-9_]{1,79}$/.test(item.eventType) ||
+      item.targetType !== 'voucher' ||
+      item.targetId !== expectedVoucherId ||
+      typeof item.reason !== 'string' ||
+      item.reason.length > 500 ||
+      typeof item.occurredAtUtc !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?$/.test(item.occurredAtUtc) ||
+      !(
+        item.before === null ||
+        (item.before && typeof item.before === 'object' && !Array.isArray(item.before))
+      ) ||
+      !(
+        item.after === null ||
+        (item.after && typeof item.after === 'object' && !Array.isArray(item.after))
+      )
+    ) {
+      throw failure(
+        'The Laravel voucher history contains an invalid event.',
+        'API_RESPONSE_INVALID',
+      );
+    }
+    seenIds.add(item.id);
+    return {
+      id: item.id,
+      actorUserId: item.actorUserId,
+      actorEmail: item.actorEmail,
+      eventType: item.eventType,
+      targetType: item.targetType,
+      targetId: item.targetId,
+      before: item.before,
+      after: item.after,
+      reason: item.reason,
+      occurredAtUtc: item.occurredAtUtc,
+    };
+  });
+
+  return {
+    source: 'laravel-sql-audit-events',
+    eventCategory: page.eventCategory,
+    voucher: {
+      id: voucher.id,
+      voucherNo: voucher.voucherNo,
+      date: voucher.date,
+      vendor: voucher.vendor,
+      type: voucher.type,
+      status: voucher.status,
+    },
+    items: mappedItems,
+    count: page.count,
+    limit: page.limit,
+    hasMore: page.hasMore,
+    nextCursor: page.nextCursor,
+  };
+}
+
 function mapAuditPage(page) {
   if (
     !page ||
@@ -219,9 +678,6 @@ function mapAuditPage(page) {
     auditHealth: null,
   };
 }
-
-const VOUCHER_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function normalizeVoucherId(payload) {
   const id = typeof payload.id === 'string' ? payload.id.trim() : '';
@@ -917,9 +1373,269 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         return mapDashboardSummary(summary);
       }
 
+      case 'recordedMovementReport': {
+        const from = typeof payload.from === 'string' ? payload.from : '';
+        const to = typeof payload.to === 'string' ? payload.to : '';
+        const type = payload.type ?? 'ALL';
+        const status = payload.status ?? 'ACTIVE';
+        const paymentMethod = payload.paymentMethod ?? 'ALL';
+        const offset = payload.offset ?? 0;
+        const limit = payload.limit ?? 200;
+        if (
+          !isCalendarDate(from) ||
+          !isCalendarDate(to) ||
+          from > to ||
+          !['ALL', 'PAYMENT', 'RECEIPT'].includes(type) ||
+          !['ALL', 'ACTIVE', 'CANCELLED'].includes(status) ||
+          !['ALL', 'CASH', 'UPI', 'BANK_TRANSFER', 'UNRECORDED', 'UNRECOGNIZED'].includes(
+            paymentMethod,
+          ) ||
+          !Number.isSafeInteger(offset) ||
+          offset < 0 ||
+          offset > 1_000_000 ||
+          !Number.isSafeInteger(limit) ||
+          limit < 1 ||
+          limit > 200
+        ) {
+          throw failure(
+            'Choose valid report dates and filters before loading the report.',
+            'PAYLOAD_INVALID',
+          );
+        }
+
+        const filters = { from, to, type, status, paymentMethod };
+        const fetchPage = async (pageOffset) => {
+          const page = await request('/reports/recorded-movements', {
+            query: { ...filters, offset: pageOffset, limit },
+          });
+          return mapRecordedMovementReportPage(page, filters, pageOffset, limit);
+        };
+
+        const first = await fetchPage(offset);
+        const remaining = first.totalCount - offset;
+        const MAX_REPORT_ROWS = 5000;
+        if (remaining < 0 || remaining > MAX_REPORT_ROWS) {
+          throw failure(
+            'This report contains more than 5,000 remaining rows. Narrow the date range or filters and retry; no partial report was displayed.',
+            'REPORT_RANGE_TOO_LARGE',
+          );
+        }
+
+        const items = [...first.items];
+        const seenIds = new Set(items.map((item) => item.id));
+        const stableSummary = (page) =>
+          JSON.stringify([
+            page.from,
+            page.to,
+            page.type,
+            page.status,
+            page.paymentMethod,
+            page.count,
+            page.activeCount,
+            page.cancelledCount,
+            page.pendingApprovalCount,
+            page.unmatchedVendorCount,
+            page.ambiguousVendorCount,
+            page.approvalExceptionCount,
+            page.invalidAmountCount,
+            page.paymentTotal,
+            page.receiptTotal,
+            page.activePaymentTotal,
+            page.activeReceiptTotal,
+            page.byPaymentMethod,
+          ]);
+        const expectedSummary = stableSummary(first);
+        let current = first;
+        while (current.hasMore) {
+          const nextOffset = current.offset + current.items.length;
+          if (nextOffset <= current.offset || nextOffset >= first.totalCount) {
+            throw failure(
+              'The report pagination did not advance safely. Retry with a narrower range.',
+              'API_RESPONSE_INVALID',
+            );
+          }
+          current = await fetchPage(nextOffset);
+          if (stableSummary(current) !== expectedSummary) {
+            throw failure(
+              'The report changed while pages were loading. Run it again to avoid a mixed result.',
+              'REPORT_CHANGED_DURING_PAGINATION',
+            );
+          }
+          for (const item of current.items) {
+            if (seenIds.has(item.id)) {
+              throw failure(
+                'The report returned a duplicate voucher across pages.',
+                'API_RESPONSE_INVALID',
+              );
+            }
+            seenIds.add(item.id);
+            items.push(item);
+          }
+        }
+
+        if (items.length !== remaining) {
+          throw failure(
+            'The report could not load every row in the filtered result. Retry; no partial report was displayed.',
+            'API_RESPONSE_INVALID',
+          );
+        }
+        return {
+          ...first,
+          items,
+          offset,
+          limit: Math.max(1, items.length),
+          hasMore: false,
+        };
+      }
+
       case 'dailyOperationsSummary': {
         const preview = await request('/cash-closes/preview');
         return mapDailyOperations(preview);
+      }
+
+      case 'cashClosePreview': {
+        const date = payload.date;
+        const openingCash = payload.openingCash;
+        const openingReason = payload.openingReason ?? '';
+        if (
+          (date !== undefined && !isCalendarDate(date)) ||
+          (openingCash !== undefined &&
+            openingCash !== '' &&
+            (typeof openingCash !== 'string' ||
+              !/^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(openingCash) ||
+              Number(openingCash) > 10_000_000)) ||
+          typeof openingReason !== 'string' ||
+          openingReason.length > 200
+        ) {
+          throw failure('Enter valid cash-close preview details.', 'PAYLOAD_INVALID');
+        }
+        const query = {};
+        if (date !== undefined) query.date = date;
+        if (openingCash !== undefined && openingCash !== '') query.openingCash = openingCash;
+        if (openingReason) query.openingReason = openingReason;
+        const preview = await request('/cash-closes/preview', { query });
+        return mapCashClosePreview(preview);
+      }
+
+      case 'createCashClose': {
+        const date = typeof payload.date === 'string' ? payload.date : '';
+        const countedCash =
+          typeof payload.countedCash === 'string' ? payload.countedCash.trim() : '';
+        const openingCash =
+          payload.openingCash === undefined || payload.openingCash === null
+            ? ''
+            : typeof payload.openingCash === 'string'
+              ? payload.openingCash.trim()
+              : null;
+        const openingReason = payload.openingReason === undefined ? '' : payload.openingReason;
+        const varianceReason = payload.varianceReason === undefined ? '' : payload.varianceReason;
+        const requestId = typeof payload.requestId === 'string' ? payload.requestId.trim() : '';
+        const validAmount = (value) =>
+          typeof value === 'string' &&
+          /^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(value) &&
+          Number(value) <= 10_000_000;
+        if (
+          !isCalendarDate(date) ||
+          !validAmount(countedCash) ||
+          (openingCash !== '' && !validAmount(openingCash)) ||
+          openingCash === null ||
+          typeof openingReason !== 'string' ||
+          openingReason.length > 200 ||
+          typeof varianceReason !== 'string' ||
+          varianceReason.length > 200 ||
+          !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(requestId)
+        ) {
+          throw failure(
+            'Enter a valid date, counted cash and retry identity before closing.',
+            'PAYLOAD_INVALID',
+          );
+        }
+
+        const body = { date, countedCash, varianceReason };
+        if (openingCash !== '') body.openingCash = openingCash;
+        if (openingReason) body.openingReason = openingReason;
+        const idempotencyKey = await stableIdempotencyKey('cash-close', 'create:' + requestId);
+        const result = await mutate('/cash-closes', body, {
+          idempotency: true,
+          idempotencyKey,
+        });
+        if (typeof result?.replayed !== 'boolean') {
+          throw failure(
+            'The server may have saved this close, but its confirmation was incomplete. Refresh the close before retrying.',
+            'API_RESPONSE_INVALID',
+          );
+        }
+        const close = mapCashCloseRecord(result.close);
+        if (close.date !== date) {
+          throw failure(
+            'The server returned a close for a different business date.',
+            'API_RESPONSE_INVALID',
+          );
+        }
+        return { close, replayed: result.replayed };
+      }
+
+      case 'recordCashCloseCorrection': {
+        const closeId = typeof payload.closeId === 'string' ? payload.closeId.trim() : '';
+        const type = payload.type;
+        const details = typeof payload.details === 'string' ? payload.details.trim() : '';
+        const reason = typeof payload.reason === 'string' ? payload.reason.trim() : '';
+        const voucherId = typeof payload.voucherId === 'string' ? payload.voucherId.trim() : '';
+        const requestId = typeof payload.requestId === 'string' ? payload.requestId.trim() : '';
+        if (
+          !VOUCHER_ID_PATTERN.test(closeId) ||
+          !['VOUCHER', 'CASH_COUNT', 'OPENING_CASH', 'OTHER'].includes(type) ||
+          details.length < 3 ||
+          details.length > 500 ||
+          reason.length < 3 ||
+          reason.length > 200 ||
+          (voucherId !== '' && !VOUCHER_ID_PATTERN.test(voucherId)) ||
+          !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(requestId)
+        ) {
+          throw failure(
+            'Enter a valid correction type, details, reason and retry identity.',
+            'PAYLOAD_INVALID',
+          );
+        }
+
+        const body = { type, details, reason };
+        if (voucherId) body.voucherId = voucherId;
+        const idempotencyKey = await stableIdempotencyKey(
+          'cash-close-correction',
+          closeId + ':' + requestId,
+        );
+        const result = await mutate(
+          '/cash-closes/' + encodeURIComponent(closeId) + '/corrections',
+          body,
+          { idempotency: true, idempotencyKey },
+        );
+        const correction = result?.correction;
+        if (
+          !correction ||
+          typeof correction !== 'object' ||
+          Array.isArray(correction) ||
+          !VOUCHER_ID_PATTERN.test(String(correction.id || '')) ||
+          correction.closeId !== closeId ||
+          typeof correction.date !== 'string' ||
+          correction.type !== type ||
+          correction.details !== details ||
+          correction.reason !== reason ||
+          typeof result.replayed !== 'boolean'
+        ) {
+          throw failure(
+            'The server may have recorded this correction, but its confirmation was incomplete. Refresh the close before retrying.',
+            'API_RESPONSE_INVALID',
+          );
+        }
+        return {
+          correction: {
+            ...correction,
+            createdBy:
+              typeof correction.createdByUserId === 'string' ? correction.createdByUserId : '',
+            createdAt: typeof correction.createdAtUtc === 'string' ? correction.createdAtUtc : '',
+          },
+          replayed: result.replayed,
+        };
       }
 
       case 'listUsers': {
@@ -939,6 +1655,215 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         }));
       }
 
+      case 'saveUser': {
+        const suppliedId = payload.id !== undefined && payload.id !== null;
+        const userId = suppliedId && typeof payload.id === 'string' ? payload.id.trim() : '';
+        if (suppliedId && !VOUCHER_ID_PATTERN.test(userId)) {
+          throw failure(
+            'The user reference is invalid. Refresh the Users list and retry.',
+            'PAYLOAD_INVALID',
+          );
+        }
+
+        const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+        const email = typeof payload.email === 'string' ? payload.email.trim().toLowerCase() : '';
+        const role = payload.role;
+        if (
+          !name ||
+          name.length > 80 ||
+          !email ||
+          email.length > 254 ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+          !['staff', 'manager', 'owner', 'accountant'].includes(role)
+        ) {
+          throw failure('Enter a valid user name, email address and role.', 'PAYLOAD_INVALID');
+        }
+
+        const body = { name, email, role };
+        const route = userId ? '/users/' + encodeURIComponent(userId) : '/users';
+        const method = userId ? 'PATCH' : 'POST';
+        if (userId) {
+          if (typeof payload.active !== 'boolean') {
+            throw failure('Choose whether this user account is active.', 'PAYLOAD_INVALID');
+          }
+          body.active = payload.active;
+        } else {
+          const temporaryPassword =
+            typeof payload.temporaryPassword === 'string'
+              ? payload.temporaryPassword
+              : payload.password;
+          if (
+            typeof temporaryPassword !== 'string' ||
+            temporaryPassword.length < 8 ||
+            temporaryPassword.length > 128
+          ) {
+            throw failure(
+              'Temporary password must be between 8 and 128 characters.',
+              'PAYLOAD_INVALID',
+            );
+          }
+          body.temporaryPassword = temporaryPassword;
+        }
+
+        const idempotencyKey =
+          payload.idempotencyKey === undefined
+            ? await stableIdempotencyKey('user-save', JSON.stringify({ userId, ...body }))
+            : payload.idempotencyKey;
+        if (
+          typeof idempotencyKey !== 'string' ||
+          !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(idempotencyKey)
+        ) {
+          throw failure('The user operation retry key is invalid.', 'PAYLOAD_INVALID');
+        }
+
+        const result = await mutate(route, body, {
+          method,
+          idempotency: true,
+          idempotencyKey,
+        });
+        return mapUserMutation(result, userId);
+      }
+
+      case 'resetPassword': {
+        const userId = typeof payload.id === 'string' ? payload.id.trim() : '';
+        const temporaryPassword =
+          typeof payload.temporaryPassword === 'string'
+            ? payload.temporaryPassword
+            : payload.password;
+        if (!VOUCHER_ID_PATTERN.test(userId)) {
+          throw failure(
+            'The user reference is invalid. Refresh the Users list and retry.',
+            'PAYLOAD_INVALID',
+          );
+        }
+        if (
+          typeof temporaryPassword !== 'string' ||
+          temporaryPassword.length < 8 ||
+          temporaryPassword.length > 128
+        ) {
+          throw failure(
+            'Temporary password must be between 8 and 128 characters.',
+            'PAYLOAD_INVALID',
+          );
+        }
+
+        const idempotencyKey =
+          payload.idempotencyKey === undefined
+            ? await stableIdempotencyKey('user-reset', userId + ':' + temporaryPassword)
+            : payload.idempotencyKey;
+        if (
+          typeof idempotencyKey !== 'string' ||
+          !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(idempotencyKey)
+        ) {
+          throw failure('The password reset retry key is invalid.', 'PAYLOAD_INVALID');
+        }
+
+        const result = await mutate(
+          '/users/' + encodeURIComponent(userId) + '/password-reset',
+          { temporaryPassword },
+          { idempotency: true, idempotencyKey },
+        );
+        return mapUserMutation(result, userId);
+      }
+
+      case 'saveSettings': {
+        const propertyName =
+          typeof payload.propertyName === 'string' ? payload.propertyName.trim() : '';
+        const propertyAddress =
+          typeof payload.propertyAddress === 'string' ? payload.propertyAddress.trim() : '';
+        const normalizeCategories = (value, label) => {
+          if (!Array.isArray(value) || value.length > 60) {
+            throw failure(label + ' must contain 1 to 60 values.', 'PAYLOAD_INVALID');
+          }
+          const normalized = [];
+          for (const item of value) {
+            if (typeof item !== 'string') {
+              throw failure(label + ' must contain text values.', 'PAYLOAD_INVALID');
+            }
+            const name = item.trim();
+            if (!name) continue;
+            if (name.length > 40) {
+              throw failure(label + ' entries must be 40 characters or fewer.', 'PAYLOAD_INVALID');
+            }
+            if (!normalized.includes(name)) normalized.push(name);
+          }
+          if (!normalized.length) {
+            throw failure(label + ' must contain at least one value.', 'PAYLOAD_INVALID');
+          }
+          return normalized;
+        };
+        const normalizeSequence = (value, label) => {
+          if (value === null || value === undefined || value === '') return null;
+          const text =
+            typeof value === 'number'
+              ? String(value)
+              : typeof value === 'string'
+                ? value.trim()
+                : '';
+          if (!/^[1-9][0-9]{0,8}$/.test(text)) {
+            throw failure('Enter a valid ' + label + '.', 'PAYLOAD_INVALID');
+          }
+          return text;
+        };
+        const openingBalance =
+          typeof payload.openingBalance === 'string' ? payload.openingBalance.trim() : '';
+        if (
+          !propertyName ||
+          propertyName.length > 120 ||
+          propertyAddress.length > 300 ||
+          typeof payload.propertyAddress !== 'string' ||
+          !/^-?(?:0|[1-9][0-9]{0,8})(?:\.[0-9]{1,2})?$/.test(openingBalance)
+        ) {
+          throw failure(
+            'Enter valid property settings and an opening balance in INR.',
+            'PAYLOAD_INVALID',
+          );
+        }
+
+        const body = {
+          propertyName,
+          propertyAddress,
+          categories: normalizeCategories(payload.categories, 'Categories'),
+          receiptCategories: normalizeCategories(
+            payload.receiptCategories,
+            'Cash-received categories',
+          ),
+          nextVoucherNo: normalizeSequence(payload.nextVoucherNo, 'next payment voucher number'),
+          nextReceiptNo: normalizeSequence(payload.nextReceiptNo, 'next cash-received number'),
+          openingBalance,
+        };
+        const idempotencyKey =
+          payload.idempotencyKey === undefined
+            ? await stableIdempotencyKey('settings-save', JSON.stringify(body))
+            : payload.idempotencyKey;
+        if (
+          typeof idempotencyKey !== 'string' ||
+          !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(idempotencyKey)
+        ) {
+          throw failure('The settings operation retry key is invalid.', 'PAYLOAD_INVALID');
+        }
+
+        const result = await mutate('/settings', body, {
+          method: 'PUT',
+          idempotency: true,
+          idempotencyKey,
+        });
+        if (
+          !result?.settings ||
+          typeof result.settings !== 'object' ||
+          Array.isArray(result.settings) ||
+          typeof result.settings.propertyName !== 'string' ||
+          !Array.isArray(result.settings.categories) ||
+          !Array.isArray(result.settings.receiptCategories)
+        ) {
+          throw failure(
+            'The Laravel settings API returned an invalid response.',
+            'API_RESPONSE_INVALID',
+          );
+        }
+        return result.settings;
+      }
+
       case 'auditLog': {
         const page = await request('/audit-events', {
           query: {
@@ -949,12 +1874,286 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         return mapAuditPage(page);
       }
 
+      case 'voucherHistory': {
+        const id = typeof payload.id === 'string' ? payload.id.trim() : '';
+        const eventCategory = payload.eventCategory ?? 'ALL';
+        const limit = payload.limit ?? 50;
+        const cursor = payload.cursor ?? null;
+        if (
+          !VOUCHER_ID_PATTERN.test(id) ||
+          ![
+            'ALL',
+            'CREATED',
+            'UPDATED',
+            'CANCELLED',
+            'APPROVED',
+            'REJECTED',
+            'RECEIPT_ATTACHED',
+            'OTHER',
+          ].includes(eventCategory) ||
+          !Number.isSafeInteger(limit) ||
+          limit < 1 ||
+          limit > 100 ||
+          !(
+            cursor === null ||
+            (typeof cursor === 'string' && cursor.length > 0 && cursor.length <= 512)
+          )
+        ) {
+          throw failure(
+            'Choose a valid voucher and history filter before loading history.',
+            'PAYLOAD_INVALID',
+          );
+        }
+        const page = await request('/vouchers/' + encodeURIComponent(id) + '/history', {
+          query: { limit, cursor, eventCategory },
+        });
+        return mapVoucherHistoryPage(page, id, eventCategory);
+      }
+
       case 'createVouchers': {
         if (payload.bulk) {
-          throw failure(
-            'Bulk import is not yet supported by the Laravel shadow API. No entries were submitted.',
-            'API_ACTION_UNSUPPORTED',
+          const sourceSystem = payload.sourceSystem ?? 'manual-csv';
+          const entries = payload.entries;
+          if (
+            !['apps-script-vouchers', 'manual-csv'].includes(sourceSystem) ||
+            !Array.isArray(entries) ||
+            entries.length < 1 ||
+            entries.length > 100
+          ) {
+            throw failure(
+              'Import between 1 and 100 rows with a valid source system.',
+              'PAYLOAD_INVALID',
+            );
+          }
+
+          const sourceIds = new Set();
+          const sourceRowNumbers = new Set();
+          const rows = entries.map((entry, index) => {
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+              throw failure('Import row ' + (index + 1) + ' is invalid.', 'PAYLOAD_INVALID');
+            }
+            const sourceRecordId =
+              typeof entry.sourceRecordId === 'string' ? entry.sourceRecordId.trim() : '';
+            const sourceRowNumber = entry.sourceRowNumber ?? index + 1;
+            const date = typeof entry.date === 'string' ? entry.date : '';
+            const vendor = typeof entry.vendor === 'string' ? entry.vendor.trim() : '';
+            const amountNumber =
+              typeof entry.amount === 'string' || typeof entry.amount === 'number'
+                ? Number(entry.amount)
+                : NaN;
+            const amountPaise = Math.round(amountNumber * 100);
+            const type = entry.type || 'PAYMENT';
+            const cashImpact = entry.cashImpact || '';
+            const paymentMethod = entry.paymentMethod ?? '';
+            const category =
+              entry.category === undefined || entry.category === '' ? 'Other' : entry.category;
+            const notes = entry.notes === undefined || entry.notes === null ? '' : entry.notes;
+            const vendorId =
+              entry.vendorId === undefined || entry.vendorId === null || entry.vendorId === ''
+                ? null
+                : entry.vendorId;
+            const duplicateConfirmationToken = entry.duplicateConfirmationToken ?? '';
+            const sourceStatus = entry.sourceStatus ?? '';
+            const sourceApprovalStatus = entry.sourceApprovalStatus ?? '';
+            const sourceVoucherNo = entry.sourceVoucherNo ?? '';
+            const sourceReceipts = entry.sourceReceipts ?? '';
+
+            if (
+              !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(sourceRecordId) ||
+              sourceIds.has(sourceRecordId) ||
+              !Number.isSafeInteger(sourceRowNumber) ||
+              sourceRowNumber < 1 ||
+              sourceRowNumber > 1000000 ||
+              sourceRowNumbers.has(sourceRowNumber) ||
+              !isCalendarDate(date) ||
+              !vendor ||
+              vendor.length > 200 ||
+              !Number.isFinite(amountNumber) ||
+              amountNumber <= 0 ||
+              Math.abs(amountNumber * 100 - amountPaise) > 0.000001 ||
+              !Number.isSafeInteger(amountPaise) ||
+              amountPaise > 1000000000 ||
+              !['PAYMENT', 'RECEIPT'].includes(type) ||
+              !['CASH_IN', 'CASH_OUT', 'NO_CASH'].includes(cashImpact) ||
+              !['', 'CASH', 'UPI', 'BANK_TRANSFER'].includes(paymentMethod) ||
+              typeof category !== 'string' ||
+              category.trim().length > 80 ||
+              typeof notes !== 'string' ||
+              notes.length > 500 ||
+              (vendorId !== null &&
+                (typeof vendorId !== 'string' || !VOUCHER_ID_PATTERN.test(vendorId))) ||
+              typeof duplicateConfirmationToken !== 'string' ||
+              duplicateConfirmationToken.length > 2048 ||
+              typeof sourceStatus !== 'string' ||
+              sourceStatus.length > 20 ||
+              typeof sourceApprovalStatus !== 'string' ||
+              sourceApprovalStatus.length > 30 ||
+              typeof sourceVoucherNo !== 'string' ||
+              sourceVoucherNo.length > 32 ||
+              typeof sourceReceipts !== 'string' ||
+              sourceReceipts.length > 1200 ||
+              typeof (entry.sourceVendorType ?? '') !== 'string' ||
+              String(entry.sourceVendorType ?? '').length > 30
+            ) {
+              throw failure(
+                'Import row ' +
+                  (index + 1) +
+                  ' needs a stable Source ID and valid date, payee, amount and cash impact. No rows were submitted.',
+                'PAYLOAD_INVALID',
+              );
+            }
+            sourceIds.add(sourceRecordId);
+            sourceRowNumbers.add(sourceRowNumber);
+            return {
+              sourceRecordId,
+              sourceRowNumber,
+              voucher: {
+                date,
+                vendor,
+                vendorId,
+                amount: (amountPaise / 100).toFixed(2),
+                category: category.trim() || 'Other',
+                notes,
+                type,
+                cashImpact,
+                paymentMethod,
+                duplicateConfirmationToken,
+                sourceStatus,
+                sourceApprovalStatus,
+                sourceVoucherNo,
+                sourceReceipts,
+                sourceVendorType: entry.sourceVendorType ?? '',
+              },
+            };
+          });
+
+          // A refreshed duplicate-review token must not change the business batch identity.
+          const identityRows = rows.map((row) => ({
+            sourceRecordId: row.sourceRecordId,
+            sourceRowNumber: row.sourceRowNumber,
+            voucher: { ...row.voucher, duplicateConfirmationToken: '' },
+          }));
+          const batchId = await stableIdempotencyKey(
+            'voucher-import-batch',
+            JSON.stringify({ sourceSystem, rows: identityRows }),
           );
+          const result = await mutate(
+            '/imports/vouchers',
+            { sourceSystem, batchId, rows },
+            { idempotency: true, idempotencyKey: batchId },
+          );
+          const reconciliation = result?.reconciliation;
+          if (
+            !result ||
+            result.batchId !== batchId ||
+            !['PROCESSING', 'RECONCILIATION_REQUIRED', 'COMPLETED'].includes(result.status) ||
+            !Array.isArray(result.rows) ||
+            result.rows.length !== rows.length ||
+            !reconciliation ||
+            !Number.isSafeInteger(reconciliation.rowCount) ||
+            reconciliation.rowCount !== rows.length ||
+            ![
+              'importedCount',
+              'replayedCount',
+              'quarantinedCount',
+              'pendingCount',
+              'unpricedCount',
+            ].every(
+              (field) => Number.isSafeInteger(reconciliation[field]) && reconciliation[field] >= 0,
+            ) ||
+            ![
+              'sourceTotalPaise',
+              'importedTotalPaise',
+              'quarantinedTotalPaise',
+              'pendingTotalPaise',
+            ].every(
+              (field) => Number.isSafeInteger(reconciliation[field]) && reconciliation[field] >= 0,
+            ) ||
+            !Number.isSafeInteger(reconciliation.variancePaise) ||
+            typeof reconciliation.balanced !== 'boolean'
+          ) {
+            throw failure(
+              'The voucher import API returned an invalid reconciliation result. Retry the same source rows; do not create a new batch.',
+              'API_RESPONSE_INVALID',
+            );
+          }
+
+          const mappedRows = result.rows.map((row) => {
+            if (
+              !row ||
+              typeof row !== 'object' ||
+              Array.isArray(row) ||
+              !rows.some(
+                (expected) =>
+                  expected.sourceRecordId === row.sourceRecordId &&
+                  expected.sourceRowNumber === row.rowNumber,
+              ) ||
+              !['IMPORTED', 'REPLAYED', 'QUARANTINED', 'PENDING'].includes(row.status) ||
+              !(
+                row.voucher === null ||
+                (row.voucher && typeof row.voucher === 'object' && !Array.isArray(row.voucher))
+              ) ||
+              !(
+                row.sourceAmountPaise === null ||
+                (Number.isSafeInteger(row.sourceAmountPaise) && row.sourceAmountPaise > 0)
+              ) ||
+              !(
+                row.importedAmountPaise === null ||
+                (Number.isSafeInteger(row.importedAmountPaise) && row.importedAmountPaise > 0)
+              ) ||
+              ['IMPORTED', 'REPLAYED'].includes(row.status) !==
+                (row.importedAmountPaise !== null) ||
+              ['IMPORTED', 'REPLAYED'].includes(row.status) !== (row.voucher !== null) ||
+              !(row.errorCode === null || typeof row.errorCode === 'string') ||
+              !(row.errorMessage === null || typeof row.errorMessage === 'string')
+            ) {
+              throw failure(
+                'The voucher import API returned an invalid row outcome.',
+                'API_RESPONSE_INVALID',
+              );
+            }
+            if (row.voucher === null) return { ...row, voucher: null };
+            const voucher = row.voucher;
+            const voucherNo = Number(voucher.voucherNo);
+            if (
+              !VOUCHER_ID_PATTERN.test(String(voucher.id || '')) ||
+              !Number.isSafeInteger(voucherNo) ||
+              voucherNo < 1 ||
+              typeof voucher.date !== 'string' ||
+              typeof voucher.vendor !== 'string' ||
+              !['PAYMENT', 'RECEIPT'].includes(voucher.type) ||
+              typeof voucher.amount !== 'string' ||
+              typeof voucher.status !== 'string' ||
+              !['NOT_REQUIRED', 'PENDING'].includes(voucher.approvalStatus)
+            ) {
+              throw failure(
+                'The voucher import API returned an invalid saved voucher.',
+                'API_RESPONSE_INVALID',
+              );
+            }
+            return {
+              ...row,
+              voucher: {
+                ...voucher,
+                no: voucherNo,
+                voucherNo,
+                amount: rupeesToNumber(voucher.amount, 'imported voucher amount'),
+                receipts: [],
+              },
+            };
+          });
+          const created = mappedRows
+            .filter((row) => row.voucher && ['IMPORTED', 'REPLAYED'].includes(row.status))
+            .map((row) => row.voucher);
+          return {
+            batchId,
+            status: result.status,
+            created,
+            skipped: mappedRows.filter((row) => row.status === 'REPLAYED').length,
+            quarantined: mappedRows.filter((row) => row.status === 'QUARANTINED').length,
+            rows: mappedRows,
+            reconciliation,
+          };
         }
         if (
           !Array.isArray(payload.entries) ||
@@ -1299,6 +2498,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         };
       }
 
+      case 'checkVoucherDuplicates':
       case 'checkPaymentDuplicates': {
         const entries = payload.entries;
         if (!Array.isArray(entries) || entries.length < 1 || entries.length > 100) {
@@ -1323,7 +2523,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           const vendorId = entry?.vendorId ?? null;
 
           if (
-            !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+            !isCalendarDate(date) ||
             !vendor ||
             vendor.length > 200 ||
             !/^(?:0|[1-9][0-9]{0,7})(?:\.[0-9]{1,2})?$/.test(amount) ||
