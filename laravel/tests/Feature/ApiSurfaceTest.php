@@ -56,18 +56,31 @@ final class ApiSurfaceTest extends TestCase
             'audit:list',
             'audit:voucher-history',
             'imports:vouchers:create-and-reconcile',
+            'imports:historical:stage-validate-commit',
+            'operations:backup-status',
+            'operations:backup-integrity',
+            'operations:readiness',
+            'operations:onboarding',
+            'reports:data-quality',
+            'support:issue-reporting',
+            'operations:backup-status',
+            'operations:backup-integrity',
+            'operations:readiness',
+            'operations:onboarding',
+            'reports:data-quality',
+            'support:issue-reporting',
         ] as $resource) {
             self::assertContains($resource, $resources, 'Missing implemented resource: '.$resource);
         }
     }
 
-    public function test_readiness_requires_and_reports_import_reconciliation_schema_version_0007(): void
+    public function test_readiness_requires_and_reports_operations_parity_schema_version_0009(): void
     {
         $this->getJson('/api/v1/health/ready')
             ->assertOk()
             ->assertJsonPath('data.status', 'ready')
             ->assertJsonPath('data.database', 'reachable')
-            ->assertJsonPath('data.schemaVersion', '0007')
+            ->assertJsonPath('data.schemaVersion', '0009')
             ->assertJsonPath('data.rolloutState', 'isolated-shadow');
     }
 
@@ -88,6 +101,19 @@ final class ApiSurfaceTest extends TestCase
             ['POST', 'api/v1/vouchers/duplicate-check'],
             ['POST', 'api/v1/vouchers'],
             ['POST', 'api/v1/imports/vouchers'],
+            ['POST', 'api/v1/imports/historical'],
+            ['GET', 'api/v1/imports/historical/{batchId}'],
+            ['POST', 'api/v1/imports/historical/{batchId}/validate'],
+            ['POST', 'api/v1/imports/historical/{batchId}/receipts/{sourceRecordId}'],
+            ['POST', 'api/v1/imports/historical/{batchId}/commit'],
+            ['GET', 'api/v1/operations/backup-status'],
+            ['GET', 'api/v1/operations/backup-integrity'],
+            ['GET', 'api/v1/operations/readiness'],
+            ['GET', 'api/v1/onboarding'],
+            ['POST', 'api/v1/onboarding/confirm'],
+            ['POST', 'api/v1/onboarding/advance'],
+            ['GET', 'api/v1/reports/data-quality'],
+            ['POST', 'api/v1/support/issues'],
             ['PATCH', 'api/v1/vouchers/{voucherId}'],
             ['POST', 'api/v1/vouchers/{voucherId}/cancel'],
             ['POST', 'api/v1/vouchers/{voucherId}/approval'],

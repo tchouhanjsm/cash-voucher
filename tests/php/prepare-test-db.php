@@ -45,6 +45,12 @@ try {
         ['audit_events', 'SELECT, INSERT'],
         ['voucher_import_batches', 'SELECT, INSERT, UPDATE'],
         ['voucher_import_rows', 'SELECT, INSERT, UPDATE'],
+        ['historical_import_batches', 'SELECT, INSERT, UPDATE'],
+        ['historical_import_rows', 'SELECT, INSERT, UPDATE'],
+        ['historical_approval_events', 'SELECT, INSERT'],
+        ['shadow_onboarding_states', 'SELECT, INSERT, UPDATE'],
+        ['support_issue_rate_limits', 'SELECT, INSERT, UPDATE'],
+        ['support_issues', 'SELECT, INSERT, UPDATE'],
         ['schema_migrations', 'SELECT'],
     ];
 

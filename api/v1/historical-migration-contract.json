@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "sourceSystem": "apps-script-vouchers",
+  "lifecycle": [
+    "STAGED",
+    "BLOCKED",
+    "READY",
+    "COMMITTED",
+    "RECONCILIATION_REQUIRED"
+  ],
+  "limits": {
+    "vouchersPerBatch": 100,
+    "approvals": 1000,
+    "auditEvents": 2000,
+    "receipts": 300,
+    "receiptBytes": 1600000,
+    "receiptsPerVoucher": 3
+  },
+  "sourceIdentity": "sourceSystem:recordType:sourceRecordId",
+  "preservedVoucherFields": [
+    "voucherNo",
+    "date",
+    "type",
+    "vendor",
+    "vendorType",
+    "amount",
+    "category",
+    "notes",
+    "status",
+    "cashImpact",
+    "approvalStatus",
+    "approvalReason",
+    "paymentMethod",
+    "cancelReason",
+    "createdAtUtc",
+    "updatedAtUtc",
+    "approvedAtUtc",
+    "createdByEmail",
+    "updatedByEmail",
+    "approvedByEmail",
+    "createdBySourceId",
+    "updatedBySourceId",
+    "approvedBySourceId",
+    "vendorSourceId",
+    "extensions"
+  ],
+  "preservationRules": [
+    "Complete canonical source payload remains persisted in historical_import_rows after commit.",
+    "Only existing active users are linked; missing historical actors remain source IDs and email snapshots.",
+    "Original approval decisions are stored as historical evidence; they are not replayed as new approvals.",
+    "Vendor name/type snapshots are retained even when vendorSourceId cannot be resolved.",
+    "Receipt bytes must match the original byte size, detected MIME and SHA-256 before commit.",
+    "Source/imported totals are compared in integer paise. Any variance requires reconciliation."
+  ],
+  "lifecycleRules": {
+    "stage": "Immutable source manifest only; no voucher, sequence or historical event writes.",
+    "validate": "Check duplicate source identities/numbers, target conflicts, child references and private receipt integrity.",
+    "upload": "Stage receipt bytes in private storage under deterministic batch/source identity.",
+    "commit": "Owner-only atomic ledger write with idempotent commit and monotonic number sequence advancement."
+  },
+  "exclusions": [
+    "No Google Sheets/Drive extraction is performed.",
+    "No live/production data is imported.",
+    "A structural backup check is not proof of restore success."
+  ]
+}
